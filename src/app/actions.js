@@ -1,18 +1,18 @@
 'use server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { prisma } from '@/lib/prisma'
 
 export async function getDashboardStats() {
   try {
     const [
-      { data: donations },
-      { data: expenses },
-      { count: staffCount },
-      { count: inventoryCount },
+      donations,
+      expenses,
+      staffCount,
+      inventoryCount,
     ] = await Promise.all([
-      supabaseAdmin.from('donations').select('amount'),
-      supabaseAdmin.from('expenses').select('amount'),
-      supabaseAdmin.from('staff').select('*', { count: 'exact', head: true }),
-      supabaseAdmin.from('inventory_items').select('*', { count: 'exact', head: true }),
+      prisma.donations.findMany({ select: { amount: true } }),
+      prisma.expenses.findMany({ select: { amount: true } }),
+      prisma.staff.count(),
+      prisma.inventory.count(),
     ])
 
     return {

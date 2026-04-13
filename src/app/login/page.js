@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { signIn, user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -24,8 +25,14 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      const { error } = await signIn({ email, password });
-      if (error) throw error;
+      const res = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+      if (res?.error) {
+        throw new Error("Invalid email or password");
+      }
       router.push('/');
     } catch (err) {
       setError(err.message);

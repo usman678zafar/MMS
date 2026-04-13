@@ -5,8 +5,7 @@ import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Plus, Search, Filter, MoreVertical, Download, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { addDonation, updateDonation, deleteDonation, getDonations, getDonors } from './actions';
-import { supabase } from '@/lib/supabase';
+import { addDonation, updateDonation, deleteDonation, getDonations, getDonors, uploadReceipt } from './actions';
 
 const defaultForm = { donor_id: '', amount: '', type: 'Sadqah', date: format(new Date(), 'yyyy-MM-dd'), notes: '', receipt_url: '' };
 
@@ -38,12 +37,13 @@ export default function DonationsPage() {
   const handleFileUpload = async (file) => {
     try {
       setUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const filePath = `receipts/${Math.random()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from('receipts').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(filePath);
-      return publicUrl;
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await uploadReceipt(formData);
+      if (!res.success) throw new Error(res.error);
+      
+      return res.url;
     } catch (err) { alert('Upload error: ' + err.message); return null; }
     finally { setUploading(false); }
   };

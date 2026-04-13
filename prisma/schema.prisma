@@ -3,72 +3,70 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "mongodb"
 }
 
 model donors {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
   name       String
   phone      String?
   email      String?
   address    String?
-  created_at DateTime?   @default(now()) @db.Timestamptz(6)
+  created_at DateTime?   @default(now())
   donations  donations[]
 }
 
 model donations {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  donor_id    String?   @db.Uuid
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  donor_id    String?   @db.ObjectId
   type        String?
-  amount      Decimal   @db.Decimal
-  date        DateTime? @db.Date
+  amount      Float
+  date        DateTime?
   notes       String?
   receipt_url String?
-  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  created_at  DateTime? @default(now())
   donors      donors?   @relation(fields: [donor_id], references: [id], onDelete: SetNull)
 }
 
 model expenses {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   category    String?
-  amount      Decimal   @db.Decimal
+  amount      Float
   description String?
-  date        DateTime? @db.Date
-  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  date        DateTime?
+  created_at  DateTime? @default(now())
 }
 
 model inventory {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
   item_name  String
   category   String?
-  quantity   Decimal?  @default(0) @db.Decimal
+  quantity   Float?    @default(0)
   unit       String?
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  created_at DateTime? @default(now())
 }
 
 model staff {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
   name           String
   role           String?
   phone          String?
-  monthly_salary Decimal?  @db.Decimal
-  joining_date   DateTime? @db.Date
+  monthly_salary Float?
+  joining_date   DateTime?
   is_active      Boolean?  @default(true)
-  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  created_at     DateTime? @default(now())
 }
 
 model students {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
   name           String
   father_name    String?
   class          String?
   gender         String?   @default("Male")
-  admission_date DateTime? @db.Date
-  monthly_fee    Decimal?  @db.Decimal
+  admission_date DateTime?
+  monthly_fee    Float?
   phone          String?
   address        String?
   is_active      Boolean?  @default(true)
-  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  created_at     DateTime? @default(now())
 }

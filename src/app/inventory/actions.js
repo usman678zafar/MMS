@@ -1,43 +1,50 @@
 'use server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { prisma } from '@/lib/prisma'
 
 export async function addInventoryItem(itemData) {
-  const { data, error } = await supabaseAdmin
-    .from('inventory')
-    .insert([itemData])
-    .select()
-
-  if (error) return { success: false, error: error.message }
-  return { success: true, data }
+  try {
+    const data = await prisma.inventory.create({
+      data: itemData
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('addInventoryItem Error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function updateInventoryItem(id, itemData) {
-  const { data, error } = await supabaseAdmin
-    .from('inventory')
-    .update(itemData)
-    .eq('id', id)
-    .select()
-
-  if (error) return { success: false, error: error.message }
-  return { success: true, data }
+  try {
+    const data = await prisma.inventory.update({
+      where: { id },
+      data: itemData
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('updateInventoryItem Error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function deleteInventoryItem(id) {
-  const { error } = await supabaseAdmin
-    .from('inventory')
-    .delete()
-    .eq('id', id)
-
-  if (error) return { success: false, error: error.message }
-  return { success: true }
+  try {
+    await prisma.inventory.delete({
+      where: { id }
+    })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
 }
 
 export async function getInventory() {
-  const { data, error } = await supabaseAdmin
-    .from('inventory')
-    .select('*')
-    .order('item_name')
-
-  if (error) return { success: false, error: error.message }
-  return { success: true, data }
+  try {
+    const data = await prisma.inventory.findMany({
+      orderBy: { item_name: 'asc' }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('getInventory Error:', error)
+    return { success: false, error: error.message }
+  }
 }

@@ -1,55 +1,55 @@
 'use server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { prisma } from '@/lib/prisma'
 
 export async function addDonor(donorData) {
-  const { data, error } = await supabaseAdmin
-    .from('donors')
-    .insert([donorData])
-    .select()
-
-  if (error) {
+  try {
+    const data = await prisma.donors.create({
+      data: donorData
+    })
+    return { success: true, data }
+  } catch (error) {
     console.error('addDonor Error:', error)
     return { success: false, error: error.message }
   }
-  return { success: true, data }
 }
 
 export async function updateDonor(id, donorData) {
-  const { data, error } = await supabaseAdmin
-    .from('donors')
-    .update(donorData)
-    .eq('id', id)
-    .select()
-
-  if (error) {
+  try {
+    const data = await prisma.donors.update({
+      where: { id },
+      data: donorData
+    })
+    return { success: true, data }
+  } catch (error) {
     console.error('updateDonor Error:', error)
     return { success: false, error: error.message }
   }
-  return { success: true, data }
 }
 
 export async function getAllDonors() {
-  const { data, error } = await supabaseAdmin
-    .from('donors')
-    .select(`
-      *,
-      donations(amount)
-    `)
-    .order('name')
-
-  if (error) {
+  try {
+    const data = await prisma.donors.findMany({
+      include: {
+        donations: {
+          select: { amount: true }
+        }
+      },
+      orderBy: { name: 'asc' }
+    })
+    return { success: true, data }
+  } catch (error) {
     console.error('getAllDonors Error:', error)
     return { success: false, error: error.message }
   }
-  return { success: true, data }
 }
 
 export async function deleteDonor(id) {
-  const { error } = await supabaseAdmin
-    .from('donors')
-    .delete()
-    .eq('id', id)
-
-  if (error) return { success: false, error: error.message }
-  return { success: true }
+  try {
+    await prisma.donors.delete({
+      where: { id }
+    })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
 }

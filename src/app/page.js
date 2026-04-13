@@ -9,7 +9,6 @@ import {
   Wallet,
   DollarSign
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import NavigationLayout from '@/components/NavigationLayout';
 import { 
   BarChart, 

@@ -1,43 +1,56 @@
 'use server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { prisma } from '@/lib/prisma'
 
 export async function addExpense(expenseData) {
-  const { data, error } = await supabaseAdmin
-    .from('expenses')
-    .insert([expenseData])
-    .select()
-
-  if (error) return { success: false, error: error.message }
-  return { success: true, data }
+  try {
+    const data = await prisma.expenses.create({
+      data: {
+        ...expenseData,
+        date: expenseData.date ? new Date(expenseData.date) : null
+      }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('addExpense Error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function updateExpense(id, expenseData) {
-  const { data, error } = await supabaseAdmin
-    .from('expenses')
-    .update(expenseData)
-    .eq('id', id)
-    .select()
-
-  if (error) return { success: false, error: error.message }
-  return { success: true, data }
+  try {
+    const data = await prisma.expenses.update({
+      where: { id },
+      data: {
+        ...expenseData,
+        date: expenseData.date ? new Date(expenseData.date) : undefined
+      }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('updateExpense Error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function deleteExpense(id) {
-  const { error } = await supabaseAdmin
-    .from('expenses')
-    .delete()
-    .eq('id', id)
-
-  if (error) return { success: false, error: error.message }
-  return { success: true }
+  try {
+    await prisma.expenses.delete({
+      where: { id }
+    })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
 }
 
 export async function getExpenses() {
-  const { data, error } = await supabaseAdmin
-    .from('expenses')
-    .select('*')
-    .order('date', { ascending: false })
-
-  if (error) return { success: false, error: error.message }
-  return { success: true, data }
+  try {
+    const data = await prisma.expenses.findMany({
+      orderBy: { date: 'desc' }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('getExpenses Error:', error)
+    return { success: false, error: error.message }
+  }
 }

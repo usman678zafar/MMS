@@ -1,42 +1,68 @@
 'use server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { prisma } from '@/lib/prisma'
 
 export async function addStudent(studentData) {
-  const { data, error } = await supabaseAdmin
-    .from('students')
-    .insert([studentData])
-    .select()
-  if (error) { console.error('addStudent Error:', error); return { success: false, error: error.message } }
-  return { success: true, data }
+  try {
+    const data = await prisma.students.create({
+      data: {
+        ...studentData,
+        admission_date: studentData.admission_date ? new Date(studentData.admission_date) : null
+      }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('addStudent Error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function updateStudent(id, studentData) {
-  const { data, error } = await supabaseAdmin
-    .from('students')
-    .update(studentData)
-    .eq('id', id)
-    .select()
-  if (error) { console.error('updateStudent Error:', error); return { success: false, error: error.message } }
-  return { success: true, data }
+  try {
+    const data = await prisma.students.update({
+      where: { id },
+      data: {
+        ...studentData,
+        admission_date: studentData.admission_date ? new Date(studentData.admission_date) : undefined
+      }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('updateStudent Error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function getStudents() {
-  const { data, error } = await supabaseAdmin
-    .from('students')
-    .select('*')
-    .order('name')
-  if (error) { console.error('getStudents Error:', error); return { success: false, error: error.message } }
-  return { success: true, data }
+  try {
+    const data = await prisma.students.findMany({
+      orderBy: { name: 'asc' }
+    })
+    return { success: true, data }
+  } catch (error) {
+    console.error('getStudents Error:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 export async function updateStudentStatus(id, is_active) {
-  const { error } = await supabaseAdmin.from('students').update({ is_active }).eq('id', id)
-  if (error) return { success: false, error: error.message }
-  return { success: true }
+  try {
+    await prisma.students.update({
+      where: { id },
+      data: { is_active }
+    })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
 }
 
 export async function deleteStudent(id) {
-  const { error } = await supabaseAdmin.from('students').delete().eq('id', id)
-  if (error) return { success: false, error: error.message }
-  return { success: true }
+  try {
+    await prisma.students.delete({
+      where: { id }
+    })
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
 }
