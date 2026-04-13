@@ -12,8 +12,11 @@ export default function Donations() {
     amount: '',
     type: 'Sadqah',
     date: format(new Date(), 'yyyy-MM-dd'),
-    notes: ''
+    notes: '',
+    receipt_url: ''
   });
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [donors, setDonors] = useState([]);
 
   useEffect(() => {
@@ -39,9 +42,43 @@ export default function Donations() {
     if (data) setDonors(data);
   }
 
+  const handleFileUpload = async (file) => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `receipts/${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('receipts')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      alert('Error uploading image: ' + error.message);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleAddDonation = async (e) => {
     e.preventDefault();
-    const { error } = await supabase.from('donations').insert([newDonation]);
+    let url = '';
+    if (selectedFile) {
+      url = await handleFileUpload(selectedFile);
+    }
+
+    const { error } = await supabase.from('donations').insert([
+      { ...newDonation, receipt_url: url }
+    ]);
+
     if (!error) {
       setShowModal(false);
       fetchDonations();
@@ -50,8 +87,10 @@ export default function Donations() {
         amount: '',
         type: 'Sadqah',
         date: format(new Date(), 'yyyy-MM-dd'),
-        notes: ''
+        notes: '',
+        receipt_url: ''
       });
+      setSelectedFile(null);
     }
   };
 
@@ -99,17 +138,18 @@ export default function Donations() {
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Donor</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Receipt</th>
                 <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-10 text-center text-slate-400">Loading donations...</td>
+                  <td colSpan="6" className="px-6 py-10 text-center text-slate-400">Loading donations...</td>
                 </tr>
               ) : donations.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-10 text-center text-slate-400">No donations found.</td>
+                  <td colSpan="6" className="px-6 py-10 text-center text-slate-400">No donations found.</td>
                 </tr>
               ) : (
                 donations.map((donation) => (
@@ -127,6 +167,13 @@ export default function Donations() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-slate-900">रु {Number(donation.amount).toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      {donation.receipt_url ? (
+                        <a href={donation.receipt_url} target="_blank" rel="noreferrer" className="text-primary-600 hover:text-primary-700 text-xs font-bold underline">View</a>
+                      ) : (
+                        <span className="text-slate-300 text-xs italic">No Receipt</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <button className="text-slate-400 hover:text-slate-600">
                         <MoreVertical className="h-5 w-5" />
@@ -194,6 +241,15 @@ export default function Donations() {
                     onChange={(e) => setNewDonation({...newDonation, date: e.target.value})}
                   />
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Receipt Image (Optional)</label>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all"
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
@@ -206,7 +262,9 @@ export default function Donations() {
               </div>
               <div className="flex gap-3 justify-end mt-6">
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Donation</button>
+                <button type="submit" disabled={uploading} className="btn btn-primary">
+                  {uploading ? 'Uploading...' : 'Save Donation'}
+                </button>
               </div>
             </form>
           </div>
