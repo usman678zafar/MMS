@@ -7,11 +7,29 @@ export async function addExpense(expenseData) {
     .insert([expenseData])
     .select()
 
-  if (error) {
-    console.error('addExpense Error:', error)
-    return { success: false, error: error.message }
-  }
+  if (error) return { success: false, error: error.message }
   return { success: true, data }
+}
+
+export async function updateExpense(id, expenseData) {
+  const { data, error } = await supabaseAdmin
+    .from('expenses')
+    .update(expenseData)
+    .eq('id', id)
+    .select()
+
+  if (error) return { success: false, error: error.message }
+  return { success: true, data }
+}
+
+export async function deleteExpense(id) {
+  const { error } = await supabaseAdmin
+    .from('expenses')
+    .delete()
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }
 
 export async function getExpenses() {
@@ -20,9 +38,6 @@ export async function getExpenses() {
     .select('*')
     .order('date', { ascending: false })
 
-  if (error) {
-    console.error('getExpenses Error:', error)
-    return { success: false, error: error.message }
-  }
+  if (error) return { success: false, error: error.message }
   return { success: true, data }
 }

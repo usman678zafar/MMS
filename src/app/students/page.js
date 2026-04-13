@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import Modal from '@/components/Modal';
-import { Plus, Search, GraduationCap, Phone, Calendar, Trash2, User, BookOpen } from 'lucide-react';
-import { addStudent, getStudents, deleteStudent, updateStudentStatus } from './actions';
+import ConfirmModal from '@/components/ConfirmModal';
+import { Plus, Search, GraduationCap, Phone, Calendar, Trash2, User, BookOpen, Edit2 } from 'lucide-react';
+import { addStudent, updateStudent, getStudents, deleteStudent, updateStudentStatus } from './actions';
 import { format } from 'date-fns';
 
 const CLASSES = ['Hifz', 'Nazra', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Dars-e-Nizami', 'Other'];
@@ -25,6 +26,8 @@ export default function StudentsPage() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [filterClass, setFilterClass] = useState('All');
@@ -39,13 +42,30 @@ export default function StudentsPage() {
     setLoading(false);
   }
 
-  const handleAdd = async (e) => {
+  const handleOpenEdit = (student) => {
+    setNewStudent({ ...student });
+    setEditingId(student.id);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setNewStudent(defaultForm);
+    setEditingId(null);
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const res = await addStudent(newStudent);
+    let res;
+    if (editingId) {
+      res = await updateStudent(editingId, newStudent);
+    } else {
+      res = await addStudent(newStudent);
+    }
+    
     if (res.success) {
-      setShowModal(false);
-      setNewStudent(defaultForm);
+      handleCloseModal();
       fetchStudents();
     } else {
       alert(`Error: ${res.error}`);
@@ -53,11 +73,12 @@ export default function StudentsPage() {
     setSaving(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Remove this student record?')) return;
-    const res = await deleteStudent(id);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const res = await deleteStudent(deleteId);
     if (res.success) fetchStudents();
     else alert(`Error: ${res.error}`);
+    setDeleteId(null);
   };
 
   const handleToggleStatus = async (id, current) => {
@@ -84,7 +105,7 @@ export default function StudentsPage() {
             <h2 className="text-2xl font-bold text-slate-900">Students</h2>
             <p className="text-slate-500">Manage madrasa student enrollment and records.</p>
           </div>
-          <button onClick={() => setShowModal(true)} className="btn btn-primary">
+          <button onClick={() => { setEditingId(null); setNewStudent(defaultForm); setShowModal(true); }} className="btn btn-primary">
             <Plus className="h-4 w-4 mr-2" />
             Enroll Student
           </button>
@@ -138,9 +159,18 @@ export default function StudentsPage() {
             </div>
           ) : (
             filtered.map((student) => (
-              <div key={student.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 group">
+              <div key={student.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 group relative">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                  <button onClick={() => handleOpenEdit(student)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit">
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => setDeleteId(student.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 pr-16">
                     <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 text-xl font-bold flex-shrink-0">
                       {student.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
@@ -151,19 +181,7 @@ export default function StudentsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleToggleStatus(student.id, student.is_active !== false)}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        student.is_active !== false
-                          ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}
-                      title="Toggle status"
-                    >
-                      {student.is_active !== false ? 'Active' : 'Inactive'}
-                    </button>
-                  </div>
+                  
                 </div>
 
                 <div className="mt-4 space-y-2">
@@ -187,6 +205,19 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="mt-5 pt-5 border-t border-slate-50 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                     <button
+                      onClick={() => handleToggleStatus(student.id, student.is_active !== false)}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        student.is_active !== false
+                          ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                      title="Toggle status"
+                    >
+                      {student.is_active !== false ? 'Active' : 'Inactive'}
+                    </button>
+                  </div>
                   {student.monthly_fee ? (
                     <span className="text-sm font-bold text-slate-900">
                       रु {Number(student.monthly_fee).toLocaleString()}<span className="text-xs text-slate-400 font-normal">/mo</span>
@@ -194,20 +225,14 @@ export default function StudentsPage() {
                   ) : (
                     <span className="text-sm text-slate-300 italic">No fee set</span>
                   )}
-                  <button
-                    onClick={() => handleDelete(student.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        <Modal open={showModal} onClose={() => setShowModal(false)} title="Enroll New Student">
-          <form onSubmit={handleAdd} className="space-y-3">
+        <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Student" : "Enroll New Student"}>
+          <form onSubmit={handleSave} className="space-y-3">
             {/* Name & Father */}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -269,13 +294,21 @@ export default function StudentsPage() {
             </div>
 
             <div className="flex gap-2 justify-end pt-2 text-sm">
-              <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary text-sm">Cancel</button>
+              <button type="button" onClick={handleCloseModal} className="btn btn-secondary text-sm">Cancel</button>
               <button type="submit" disabled={saving} className="btn btn-primary text-sm disabled:opacity-50">
-                {saving ? 'Enrolling...' : 'Enroll Student'}
+                {saving ? 'Saving...' : (editingId ? 'Update Student' : 'Enroll Student')}
               </button>
             </div>
           </form>
         </Modal>
+
+        <ConfirmModal
+          open={!!deleteId}
+          onClose={() => setDeleteId(null)}
+          onConfirm={confirmDelete}
+          title="Delete Student Record"
+          message="Are you sure you want to completely remove this student? This action cannot be undone."
+        />
       </div>
     </NavigationLayout>
   );

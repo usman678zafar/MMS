@@ -2,13 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import Modal from '@/components/Modal';
-import { Plus, Search, Trash2, Phone, Mail, MapPin, HandHeart } from 'lucide-react';
-import { addDonor, getAllDonors, deleteDonor } from './actions';
+import ConfirmModal from '@/components/ConfirmModal';
+import { Plus, Search, Trash2, Phone, Mail, MapPin, HandHeart, Edit2 } from 'lucide-react';
+import { addDonor, updateDonor, getAllDonors, deleteDonor } from './actions';
 
 export default function DonorsPage() {
   const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [newDonor, setNewDonor] = useState({
@@ -29,13 +32,30 @@ export default function DonorsPage() {
     setLoading(false);
   }
 
-  const handleAddDonor = async (e) => {
+  const handleOpenEdit = (donor) => {
+    setNewDonor({ name: donor.name, email: donor.email || '', phone: donor.phone || '', address: donor.address || '' });
+    setEditingId(donor.id);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setNewDonor({ name: '', email: '', phone: '', address: '' });
+    setEditingId(null);
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const res = await addDonor(newDonor);
+    let res;
+    if (editingId) {
+      res = await updateDonor(editingId, newDonor);
+    } else {
+      res = await addDonor(newDonor);
+    }
+
     if (res.success) {
-      setShowModal(false);
-      setNewDonor({ name: '', email: '', phone: '', address: '' });
+      handleCloseModal();
       fetchDonors();
     } else {
       alert(`Error: ${res.error}`);
@@ -43,11 +63,12 @@ export default function DonorsPage() {
     setSaving(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to remove this donor?')) return;
-    const res = await deleteDonor(id);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    const res = await deleteDonor(deleteId);
     if (res.success) fetchDonors();
     else alert(`Error: ${res.error}`);
+    setDeleteId(null);
   };
 
   const filtered = donors.filter(d =>
@@ -68,7 +89,7 @@ export default function DonorsPage() {
             <p className="text-slate-500">Manage all donors and their contribution history.</p>
           </div>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { setEditingId(null); setNewDonor({ name: '', email: '', phone: '', address: '' }); setShowModal(true); }}
             className="btn btn-primary"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -100,25 +121,28 @@ export default function DonorsPage() {
             </div>
           ) : (
             filtered.map((donor) => (
-              <div key={donor.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 group">
-                <div className="flex items-start justify-between">
+              <div key={donor.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 group relative">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                  <button onClick={() => handleOpenEdit(donor)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit">
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => setDeleteId(donor.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-start justify-between pr-14">
                   <div className="flex items-center gap-3">
                     <div className="h-12 w-12 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 text-xl font-bold flex-shrink-0">
                       {donor.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-base">{donor.name}</h3>
+                      <h3 className="font-bold text-slate-900 text-base leading-tight">{donor.name}</h3>
                       <p className="text-xs text-slate-400 mt-0.5">
                         {donor.donations?.length || 0} donation{donor.donations?.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(donor.id)}
-                    className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
 
                 <div className="mt-5 space-y-2.5">
@@ -153,8 +177,8 @@ export default function DonorsPage() {
           )}
         </div>
 
-        <Modal open={showModal} onClose={() => setShowModal(false)} title="Add New Donor">
-          <form onSubmit={handleAddDonor} className="space-y-3">
+        <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Donor" : "Add New Donor"}>
+          <form onSubmit={handleSave} className="space-y-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name *</label>
               <input type="text" required className="input-field text-sm" placeholder="e.g. Ahmad Ali Khan"
@@ -178,13 +202,21 @@ export default function DonorsPage() {
               </div>
             </div>
             <div className="flex gap-2 justify-end pt-2">
-              <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary text-sm">Cancel</button>
+              <button type="button" onClick={handleCloseModal} className="btn btn-secondary text-sm">Cancel</button>
               <button type="submit" disabled={saving} className="btn btn-primary text-sm disabled:opacity-50">
-                {saving ? 'Saving...' : 'Add Donor'}
+                {saving ? 'Saving...' : (editingId ? 'Update Donor' : 'Add Donor')}
               </button>
             </div>
           </form>
         </Modal>
+
+        <ConfirmModal
+          open={!!deleteId}
+          onClose={() => setDeleteId(null)}
+          onConfirm={confirmDelete}
+          title="Delete Donor"
+          message="Are you sure you want to completely remove this donor? This action cannot be undone."
+        />
       </div>
     </NavigationLayout>
   );

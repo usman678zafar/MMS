@@ -14,6 +14,20 @@ export async function addDonor(donorData) {
   return { success: true, data }
 }
 
+export async function updateDonor(id, donorData) {
+  const { data, error } = await supabaseAdmin
+    .from('donors')
+    .update(donorData)
+    .eq('id', id)
+    .select()
+
+  if (error) {
+    console.error('updateDonor Error:', error)
+    return { success: false, error: error.message }
+  }
+  return { success: true, data }
+}
+
 export async function getAllDonors() {
   const { data, error } = await supabaseAdmin
     .from('donors')

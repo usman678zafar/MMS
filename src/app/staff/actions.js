@@ -7,22 +7,37 @@ export async function addStaffMember(staffData) {
     .insert([staffData])
     .select()
 
-  if (error) {
-    console.error('addStaffMember Error:', error)
-    return { success: false, error: error.message }
-  }
+  if (error) return { success: false, error: error.message }
   return { success: true, data }
+}
+
+export async function updateStaffMember(id, staffData) {
+  const { data, error } = await supabaseAdmin
+    .from('staff')
+    .update(staffData)
+    .eq('id', id)
+    .select()
+
+  if (error) return { success: false, error: error.message }
+  return { success: true, data }
+}
+
+export async function deleteStaffMember(id) {
+  const { error } = await supabaseAdmin
+    .from('staff')
+    .delete()
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }
 
 export async function getStaff() {
   const { data, error } = await supabaseAdmin
     .from('staff')
     .select('*')
-    .order('name')
+    .order('created_at', { ascending: true })
 
-  if (error) {
-    console.error('getStaff Error:', error)
-    return { success: false, error: error.message }
-  }
+  if (error) return { success: false, error: error.message }
   return { success: true, data }
 }
