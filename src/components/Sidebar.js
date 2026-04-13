@@ -24,21 +24,33 @@ const navigation = [
   { name: 'Inventory', href: '/inventory', icon: Package },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const { signOut, profile } = useAuth();
   const pathname = usePathname();
 
   return (
-    <div className="flex bg-white flex-col w-64 border-r border-slate-200 h-screen sticky top-0">
+    <div className="flex bg-white flex-col w-64 md:border-r border-slate-200 h-screen sticky top-0 shadow-2xl md:shadow-none">
       <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
-        <div className="flex items-center flex-shrink-0 px-6">
-          <div className="h-10 w-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
-            <span className="text-white font-bold text-xl">M</span>
+        <div className="flex items-center justify-between px-6 flex-shrink-0">
+          <div className="flex items-center">
+            <div className="h-10 w-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
+              <span className="text-white font-bold text-xl">M</span>
+            </div>
+            <div className="ml-3">
+              <h1 className="text-lg font-bold text-slate-900 leading-none">MMS</h1>
+              <p className="text-xs text-slate-500 font-medium mt-1">Masjid Management</p>
+            </div>
           </div>
-          <div className="ml-3">
-            <h1 className="text-lg font-bold text-slate-900 leading-none">MMS</h1>
-            <p className="text-xs text-slate-500 font-medium mt-1">Masjid Management</p>
-          </div>
+          {onClose && (
+            <button 
+              onClick={onClose}
+              className="md:hidden p-2 -mr-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
         <nav className="mt-8 flex-1 px-3 space-y-1">
           {navigation.map((item) => {

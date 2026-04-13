@@ -126,7 +126,7 @@ export default function DonationsPage() {
               <thead>
                 <tr className="bg-slate-50/50">
                   {['Date','Donor','Type','Amount','Receipt','Action'].map(h => (
-                    <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -135,17 +135,17 @@ export default function DonationsPage() {
                   : filtered.length === 0 ? <tr><td colSpan="6" className="px-5 py-10 text-center text-slate-400">No donations found.</td></tr>
                   : filtered.map((d) => (
                     <tr key={d.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-5 py-3.5 text-sm text-slate-600">{format(new Date(d.date), 'MMM dd, yyyy')}</td>
-                      <td className="px-5 py-3.5 font-medium text-slate-900 text-sm">{d.donors?.name || 'Walk-in'}</td>
-                      <td className="px-5 py-3.5">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${d.type === 'Zakat' ? 'bg-emerald-100 text-emerald-800' : d.type === 'Sadqah' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>{d.type}</span>
+                      <td className="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{format(new Date(d.date), 'MMM dd, yyyy')}</td>
+                      <td className="px-5 py-3.5 font-medium text-slate-900 text-sm whitespace-nowrap">{d.donors?.name || 'Walk-in'}</td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${d.type === 'Zakat' ? 'bg-emerald-100 text-emerald-800' : d.type === 'Sadqah' ? 'bg-blue-100 text-blue-800' : d.type === 'Masjid' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>{d.type}</span>
                       </td>
-                      <td className="px-5 py-3.5 text-sm font-semibold text-slate-900">रु {Number(d.amount).toLocaleString()}</td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 text-sm font-semibold text-slate-900 whitespace-nowrap">रु {Number(d.amount).toLocaleString()}</td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         {d.receipt_url ? <a href={d.receipt_url} target="_blank" rel="noreferrer" className="text-primary-600 text-xs font-bold underline">View</a>
                           : <span className="text-slate-300 text-xs italic">None</span>}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex gap-2">
                           <button onClick={() => handleOpenEdit(d)} className="text-slate-300 hover:text-blue-500 transition-colors" title="Edit">
                             <Edit2 className="h-4 w-4" />
@@ -180,7 +180,7 @@ export default function DonationsPage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Type</label>
                 <select className="input-field text-sm" value={newDonation.type} onChange={(e) => setNewDonation({ ...newDonation, type: e.target.value })}>
-                  {['Zakat','Sadqah','Lillah','Fitrana','Other'].map(t => <option key={t}>{t}</option>)}
+                  {['Zakat','Sadqah','Lillah','Fitrana','Masjid','Other'].map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
               <div className="col-span-2">

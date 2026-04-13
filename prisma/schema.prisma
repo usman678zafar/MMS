@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model donors {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  phone      String?
+  email      String?
+  address    String?
+  created_at DateTime?   @default(now()) @db.Timestamptz(6)
+  donations  donations[]
+}
+
+model donations {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  donor_id    String?   @db.Uuid
+  type        String?
+  amount      Decimal   @db.Decimal
+  date        DateTime? @db.Date
+  notes       String?
+  receipt_url String?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  donors      donors?   @relation(fields: [donor_id], references: [id], onDelete: SetNull)
+}
+
+model expenses {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category    String?
+  amount      Decimal   @db.Decimal
+  description String?
+  date        DateTime? @db.Date
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model inventory {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  item_name  String
+  category   String?
+  quantity   Decimal?  @default(0) @db.Decimal
+  unit       String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model staff {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  role           String?
+  phone          String?
+  monthly_salary Decimal?  @db.Decimal
+  joining_date   DateTime? @db.Date
+  is_active      Boolean?  @default(true)
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model students {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  father_name    String?
+  class          String?
+  gender         String?   @default("Male")
+  admission_date DateTime? @db.Date
+  monthly_fee    Decimal?  @db.Decimal
+  phone          String?
+  address        String?
+  is_active      Boolean?  @default(true)
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+}

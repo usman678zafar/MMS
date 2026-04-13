@@ -97,7 +97,7 @@ export default function ExpensesPage() {
               <thead>
                 <tr className="bg-slate-50/50">
                   {['Date','Category','Description','Amount','Action'].map(h => (
-                    <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -106,16 +106,16 @@ export default function ExpensesPage() {
                   : filtered.length === 0 ? <tr><td colSpan="5" className="px-5 py-10 text-center text-slate-400">No records found.</td></tr>
                   : filtered.map((e) => (
                     <tr key={e.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-5 py-3.5 text-sm text-slate-600">{format(new Date(e.date), 'MMM dd, yyyy')}</td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{format(new Date(e.date), 'MMM dd, yyyy')}</td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-6 w-6 rounded bg-rose-50 flex items-center justify-center mr-2"><ReceiptText className="h-3 w-3 text-rose-600" /></div>
                           <span className="font-medium text-slate-900 text-sm">{e.category}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-600 truncate max-w-[200px]">{e.description}</td>
-                      <td className="px-5 py-3.5 text-sm font-semibold text-rose-600">रु {Number(e.amount).toLocaleString()}</td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 text-sm text-slate-600 truncate max-w-[200px] whitespace-nowrap">{e.description}</td>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-rose-600 whitespace-nowrap">रु {Number(e.amount).toLocaleString()}</td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex gap-2">
                           <button onClick={() => handleOpenEdit(e)} className="text-slate-300 hover:text-blue-500 transition-colors" title="Edit">
                             <Edit2 className="h-4 w-4" />

@@ -97,7 +97,7 @@ export default function InventoryPage() {
               <thead>
                 <tr className="bg-slate-50/50">
                   {['Item Name','Category','Stock Level','Status','Action'].map(h => (
-                    <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -106,20 +106,20 @@ export default function InventoryPage() {
                   : filtered.length === 0 ? <tr><td colSpan="5" className="px-5 py-10 text-center text-slate-400">No items found.</td></tr>
                   : filtered.map((item) => (
                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-7 w-7 rounded bg-slate-100 flex items-center justify-center mr-2"><Package className="h-3.5 w-3.5 text-slate-500" /></div>
                           <span className="font-semibold text-slate-900 text-sm">{item.item_name}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-600">{item.category}</td>
-                      <td className="px-5 py-3.5 text-sm font-medium text-slate-900">{item.quantity} {item.unit}</td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{item.category}</td>
+                      <td className="px-5 py-3.5 text-sm font-medium text-slate-900 whitespace-nowrap">{item.quantity} {item.unit}</td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         {item.quantity < 5 ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800"><AlertTriangle className="h-3 w-3 mr-1" />Low Stock</span>
                         ) : <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">In Stock</span>}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex gap-2">
                           <button onClick={() => handleOpenEdit(item)} className="text-slate-300 hover:text-blue-500 transition-colors" title="Edit">
                             <Edit2 className="h-4 w-4" />
