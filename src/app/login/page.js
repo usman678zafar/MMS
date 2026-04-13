@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useNavigate, Navigate } from 'react-router-dom';
+'use client'
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import { Mail, Lock, Loader2, ArrowRight } from 'lucide-react';
 
 export default function Login() {
@@ -9,11 +10,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { signIn, user } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
+  useEffect(() => {
+    if (user) {
+      router.replace('/');
+    }
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +25,7 @@ export default function Login() {
     try {
       const { error } = await signIn({ email, password });
       if (error) throw error;
-      navigate('/');
+      router.push('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -30,16 +33,17 @@ export default function Login() {
     }
   };
 
+  if (user) return null;
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Orbs */}
-      <div className="absolute top-0 -left-20 w-96 h-96 bg-primary-600/20 rounded-full blur-[100px]" />
-      <div className="absolute bottom-0 -right-20 w-96 h-96 bg-secondary-600/10 rounded-full blur-[100px]" />
+      <div className="absolute top-0 -left-20 w-96 h-96 bg-blue-600/20 rounded-full blur-[100px]" />
+      <div className="absolute bottom-0 -right-20 w-96 h-96 bg-purple-600/10 rounded-full blur-[100px]" />
 
       <div className="w-full max-w-md">
         <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl shadow-2xl">
           <div className="text-center mb-10">
-            <div className="inline-flex h-16 w-16 items-center justify-center bg-primary-500 rounded-2xl shadow-lg shadow-primary-500/20 mb-6">
+            <div className="inline-flex h-16 w-16 items-center justify-center bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/20 mb-6">
               <span className="text-white text-2xl font-bold">M</span>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
@@ -61,7 +65,7 @@ export default function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   placeholder="name@madrasa.com"
                 />
               </div>
@@ -75,7 +79,7 @@ export default function Login() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -84,7 +88,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary-600 hover:bg-primary-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-primary-600/20 flex items-center justify-center space-x-2 transition-all group active:scale-95"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-600/20 flex items-center justify-center space-x-2 transition-all group active:scale-95"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

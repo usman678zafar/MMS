@@ -1,5 +1,6 @@
+'use client'
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 const AuthContext = createContext({});
 
@@ -8,39 +9,33 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Build a minimal profile from auth.user to avoid hitting broken RLS on profiles table
+  const buildProfileFromUser = (authUser) => {
+    if (!authUser) return null;
+    const email = authUser.email || '';
+    const meta = authUser.user_metadata || {};
+    return {
+      id: authUser.id,
+      full_name: meta.full_name || meta.name || email.split('@')[0] || 'Admin',
+      email,
+    };
+  };
+
   useEffect(() => {
-    // Check active sessions and sets the user
-    const session = supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      setProfile(buildProfileFromUser(session?.user ?? null));
       setLoading(false);
     });
 
-    // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-      }
+      setProfile(buildProfileFromUser(session?.user ?? null));
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const fetchProfile = async (userId) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    
-    if (!error) {
-      setProfile(data);
-    }
-  };
 
   const value = {
     signUp: (data) => supabase.auth.signUp(data),

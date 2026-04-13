@@ -1,18 +1,23 @@
+'use client'
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   HandHeart, 
   Receipt, 
   Users, 
   Package, 
-  Settings,
-  LogOut
+  LogOut,
+  UserRound,
+  GraduationCap
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Students', href: '/students', icon: GraduationCap },
+  { name: 'Donors', href: '/donors', icon: UserRound },
   { name: 'Donations', href: '/donations', icon: HandHeart },
   { name: 'Expenses', href: '/expenses', icon: Receipt },
   { name: 'Staff', href: '/staff', icon: Users },
@@ -21,6 +26,7 @@ const navigation = [
 
 export default function Sidebar() {
   const { signOut, profile } = useAuth();
+  const pathname = usePathname();
 
   return (
     <div className="flex bg-white flex-col w-64 border-r border-slate-200 h-screen sticky top-0">
@@ -35,18 +41,23 @@ export default function Sidebar() {
           </div>
         </div>
         <nav className="mt-8 flex-1 px-3 space-y-1">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.href}
-              className={({ isActive }) =>
-                `sidebar-link ${isActive ? 'sidebar-link-active' : 'sidebar-link-inactive'}`
-              }
-            >
-              <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
-              {item.name}
-            </NavLink>
-          ))}
+          {navigation.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all ${
+                  isActive 
+                    ? 'bg-primary-50 text-primary-700' 
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <item.icon className={`mr-3 h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-600' : 'text-slate-400'}`} />
+                {item.name}
+              </Link>
+            );
+          })}
         </nav>
       </div>
       <div className="flex-shrink-0 flex border-t border-slate-200 p-4">

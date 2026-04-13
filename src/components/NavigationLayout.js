@@ -1,15 +1,29 @@
-import React from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
+'use client'
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
-import { useAuth } from '../context/AuthContext';
-import { Bell, Search } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { Bell, Search, Loader2 } from 'lucide-react';
 
-export default function Layout() {
-  const { user } = useAuth();
+export default function NavigationLayout({ children }) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 text-primary-600 animate-spin" />
+      </div>
+    );
   }
+
+  if (!user) return null;
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -23,7 +37,7 @@ export default function Layout() {
                 <input
                   type="text"
                   placeholder="Search donors, staff, or expenses..."
-                  className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary-500 transition-all"
+                  className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary-500 transition-all outline-none"
                 />
               </div>
             </div>
@@ -36,7 +50,7 @@ export default function Layout() {
         </header>
         <main className="flex-1 px-8 py-8">
           <div className="max-w-7xl mx-auto">
-            <Outlet />
+            {children}
           </div>
         </main>
       </div>
