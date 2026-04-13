@@ -112,7 +112,7 @@ export default function StudentsPage() {
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
             { label: 'Total Enrolled', value: students.length, color: 'text-slate-900' },
             { label: 'Active', value: active, color: 'text-emerald-600' },
@@ -234,7 +234,7 @@ export default function StudentsPage() {
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Student" : "Enroll New Student"}>
           <form onSubmit={handleSave} className="space-y-3">
             {/* Name & Father */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Student Name *</label>
                 <input type="text" required className="input-field text-sm" placeholder="Full name"
@@ -248,7 +248,7 @@ export default function StudentsPage() {
             </div>
 
             {/* Class & Gender */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Class / Level</label>
                 <select className="input-field text-sm" value={newStudent.class}
@@ -266,7 +266,7 @@ export default function StudentsPage() {
             </div>
 
             {/* Admission date & Fee */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Admission Date</label>
                 <input type="date" className="input-field text-sm"
@@ -280,7 +280,7 @@ export default function StudentsPage() {
             </div>
 
             {/* Phone & Address */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="col-span-2 sm:col-span-1">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Contact Phone</label>
                 <input type="tel" className="input-field text-sm" placeholder="03XX-XXXXXXX"

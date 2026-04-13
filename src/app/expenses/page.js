@@ -134,7 +134,7 @@ export default function ExpensesPage() {
 
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Expense" : "Record Expense"}>
           <form onSubmit={handleSaveExpense} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Category</label>
                 <select className="input-field text-sm" value={newExpense.category} onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}>

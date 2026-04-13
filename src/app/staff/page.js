@@ -121,7 +121,7 @@ export default function StaffPage() {
               <input type="text" required className="input-field text-sm" placeholder="Staff member name"
                 value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Role</label>
                 <select className="input-field text-sm" value={newStaff.role} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}>

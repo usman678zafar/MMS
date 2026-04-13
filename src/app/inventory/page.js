@@ -142,7 +142,7 @@ export default function InventoryPage() {
               <label className="block text-xs font-semibold text-slate-600 mb-1">Item Name *</label>
               <input type="text" required className="input-field text-sm" placeholder="e.g. Prayer Mats" value={newItem.item_name} onChange={(e) => setNewItem({...newItem, item_name: e.target.value})} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Category</label>
                 <select className="input-field text-sm" value={newItem.category} onChange={(e) => setNewItem({...newItem, category: e.target.value})}>

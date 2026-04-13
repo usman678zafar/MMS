@@ -184,7 +184,7 @@ export default function DonorsPage() {
               <input type="text" required className="input-field text-sm" placeholder="e.g. Ahmad Ali Khan"
                 value={newDonor.name} onChange={(e) => setNewDonor({ ...newDonor, name: e.target.value })} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
                 <input type="tel" className="input-field text-sm" placeholder="03XX-XXXXXXX"

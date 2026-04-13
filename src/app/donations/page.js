@@ -171,7 +171,7 @@ export default function DonationsPage() {
                 {donors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Amount (रु) *</label>
                 <input type="number" required className="input-field text-sm" placeholder="0"
