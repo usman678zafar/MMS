@@ -29,7 +29,7 @@ export default function Sidebar({ onClose }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex bg-white flex-col w-64 md:border-r border-slate-200 h-screen sticky top-0 shadow-2xl md:shadow-none">
+    <div className="flex bg-white flex-col w-64 md:border-r border-slate-200 h-[100dvh] sticky top-0 shadow-2xl md:shadow-none">
       <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto">
         <div className="flex items-center justify-between px-6 flex-shrink-0">
           <div className="flex items-center">

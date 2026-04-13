@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import { useAuth } from '@/context/AuthContext';
 import { Bell, Search, Loader2 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { Bell, Search, Loader2 } from 'lucide-react';
 export default function NavigationLayout({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
 
   useEffect(() => {
@@ -17,7 +18,6 @@ export default function NavigationLayout({ children }) {
   }, [user, loading, router]);
 
   // Close mobile menu on route change
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   useEffect(() => {
     setIsMobileOpen(false);
   }, [pathname]);
@@ -33,7 +33,7 @@ export default function NavigationLayout({ children }) {
   if (!user) return null;
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-[100dvh] bg-slate-50 overflow-hidden">
       {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div 
