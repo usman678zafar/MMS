@@ -33,7 +33,7 @@ export default function NavigationLayout({ children }) {
   if (!user) return null;
 
   return (
-    <div className="flex h-[100dvh] bg-slate-50 overflow-hidden">
+    <div className="flex min-h-screen bg-slate-50">
       {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div 
@@ -47,7 +47,7 @@ export default function NavigationLayout({ children }) {
         <Sidebar onClose={() => setIsMobileOpen(false)} />
       </div>
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-y-auto">
+      <div className="flex flex-col flex-1 min-w-0">
         <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-200">
           <div className="flex items-center justify-between h-16 px-4 sm:px-8 gap-4">
             <div className="flex items-center gap-3 flex-1">
@@ -77,7 +77,7 @@ export default function NavigationLayout({ children }) {
             </div>
           </div>
         </header>
-        <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 w-full max-w-full overflow-hidden">
+        <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 w-full max-w-full">
           <div className="max-w-7xl mx-auto w-full">
             {children}
           </div>
