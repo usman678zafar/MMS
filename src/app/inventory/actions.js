@@ -4,7 +4,10 @@ import { prisma } from '@/lib/prisma'
 export async function addInventoryItem(itemData) {
   try {
     const data = await prisma.inventory.create({
-      data: itemData
+      data: {
+        ...itemData,
+        quantity: itemData.quantity ? parseFloat(itemData.quantity) : 0
+      }
     })
     return { success: true, data }
   } catch (error) {
@@ -17,7 +20,10 @@ export async function updateInventoryItem(id, itemData) {
   try {
     const data = await prisma.inventory.update({
       where: { id },
-      data: itemData
+      data: {
+        ...itemData,
+        quantity: itemData.quantity ? parseFloat(itemData.quantity) : undefined
+      }
     })
     return { success: true, data }
   } catch (error) {

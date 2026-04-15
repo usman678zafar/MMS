@@ -6,6 +6,7 @@ export async function addStaffMember(staffData) {
     const data = await prisma.staff.create({
       data: {
         ...staffData,
+        monthly_salary: staffData.monthly_salary ? parseFloat(staffData.monthly_salary) : 0,
         joining_date: staffData.joining_date ? new Date(staffData.joining_date) : null
       }
     })
@@ -22,6 +23,7 @@ export async function updateStaffMember(id, staffData) {
       where: { id },
       data: {
         ...staffData,
+        monthly_salary: staffData.monthly_salary ? parseFloat(staffData.monthly_salary) : undefined,
         joining_date: staffData.joining_date ? new Date(staffData.joining_date) : undefined
       }
     })

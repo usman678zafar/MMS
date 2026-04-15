@@ -6,6 +6,7 @@ export async function addStudent(studentData) {
     const data = await prisma.students.create({
       data: {
         ...studentData,
+        monthly_fee: studentData.monthly_fee ? parseFloat(studentData.monthly_fee) : 0,
         admission_date: studentData.admission_date ? new Date(studentData.admission_date) : null
       }
     })
@@ -22,6 +23,7 @@ export async function updateStudent(id, studentData) {
       where: { id },
       data: {
         ...studentData,
+        monthly_fee: studentData.monthly_fee ? parseFloat(studentData.monthly_fee) : undefined,
         admission_date: studentData.admission_date ? new Date(studentData.admission_date) : undefined
       }
     })

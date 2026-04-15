@@ -36,6 +36,7 @@ export async function addDonation(donationData) {
     const data = await prisma.donations.create({
       data: {
         ...donationData,
+        amount: donationData.amount ? parseFloat(donationData.amount) : 0,
         date: donationData.date ? new Date(donationData.date) : null
       }
     })
@@ -52,6 +53,7 @@ export async function updateDonation(id, donationData) {
       where: { id },
       data: {
         ...donationData,
+        amount: donationData.amount ? parseFloat(donationData.amount) : undefined,
         date: donationData.date ? new Date(donationData.date) : undefined
       }
     })

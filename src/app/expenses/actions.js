@@ -6,6 +6,7 @@ export async function addExpense(expenseData) {
     const data = await prisma.expenses.create({
       data: {
         ...expenseData,
+        amount: expenseData.amount ? parseFloat(expenseData.amount) : 0,
         date: expenseData.date ? new Date(expenseData.date) : null
       }
     })
@@ -22,6 +23,7 @@ export async function updateExpense(id, expenseData) {
       where: { id },
       data: {
         ...expenseData,
+        amount: expenseData.amount ? parseFloat(expenseData.amount) : undefined,
         date: expenseData.date ? new Date(expenseData.date) : undefined
       }
     })
