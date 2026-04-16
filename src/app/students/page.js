@@ -1,11 +1,13 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Plus, Search, GraduationCap, Phone, Calendar, Trash2, User, BookOpen, Edit2 } from 'lucide-react';
 import { addStudent, updateStudent, getStudents, deleteStudent, updateStudentStatus } from './actions';
 import { format } from 'date-fns';
+import { PERMISSIONS } from '@/lib/rbac';
 
 const CLASSES = ['Hifz', 'Nazra', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Dars-e-Nizami', 'Other'];
 const GENDERS = ['Male', 'Female'];
@@ -98,7 +100,8 @@ export default function StudentsPage() {
 
   return (
     <NavigationLayout>
-      <div className="space-y-6">
+      <ProtectedRoute requiredPermission={PERMISSIONS.STUDENTS_VIEW}>
+        <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -331,7 +334,8 @@ export default function StudentsPage() {
           title="Delete Student Record"
           message="Are you sure you want to completely remove this student? This action cannot be undone."
         />
-      </div>
+        </div>
+      </ProtectedRoute>
     </NavigationLayout>
   );
 }

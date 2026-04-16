@@ -10,23 +10,49 @@ import {
   Package, 
   LogOut,
   UserRound,
-  GraduationCap
+  GraduationCap,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { PERMISSIONS } from '@/lib/rbac';
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Students', href: '/students', icon: GraduationCap },
-  { name: 'Donors', href: '/donors', icon: UserRound },
-  { name: 'Donations', href: '/donations', icon: HandHeart },
-  { name: 'Expenses', href: '/expenses', icon: Receipt },
-  { name: 'Staff', href: '/staff', icon: Users },
-  { name: 'Inventory', href: '/inventory', icon: Package },
-];
+const getNavigationItems = (hasPermission) => {
+  const baseNavigation = [
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: PERMISSIONS.DASHBOARD_VIEW },
+  ];
+
+  const additionalNavigation = [
+    { name: 'Students', href: '/students', icon: GraduationCap, permission: PERMISSIONS.STUDENTS_VIEW },
+    { name: 'Donors', href: '/donors', icon: UserRound, permission: PERMISSIONS.DONORS_VIEW },
+    { name: 'Donations', href: '/donations', icon: HandHeart, permission: PERMISSIONS.DONATIONS_VIEW },
+    { name: 'Expenses', href: '/expenses', icon: Receipt, permission: PERMISSIONS.EXPENSES_VIEW },
+    { name: 'Staff', href: '/staff', icon: Users, permission: PERMISSIONS.STAFF_VIEW },
+    { name: 'Inventory', href: '/inventory', icon: Package, permission: PERMISSIONS.INVENTORY_VIEW },
+  ];
+
+  const adminNavigation = [
+    { name: 'Users', href: '/users', icon: Settings, permission: PERMISSIONS.USERS_VIEW },
+  ];
+
+  let navigation = baseNavigation;
+
+  additionalNavigation.forEach(item => {
+    if (hasPermission(item.permission)) {
+      navigation.push(item);
+    }
+  });
+
+  if (hasPermission(PERMISSIONS.USERS_VIEW)) {
+    navigation.push(adminNavigation[0]);
+  }
+
+  return navigation;
+};
 
 export default function Sidebar() {
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, hasPermission } = useAuth();
   const pathname = usePathname();
+  const navigation = getNavigationItems(hasPermission);
 
   return (
     <div className="flex bg-white flex-col w-64 md:border-r border-slate-200 h-[100dvh] sticky top-0 shadow-2xl md:shadow-none">

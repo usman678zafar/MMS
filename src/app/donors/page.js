@@ -1,10 +1,12 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Plus, Search, Trash2, Phone, Mail, MapPin, HandHeart, Edit2 } from 'lucide-react';
 import { addDonor, updateDonor, getAllDonors, deleteDonor } from './actions';
+import { PERMISSIONS } from '@/lib/rbac';
 
 export default function DonorsPage() {
   const [donors, setDonors] = useState([]);
@@ -81,7 +83,8 @@ export default function DonorsPage() {
 
   return (
     <NavigationLayout>
-      <div className="space-y-6">
+      <ProtectedRoute requiredPermission={PERMISSIONS.DONORS_VIEW}>
+        <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -217,7 +220,8 @@ export default function DonorsPage() {
           title="Delete Donor"
           message="Are you sure you want to completely remove this donor? This action cannot be undone."
         />
-      </div>
+        </div>
+      </ProtectedRoute>
     </NavigationLayout>
   );
 }

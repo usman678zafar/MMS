@@ -58,6 +58,17 @@ model staff {
   created_at     DateTime? @default(now())
 }
 
+model users {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  email       String    @unique
+  name        String
+  role        String    @default("viewer")
+  password    String
+  is_active   Boolean?  @default(true)
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @updatedAt
+}
+
 model students {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
   name           String

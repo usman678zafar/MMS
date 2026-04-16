@@ -1,11 +1,13 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Plus, Search, Filter, MoreVertical, Download, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { addDonation, updateDonation, deleteDonation, getDonations, getDonors, uploadReceipt } from './actions';
+import { PERMISSIONS } from '@/lib/rbac';
 
 const defaultForm = { donor_id: '', amount: '', type: 'Sadqah', date: format(new Date(), 'yyyy-MM-dd'), notes: '', receipt_url: '' };
 
@@ -100,7 +102,8 @@ export default function DonationsPage() {
 
   return (
     <NavigationLayout>
-      <div className="space-y-6">
+      <ProtectedRoute requiredPermission={PERMISSIONS.DONATIONS_VIEW}>
+        <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Donations</h2>
@@ -217,7 +220,8 @@ export default function DonationsPage() {
           title="Delete Donation"
           message="Are you sure you want to completely remove this donation record? This action cannot be undone."
         />
-      </div>
+        </div>
+      </ProtectedRoute>
     </NavigationLayout>
   );
 }

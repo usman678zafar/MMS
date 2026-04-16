@@ -1,11 +1,13 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Plus, Search, ReceiptText, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { addExpense, updateExpense, deleteExpense, getExpenses } from './actions';
+import { PERMISSIONS } from '@/lib/rbac';
 
 const CATEGORIES = ['Utilities', 'Maintenance', 'Salaries', 'Educational', 'Events', 'Food', 'Other'];
 
@@ -74,7 +76,8 @@ export default function ExpensesPage() {
 
   return (
     <NavigationLayout>
-      <div className="space-y-6">
+      <ProtectedRoute requiredPermission={PERMISSIONS.EXPENSES_VIEW}>
+        <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Expenses</h2>
@@ -168,7 +171,8 @@ export default function ExpensesPage() {
           title="Delete Expense"
           message="Are you sure you want to completely remove this expense record? This action cannot be undone."
         />
-      </div>
+        </div>
+      </ProtectedRoute>
     </NavigationLayout>
   );
 }

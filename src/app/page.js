@@ -10,6 +10,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import NavigationLayout from '@/components/NavigationLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import { 
   BarChart, 
   Bar, 
@@ -21,6 +22,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import { PERMISSIONS } from '@/lib/rbac';
 
 import { getDashboardStats, getFinancialData, getRecentActivity } from './actions';
 
@@ -106,11 +108,12 @@ export default function DashboardPage() {
 
   return (
     <NavigationLayout>
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
-          <p className="text-slate-500">Welcome back. Here's what's happening today.</p>
-        </div>
+      <ProtectedRoute requiredPermission={PERMISSIONS.DASHBOARD_VIEW}>
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
+            <p className="text-slate-500">Welcome back. Here's what's happening today.</p>
+          </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {cards.map((card) => (
@@ -190,6 +193,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      </ProtectedRoute>
     </NavigationLayout>
   );
 }

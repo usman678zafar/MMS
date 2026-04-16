@@ -1,10 +1,12 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Plus, Search, Package, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
 import { addInventoryItem, updateInventoryItem, deleteInventoryItem, getInventory } from './actions';
+import { PERMISSIONS } from '@/lib/rbac';
 
 const CATEGORIES = ['General', 'Cleaning', 'Educational', 'Office', 'Kitchen'];
 
@@ -73,7 +75,8 @@ export default function InventoryPage() {
 
   return (
     <NavigationLayout>
-      <div className="space-y-6">
+      <ProtectedRoute requiredPermission={PERMISSIONS.INVENTORY_VIEW}>
+        <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Inventory</h2>
@@ -174,7 +177,8 @@ export default function InventoryPage() {
           title="Delete Inventory Item"
           message="Are you sure you want to completely remove this inventory item? This action cannot be undone."
         />
-      </div>
+        </div>
+      </ProtectedRoute>
     </NavigationLayout>
   );
 }

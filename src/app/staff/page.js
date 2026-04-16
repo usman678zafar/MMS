@@ -1,11 +1,13 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import { Plus, Search, UserCircle, Phone, Banknote, Edit2, Trash2 } from 'lucide-react';
 import { addStaffMember, updateStaffMember, deleteStaffMember, getStaff } from './actions';
 import { format } from 'date-fns';
+import { PERMISSIONS } from '@/lib/rbac';
 
 const defaultForm = { name: '', role: 'Imam', monthly_salary: '', phone: '', joining_date: format(new Date(), 'yyyy-MM-dd') };
 
@@ -69,7 +71,8 @@ export default function StaffPage() {
 
   return (
     <NavigationLayout>
-      <div className="space-y-6">
+      <ProtectedRoute requiredPermission={PERMISSIONS.STAFF_VIEW}>
+        <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Staff Management</h2>
@@ -158,7 +161,8 @@ export default function StaffPage() {
           title="Delete Staff Member"
           message="Are you sure you want to completely remove this staff member? This action cannot be undone."
         />
-      </div>
+        </div>
+      </ProtectedRoute>
     </NavigationLayout>
   );
 }
