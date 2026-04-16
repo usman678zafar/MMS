@@ -22,16 +22,7 @@ import {
   Area
 } from 'recharts';
 
-const data = [
-  { name: 'Jan', donations: 4000, expenses: 2400 },
-  { name: 'Feb', donations: 3000, expenses: 1398 },
-  { name: 'Mar', donations: 2000, expenses: 9800 },
-  { name: 'Apr', donations: 2780, expenses: 3908 },
-  { name: 'May', donations: 1890, expenses: 4800 },
-  { name: 'Jun', donations: 2390, expenses: 3800 },
-];
-
-import { getDashboardStats } from './actions';
+import { getDashboardStats, getFinancialData, getRecentActivity } from './actions';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -40,22 +31,42 @@ export default function DashboardPage() {
     activeStaff: 0,
     inventoryCount: 0,
   });
+  const [financialData, setFinancialData] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchStats() {
-      const res = await getDashboardStats();
-      if (res.success) {
-        setStats({
-          totalDonations: res.totalDonations,
-          totalExpenses: res.totalExpenses,
-          activeStaff: res.activeStaff,
-          inventoryCount: res.inventoryCount,
-        });
+    async function fetchAllData() {
+      try {
+        const [statsRes, financialRes, activityRes] = await Promise.all([
+          getDashboardStats(),
+          getFinancialData(),
+          getRecentActivity()
+        ]);
+
+        if (statsRes.success) {
+          setStats({
+            totalDonations: statsRes.totalDonations,
+            totalExpenses: statsRes.totalExpenses,
+            activeStaff: statsRes.activeStaff,
+            inventoryCount: statsRes.inventoryCount,
+          });
+        }
+
+        if (financialRes.success) {
+          setFinancialData(financialRes.data);
+        }
+
+        if (activityRes.success) {
+          setRecentActivity(activityRes.activities);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
-    fetchStats();
+    fetchAllData();
   }, []);
 
   const cards = [
@@ -130,7 +141,7 @@ export default function DashboardPage() {
             </div>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <AreaChart data={data}>
+                <AreaChart data={financialData}>
                   <defs>
                     <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
@@ -152,18 +163,26 @@ export default function DashboardPage() {
           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
             <h3 className="font-bold text-slate-900 text-lg mb-6">Recent Activity</h3>
             <div className="space-y-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center mr-4">
-                    <DollarSign className="h-5 w-5 text-slate-500" />
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center">
+                    <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center mr-4">
+                      <DollarSign className="h-5 w-5 text-slate-500" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-slate-900">New Donation Received</p>
+                      <p className="text-xs text-slate-500">Rs { activity.amount.toLocaleString() } from {activity.donor}</p>
+                    </div>
+                    <span className="text-xs text-slate-400 font-medium">
+                      {new Date(activity.date).toLocaleDateString()}
+                    </span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-900">New Donation Received</p>
-                    <p className="text-xs text-slate-500">Rs { (i * 2500).toLocaleString() } from Recent Donor</p>
-                  </div>
-                  <span className="text-xs text-slate-400 font-medium">{i}h ago</span>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-sm text-slate-500">No recent activity found</p>
                 </div>
-              ))}
+              )}
             </div>
             <button className="w-full mt-6 py-2 text-primary-600 text-sm font-semibold hover:bg-primary-50 rounded-xl transition-colors">
               View All Activity
