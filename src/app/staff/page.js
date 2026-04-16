@@ -4,11 +4,15 @@ import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
+import Pagination from '@/components/Pagination';
+import { TableSkeleton, StatsSkeleton, FilterSkeleton } from '@/components/SkeletonLoader';
 import { Plus, Search, UserCircle, Phone, Banknote, Edit2, Trash2 } from 'lucide-react';
 import { addStaffMember, updateStaffMember, deleteStaffMember, getStaff } from './actions';
 import { format } from 'date-fns';
 import { PERMISSIONS } from '@/lib/rbac';
+import { PAGINATION_DEFAULTS } from '@/lib/pagination';
 
+const ROLES = ['Imam', 'Moazzin', 'Teacher', 'Cleaner', 'Manager', 'Other'];
 const defaultForm = { name: '', role: 'Imam', monthly_salary: '', phone: '', joining_date: format(new Date(), 'yyyy-MM-dd') };
 
 export default function StaffPage() {
@@ -17,14 +21,22 @@ export default function StaffPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
-  const [newStaff, setNewStaff] = useState(defaultForm);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [newStaff, setNewStaff] = useState(defaultForm);
 
-  useEffect(() => { fetchStaff(); }, []);
+  useEffect(() => { fetchStaff(); }, [currentPage, search, filterStatus]);
 
   async function fetchStaff() {
-    const res = await getStaff();
-    if (res.success) setStaff(res.data);
+    setLoading(true);
+    const res = await getStaff(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterStatus);
+    if (res.success) {
+      setStaff(res.data);
+      setPagination(res.pagination);
+    }
     setLoading(false);
   }
 
@@ -69,52 +81,194 @@ export default function StaffPage() {
     setDeleteId(null);
   };
 
+  const handleSearch = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilter = (value) => {
+    setFilterStatus(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const active = staff.filter(s => s.is_active !== false).length;
+  const inactive = staff.length - active;
+  const totalSalary = staff.reduce((sum, s) => sum + Number(s.monthly_salary || 0), 0);
+
   return (
     <NavigationLayout>
       <ProtectedRoute requiredPermission={PERMISSIONS.STAFF_VIEW}>
         <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Staff Management</h2>
             <p className="text-slate-500">Manage Madrasa and Masjid staff records.</p>
           </div>
           <button onClick={() => { setEditingId(null); setNewStaff(defaultForm); setShowModal(true); }} className="btn btn-primary">
-            <Plus className="h-4 w-4 mr-2" />Add Staff Member
+            <Plus className="h-4 w-4 mr-2" />
+            Add Staff Member
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {loading ? (
-            <div className="col-span-full py-20 text-center text-slate-400">Loading staff records...</div>
-          ) : staff.length === 0 ? (
-            <div className="col-span-full py-20 text-center text-slate-400">No staff members found.</div>
-          ) : staff.map((member) => (
-            <div key={member.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative">
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                <button onClick={() => handleOpenEdit(member)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit">
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button onClick={() => setDeleteId(member.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+        {/* Stats Bar */}
+        {loading ? (
+          <StatsSkeleton />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Total Staff', value: staff.length, color: 'text-slate-900' },
+              { label: 'Active', value: active, color: 'text-emerald-600' },
+              { label: 'Inactive', value: inactive, color: 'text-rose-500' },
+            ].map(stat => (
+              <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">{stat.label}</p>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div className="flex items-start justify-between pr-14">
-                <div className="h-11 w-11 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 text-xl font-bold">{member.name?.charAt(0) || '?'}</div>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${member.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                  {member.is_active ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-              <div className="mt-3">
-                <h3 className="text-base font-bold text-slate-900">{member.name}</h3>
-                <p className="text-sm text-slate-500">{member.role}</p>
-              </div>
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center text-sm text-slate-600"><Banknote className="h-4 w-4 mr-2 text-slate-400" />रु {Number(member.monthly_salary).toLocaleString()} / mo</div>
-                <div className="flex items-center text-sm text-slate-600"><Phone className="h-4 w-4 mr-2 text-slate-400" />{member.phone || 'N/A'}</div>
-              </div>
+        {/* Filters */}
+        {loading ? (
+          <FilterSkeleton />
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by name, role, or phone..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              />
             </div>
-          ))}
+            <select
+              value={filterStatus}
+              onChange={(e) => handleStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        )}
+
+        {/* Staff Table */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Staff Member</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Salary</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Joined</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="p-0">
+                      <TableSkeleton columns={7} rows={5} />
+                    </td>
+                  </tr>
+                ) : staff.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center">
+                      <UserCircle className="h-12 w-12 text-slate-200 mx-auto mb-3" />
+                      <p className="text-slate-400 text-lg font-medium">No staff members found</p>
+                      <p className="text-slate-400 text-sm mt-1">Add your first staff member to get started</p>
+                    </td>
+                  </tr>
+                ) : (
+                  staff.map((member) => (
+                    <tr key={member.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-base flex-shrink-0">
+                            {member.name?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm">{member.name}</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                              Staff ID: {member.id?.slice(-8)}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold whitespace-nowrap">
+                          {member.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                        {member.phone || (
+                          <span className="text-slate-300 italic text-xs">No phone</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-sm font-bold text-slate-900">
+                          Rs {Number(member.monthly_salary).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {member.joining_date ? format(new Date(member.joining_date), 'MMM yyyy') : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm ${
+                            member.is_active !== false
+                              ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100'
+                              : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'
+                          }`}
+                          title="Click to toggle status"
+                        >
+                          {member.is_active !== false ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button 
+                            onClick={() => handleOpenEdit(member)} 
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                            title="Edit Staff Member"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => setDeleteId(member.id)} 
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            title="Delete Staff Member"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+            />
+          )}
         </div>
 
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Staff Member" : "Add Staff Member"}>
@@ -128,7 +282,7 @@ export default function StaffPage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Role</label>
                 <select className="input-field text-sm" value={newStaff.role} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}>
-                  {['Imam', 'Moazzin', 'Teacher', 'Cleaner', 'Manager', 'Other'].map(r => <option key={r}>{r}</option>)}
+                  {ROLES.map(r => <option key={r}>{r}</option>)}
                 </select>
               </div>
               <div>

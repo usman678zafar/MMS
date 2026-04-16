@@ -4,10 +4,13 @@ import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
+import Pagination from '@/components/Pagination';
+import { TableSkeleton, StatsSkeleton, FilterSkeleton } from '@/components/SkeletonLoader';
 import { Plus, Search, ReceiptText, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { addExpense, updateExpense, deleteExpense, getExpenses } from './actions';
 import { PERMISSIONS } from '@/lib/rbac';
+import { PAGINATION_DEFAULTS } from '@/lib/pagination';
 
 const CATEGORIES = ['Utilities', 'Maintenance', 'Salaries', 'Educational', 'Events', 'Food', 'Other'];
 
@@ -20,12 +23,19 @@ export default function ExpensesPage() {
   const [newExpense, setNewExpense] = useState({ category: 'Utilities', amount: '', description: '', date: format(new Date(), 'yyyy-MM-dd') });
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { fetchExpenses(); }, []);
+  useEffect(() => { fetchExpenses(); }, [currentPage, search, filterCategory]);
 
   async function fetchExpenses() {
-    const res = await getExpenses();
-    if (res.success) setExpenses(res.data);
+    setLoading(true);
+    const res = await getExpenses(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterCategory);
+    if (res.success) {
+      setExpenses(res.data);
+      setPagination(res.pagination);
+    }
     setLoading(false);
   }
 
@@ -69,70 +79,179 @@ export default function ExpensesPage() {
     setDeleteId(null);
   };
 
-  const filtered = expenses.filter(e => 
-    e.description?.toLowerCase().includes(search.toLowerCase()) ||
-    e.category?.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSearch = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryFilter = (value) => {
+    setFilterCategory(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  const thisMonth = expenses.filter(e => {
+    const expenseDate = new Date(e.date);
+    const now = new Date();
+    return expenseDate.getMonth() === now.getMonth() && expenseDate.getFullYear() === now.getFullYear();
+  }).reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
   return (
     <NavigationLayout>
       <ProtectedRoute requiredPermission={PERMISSIONS.EXPENSES_VIEW}>
         <div className="space-y-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Expenses</h2>
             <p className="text-slate-500">Track and categorize spending.</p>
           </div>
-          <button onClick={() => { setEditingId(null); setNewExpense({ category: 'Utilities', amount: '', description: '', date: format(new Date(), 'yyyy-MM-dd') }); setShowModal(true); }} className="btn btn-primary bg-rose-600 hover:bg-rose-700 shadow-rose-100 text-sm">
-            <Plus className="h-4 w-4 mr-1.5" />Record Expense
+          <button onClick={() => { setEditingId(null); setNewExpense({ category: 'Utilities', amount: '', description: '', date: format(new Date(), 'yyyy-MM-dd') }); setShowModal(true); }} className="btn btn-primary">
+            <Plus className="h-4 w-4 mr-2" />
+            Record Expense
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-50">
-            <div className="relative max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input type="text" placeholder="Search description or category..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-50 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-500" />
-            </div>
+        {/* Stats Bar */}
+        {loading ? (
+          <StatsSkeleton />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Total Expenses', value: `रु${totalExpenses.toLocaleString()}`, color: 'text-slate-900' },
+              { label: 'This Month', value: `रु${thisMonth.toLocaleString()}`, color: 'text-rose-500' },
+              { label: 'Transactions', value: expenses.length, color: 'text-emerald-600' },
+            ].map(stat => (
+              <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">{stat.label}</p>
+              </div>
+            ))}
           </div>
+        )}
+
+        {/* Filters */}
+        {loading ? (
+          <FilterSkeleton />
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search description or category..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              />
+            </div>
+            <select
+              value={filterCategory}
+              onChange={(e) => handleCategoryFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+            >
+              <option value="">All Categories</option>
+              {CATEGORIES.map(category => <option key={category}>{category}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* Expenses Table */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50">
-                  {['Date','Category','Description','Amount','Action'].map(h => (
-                    <th key={h} className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                  ))}
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {loading ? <tr><td colSpan="5" className="px-5 py-10 text-center text-slate-400">Loading...</td></tr>
-                  : filtered.length === 0 ? <tr><td colSpan="5" className="px-5 py-10 text-center text-slate-400">No records found.</td></tr>
-                  : filtered.map((e) => (
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="p-0">
+                      <TableSkeleton columns={5} rows={5} />
+                    </td>
+                  </tr>
+                ) : expenses.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-12 text-center">
+                      <ReceiptText className="h-12 w-12 text-slate-200 mx-auto mb-3" />
+                      <p className="text-slate-400 text-lg font-medium">No expenses found</p>
+                      <p className="text-slate-400 text-sm mt-1">Add your first expense to get started</p>
+                    </td>
+                  </tr>
+                ) : (
+                  expenses.map((e) => (
                     <tr key={e.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-5 py-3.5 text-sm text-slate-600 whitespace-nowrap">{format(new Date(e.date), 'MMM dd, yyyy')}</td>
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-6 w-6 rounded bg-rose-50 flex items-center justify-center mr-2"><ReceiptText className="h-3 w-3 text-rose-600" /></div>
-                          <span className="font-medium text-slate-900 text-sm">{e.category}</span>
+                      <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                        {format(new Date(e.date), 'MMM dd, yyyy')}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 font-bold text-base flex-shrink-0">
+                            {e.category?.charAt(0)?.toUpperCase() || 'E'}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm">{e.category}</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                              Expense
+                            </p>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-600 truncate max-w-[200px] whitespace-nowrap">{e.description}</td>
-                      <td className="px-5 py-3.5 text-sm font-semibold text-rose-600 whitespace-nowrap">रु {Number(e.amount).toLocaleString()}</td>
-                      <td className="px-5 py-3.5 whitespace-nowrap">
-                        <div className="flex gap-2">
-                          <button onClick={() => handleOpenEdit(e)} className="text-slate-300 hover:text-blue-500 transition-colors" title="Edit">
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {e.description ? (
+                          <span className="truncate">{e.description}</span>
+                        ) : (
+                          <span className="text-slate-300 italic text-xs">No description</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-sm font-bold text-rose-600">
+                          Rs {Number(e.amount).toLocaleString()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button 
+                            onClick={() => handleOpenEdit(e)} 
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                            title="Edit Expense"
+                          >
                             <Edit2 className="h-4 w-4" />
                           </button>
-                          <button onClick={() => setDeleteId(e.id)} className="text-slate-300 hover:text-red-500 transition-colors" title="Delete">
+                          <button 
+                            onClick={() => setDeleteId(e.id)} 
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            title="Delete Expense"
+                          >
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+            />
+          )}
         </div>
 
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Expense" : "Record Expense"}>

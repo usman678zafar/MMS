@@ -1,18 +1,18 @@
 'use server'
-import { prisma } from '@/lib/prisma'
+import { connectDB } from '@/lib/mongoose'
+import mongoose from 'mongoose'
+import User from '@/models/User'
 
 export async function getDashboardStats() {
   try {
-    const [
-      donations,
-      expenses,
-      staffCount,
-      inventoryCount,
-    ] = await Promise.all([
-      prisma.donations.findMany({ select: { amount: true } }),
-      prisma.expenses.findMany({ select: { amount: true } }),
-      prisma.staff.count(),
-      prisma.inventory.count(),
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    
+    const [donations, expenses, staffCount, inventoryCount] = await Promise.all([
+      db.collection('donations').find({}).toArray(),
+      db.collection('expenses').find({}).toArray(),
+      db.collection('staff').countDocuments(),
+      db.collection('inventory').countDocuments()
     ])
 
     return {
@@ -33,19 +33,12 @@ export async function getFinancialData() {
     const sixMonthsAgo = new Date()
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    
     const [donations, expenses] = await Promise.all([
-      prisma.donations.findMany({
-        where: {
-          date: { gte: sixMonthsAgo }
-        },
-        select: { amount: true, date: true }
-      }),
-      prisma.expenses.findMany({
-        where: {
-          date: { gte: sixMonthsAgo }
-        },
-        select: { amount: true, date: true }
-      })
+      db.collection('donations').find({ date: { $gte: sixMonthsAgo } }).toArray(),
+      db.collection('expenses').find({ date: { $gte: sixMonthsAgo } }).toArray()
     ])
 
     // Group by month
@@ -89,15 +82,11 @@ export async function getFinancialData() {
 
 export async function getRecentActivity() {
   try {
-    const recentDonations = await prisma.donations.findMany({
-      take: 4,
-      orderBy: { created_at: 'desc' },
-      include: {
-        donors: {
-          select: { name: true }
-        }
-      }
-    })
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const donationsCollection = db.collection('donations');
+    
+    const recentDonations = await donationsCollection.find({}).sort({ created_at: -1 }).limit(4).toArray();
 
     const activities = recentDonations.map(donation => ({
       type: 'donation',

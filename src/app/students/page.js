@@ -4,10 +4,13 @@ import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
+import Pagination from '@/components/Pagination';
+import { TableSkeleton, StatsSkeleton, FilterSkeleton } from '@/components/SkeletonLoader';
 import { Plus, Search, GraduationCap, Phone, Calendar, Trash2, User, BookOpen, Edit2 } from 'lucide-react';
 import { addStudent, updateStudent, getStudents, deleteStudent, updateStudentStatus } from './actions';
 import { format } from 'date-fns';
 import { PERMISSIONS } from '@/lib/rbac';
+import { PAGINATION_DEFAULTS } from '@/lib/pagination';
 
 const CLASSES = ['Hifz', 'Nazra', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Dars-e-Nizami', 'Other'];
 const GENDERS = ['Male', 'Female'];
@@ -33,14 +36,20 @@ export default function StudentsPage() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [filterClass, setFilterClass] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
   const [newStudent, setNewStudent] = useState(defaultForm);
 
-  useEffect(() => { fetchStudents(); }, []);
+  useEffect(() => { fetchStudents(); }, [currentPage, search, filterStatus]);
 
   async function fetchStudents() {
     setLoading(true);
-    const res = await getStudents();
-    if (res.success) setStudents(res.data);
+    const res = await getStudents(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterStatus);
+    if (res.success) {
+      setStudents(res.data);
+      setPagination(res.pagination);
+    }
     setLoading(false);
   }
 
@@ -88,12 +97,19 @@ export default function StudentsPage() {
     fetchStudents();
   };
 
-  const filtered = students.filter(s => {
-    const matchSearch = s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.father_name?.toLowerCase().includes(search.toLowerCase());
-    const matchClass = filterClass === 'All' || s.class === filterClass;
-    return matchSearch && matchClass;
-  });
+  const handleSearch = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilter = (value) => {
+    setFilterStatus(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   const active = students.filter(s => s.is_active !== false).length;
   const inactive = students.length - active;
@@ -115,40 +131,57 @@ export default function StudentsPage() {
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {[
-            { label: 'Total Enrolled', value: students.length, color: 'text-slate-900' },
-            { label: 'Active', value: active, color: 'text-emerald-600' },
-            { label: 'Inactive', value: inactive, color: 'text-rose-500' },
-          ].map(stat => (
-            <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
-              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">{stat.label}</p>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <StatsSkeleton />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Total Enrolled', value: students.length, color: 'text-slate-900' },
+              { label: 'Active', value: active, color: 'text-emerald-600' },
+              { label: 'Inactive', value: inactive, color: 'text-rose-500' },
+            ].map(stat => (
+              <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by name or father's name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-            />
+        {loading ? (
+          <FilterSkeleton />
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by name or father's name..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => handleStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+            >
+              <option value="">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <select
+              value={filterClass}
+              onChange={(e) => setFilterClass(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+            >
+              <option value="All">All Classes</option>
+              {CLASSES.map(c => <option key={c}>{c}</option>)}
+            </select>
           </div>
-          <select
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-          >
-            <option value="All">All Classes</option>
-            {CLASSES.map(c => <option key={c}>{c}</option>)}
-          </select>
-        </div>
+        )}
 
         {/* Students Table */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -168,14 +201,11 @@ export default function StudentsPage() {
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400">
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="h-8 w-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-sm">Loading students...</span>
-                      </div>
+                    <td colSpan="7" className="p-0">
+                      <TableSkeleton columns={7} rows={5} />
                     </td>
                   </tr>
-                ) : filtered.length === 0 ? (
+                ) : students.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-6 py-12 text-center">
                       <GraduationCap className="h-12 w-12 text-slate-200 mx-auto mb-3" />
@@ -184,7 +214,7 @@ export default function StudentsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((student) => (
+                  students.map((student) => (
                     <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -254,6 +284,15 @@ export default function StudentsPage() {
               </tbody>
             </table>
           </div>
+          {pagination && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+            />
+          )}
         </div>
 
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Student" : "Enroll New Student"}>

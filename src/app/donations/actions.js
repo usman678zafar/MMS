@@ -1,7 +1,9 @@
 'use server'
-import { prisma } from '@/lib/prisma'
+import { connectDB } from '@/lib/mongoose'
+import mongoose from 'mongoose'
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/r2";
+import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } from '@/lib/pagination';
 
 export async function uploadReceipt(formData) {
   try {
@@ -33,13 +35,18 @@ export async function uploadReceipt(formData) {
 
 export async function addDonation(donationData) {
   try {
-    const data = await prisma.donations.create({
-      data: {
-        ...donationData,
-        amount: donationData.amount ? parseFloat(donationData.amount) : 0,
-        date: donationData.date ? new Date(donationData.date) : null
-      }
-    })
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('donations');
+    
+    const data = {
+      ...donationData,
+      amount: donationData.amount ? parseFloat(donationData.amount) : 0,
+      date: donationData.date ? new Date(donationData.date) : null,
+      created_at: new Date()
+    };
+    
+    const result = await collection.insertOne(data);
     return { success: true, data }
   } catch (error) {
     console.error('addDonation Error:', error)
@@ -49,14 +56,21 @@ export async function addDonation(donationData) {
 
 export async function updateDonation(id, donationData) {
   try {
-    const data = await prisma.donations.update({
-      where: { id },
-      data: {
-        ...donationData,
-        amount: donationData.amount ? parseFloat(donationData.amount) : undefined,
-        date: donationData.date ? new Date(donationData.date) : undefined
-      }
-    })
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('donations');
+    
+    const data = {
+      ...donationData,
+      amount: donationData.amount ? parseFloat(donationData.amount) : undefined,
+      date: donationData.date ? new Date(donationData.date) : undefined,
+      updated_at: new Date()
+    };
+    
+    const result = await collection.updateOne(
+      { _id: id },
+      { $set: data }
+    );
     return { success: true, data }
   } catch (error) {
     console.error('updateDonation Error:', error)
@@ -66,27 +80,65 @@ export async function updateDonation(id, donationData) {
 
 export async function deleteDonation(id) {
   try {
-    await prisma.donations.delete({
-      where: { id }
-    })
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('donations');
+    
+    await collection.deleteOne({ _id: id });
     return { success: true }
   } catch (error) {
-    console.error('deleteDonation Error:', error)
     return { success: false, error: error.message }
   }
 }
 
-export async function getDonations() {
+export async function getDonations(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', type = '') {
   try {
-    const data = await prisma.donations.findMany({
-      include: {
-        donors: {
-          select: { name: true }
-        }
-      },
-      orderBy: { date: 'desc' }
-    })
-    return { success: true, data }
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('donations');
+    
+    // Build query
+    const query = {};
+    
+    if (search) {
+      query.$or = [
+        { 'donors.name': { $regex: search, $options: 'i' } },
+        { type: { $regex: search, $options: 'i' } },
+        { notes: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (type) {
+      query.type = type;
+    }
+    
+    // Get total count
+    const totalItems = await collection.countDocuments(query);
+    
+    // Get paginated data with donor lookup
+    const { skip, limit } = getPaginationParams(page, pageSize);
+    const data = await collection.aggregate([
+      { $match: query },
+      { $lookup: {
+        from: 'donors',
+        localField: 'donor_id',
+        foreignField: '_id',
+        as: 'donors'
+      }},
+      { $unwind: {
+        path: '$donors',
+        preserveNullAndEmptyArrays: true
+      }},
+      { $sort: { date: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]).toArray();
+    
+    // Manually serialize aggregation result to handle nested ObjectIds
+    const { serializeDocuments } = await import('@/lib/serialization');
+    const serializedData = serializeDocuments(data);
+    
+    return formatPaginatedResponse(serializedData, totalItems, page, pageSize);
   } catch (error) {
     console.error('getDonations Error:', error)
     return { success: false, error: error.message }
@@ -95,10 +147,20 @@ export async function getDonations() {
 
 export async function getDonors() {
   try {
-    const data = await prisma.donors.findMany({
-      select: { id: true, name: true }
-    })
-    return { success: true, data }
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('donors');
+    
+    const data = await collection.find({}).project({ _id: 1, name: 1 }).toArray();
+    
+    // Use the serialization utility
+    const { serializeDocuments } = await import('@/lib/serialization');
+    const serializedData = serializeDocuments(data).map(item => ({
+      id: item.id,
+      name: item.name
+    }));
+    
+    return { success: true, data: serializedData }
   } catch (error) {
     console.error('getDonors Error:', error)
     return { success: false, error: error.message }

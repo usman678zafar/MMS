@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { signIn } from 'next-auth/react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,15 +24,21 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      const res = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
       });
-      if (res?.error) {
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Store user in localStorage or context
+        localStorage.setItem('user', JSON.stringify(data.user));
+        router.push('/');
+      } else {
         throw new Error("Invalid email or password");
       }
-      router.push('/');
     } catch (err) {
       setError(err.message);
     } finally {

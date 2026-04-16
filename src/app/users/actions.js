@@ -1,23 +1,49 @@
 'use server'
-import { prisma } from '@/lib/prisma'
+import { connectDB } from '@/lib/mongoose'
+import mongoose from 'mongoose'
+import User from '@/models/User'
 import bcrypt from 'bcryptjs'
+import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } from '@/lib/pagination'
 
-export async function getUsers() {
+export async function getUsers(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', role = '') {
   try {
-    const users = await prisma.users.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true
-      },
-      orderBy: { created_at: 'desc' }
-    })
-
-    return { success: true, users }
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('users');
+    
+    // Build query
+    const query = {};
+    
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { role: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (role) {
+      query.role = role;
+    }
+    
+    // Get total count
+    const totalItems = await collection.countDocuments(query);
+    
+    // Get paginated data
+    const { skip, limit } = getPaginationParams(page, pageSize);
+    const users = await collection.find(query)
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+    
+    // Remove password field before serialization
+    const sanitizedUsers = users.map(user => ({
+      ...user,
+      password: undefined // Don't send password to client
+    }));
+    
+    return formatPaginatedResponse(sanitizedUsers, totalItems, page, pageSize);
   } catch (error) {
     console.error('getUsers Error:', error)
     return { success: false, error: error.message }
@@ -27,11 +53,12 @@ export async function getUsers() {
 export async function addUser(userData) {
   try {
     const { name, email, role, password } = userData
-
+    await connectDB();
+    
     // Check if user already exists
-    const existingUser = await prisma.users.findUnique({
-      where: { email }
-    })
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('users');
+    const existingUser = await collection.findOne({ email });
 
     if (existingUser) {
       return { success: false, error: 'User with this email already exists' }
@@ -39,24 +66,16 @@ export async function addUser(userData) {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
-
-    const user = await prisma.users.create({
-      data: {
-        name,
-        email,
-        role,
-        password: hashedPassword
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        is_active: true,
-        created_at: true
-      }
-    })
-
+    
+    const user = new User({
+      name,
+      email,
+      role: role || 'super_admin',
+      password: hashedPassword
+    });
+    
+    await user.save();
+    
     return { success: true, user }
   } catch (error) {
     console.error('addUser Error:', error)
@@ -69,9 +88,9 @@ export async function updateUser(userId, userData) {
     const { name, email, role, password } = userData
 
     // Check if user exists
-    const existingUser = await prisma.users.findUnique({
-      where: { id: userId }
-    })
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('users');
+    const existingUser = await collection.findOne({ _id: userId });
 
     if (!existingUser) {
       return { success: false, error: 'User not found' }
@@ -79,9 +98,7 @@ export async function updateUser(userId, userData) {
 
     // Check if email is being changed and if new email already exists
     if (email !== existingUser.email) {
-      const emailExists = await prisma.users.findUnique({
-        where: { email }
-      })
+      const emailExists = await collection.findOne({ email });
 
       if (emailExists) {
         return { success: false, error: 'User with this email already exists' }
@@ -91,7 +108,8 @@ export async function updateUser(userId, userData) {
     const updateData = {
       name,
       email,
-      role
+      role,
+      updated_at: new Date()
     }
 
     // Only update password if provided
@@ -99,19 +117,12 @@ export async function updateUser(userId, userData) {
       updateData.password = await bcrypt.hash(password, 10)
     }
 
-    const user = await prisma.users.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true
-      }
-    })
+    await collection.updateOne(
+      { _id: userId },
+      { $set: updateData }
+    );
+
+    const user = await collection.findOne({ _id: userId });
 
     return { success: true, user }
   } catch (error) {
@@ -122,18 +133,18 @@ export async function updateUser(userId, userData) {
 
 export async function deleteUser(userId) {
   try {
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('users');
+    
     // Check if user exists
-    const existingUser = await prisma.users.findUnique({
-      where: { id: userId }
-    })
+    const existingUser = await collection.findOne({ _id: userId });
 
     if (!existingUser) {
       return { success: false, error: 'User not found' }
     }
 
-    await prisma.users.delete({
-      where: { id: userId }
-    })
+    await collection.deleteOne({ _id: userId });
 
     return { success: true }
   } catch (error) {
@@ -144,31 +155,23 @@ export async function deleteUser(userId) {
 
 export async function toggleUserStatus(userId) {
   try {
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('users');
+    
     // Check if user exists
-    const existingUser = await prisma.users.findUnique({
-      where: { id: userId }
-    })
+    const existingUser = await collection.findOne({ _id: userId });
 
     if (!existingUser) {
       return { success: false, error: 'User not found' }
     }
 
-    const user = await prisma.users.update({
-      where: { id: userId },
-      data: {
-        is_active: !existingUser.is_active
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true
-      }
-    })
+    await collection.updateOne(
+      { _id: userId },
+      { $set: { is_active: !existingUser.is_active, updated_at: new Date() } }
+    );
 
+    const user = await collection.findOne({ _id: userId });
     return { success: true, user }
   } catch (error) {
     console.error('toggleUserStatus Error:', error)

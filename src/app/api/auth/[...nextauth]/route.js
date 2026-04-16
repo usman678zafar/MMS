@@ -1,22 +1,44 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { connectDB } from '@/lib/mongoose';
+import User from '@/models/User';
+import bcrypt from 'bcryptjs';
 
 const authOptions = {
   providers: [
     CredentialsProvider({
       name: "Admin Login",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "admin@madrasa.com" },
+        email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (
-          credentials.email === process.env.ADMIN_EMAIL &&
-          credentials.password === process.env.ADMIN_PASSWORD
-        ) {
-          // Any object returned will be saved in `user` property of the JWT
-          return { id: "1", name: "Admin", email: credentials.email };
-        } else {
+        try {
+          await connectDB();
+          
+          // Find user in database
+          const user = await User.findOne({ email: credentials.email });
+          
+          if (!user) {
+            return null;
+          }
+          
+          // Compare password
+          const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+          
+          if (!isValidPassword) {
+            return null;
+          }
+          
+          // Return user object
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role
+          };
+        } catch (error) {
+          console.error('Auth error:', error);
           return null;
         }
       }
@@ -30,11 +52,20 @@ const authOptions = {
   },
   callbacks: {
     async session({ session, token }) {
-      session.user.id = token.sub;
+      if (token.user) {
+        session.user.id = token.user.id;
+        session.user.role = token.user.role;
+      }
       return session;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.user = user;
+      }
+      return token;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development',
 };
 
 const handler = NextAuth(authOptions);
