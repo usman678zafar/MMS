@@ -16,7 +16,7 @@ export async function connectDB() {
     await mongoose.connect(MONGODB_URI);
   } catch (error) {
     console.error('MongoDB connection error:', error);
-    process.exit(1);
+    // Don't kill the process in development, just log the error
   }
 }
 
