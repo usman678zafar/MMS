@@ -147,88 +147,110 @@ export default function StudentsPage() {
           </select>
         </div>
 
-        {/* Student Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
-            <div className="col-span-full py-20 text-center text-slate-400">Loading students...</div>
-          ) : filtered.length === 0 ? (
-            <div className="col-span-full py-20 text-center">
-              <GraduationCap className="h-12 w-12 text-slate-200 mx-auto mb-3" />
-              <p className="text-slate-400 text-lg font-medium">No students found</p>
-              <p className="text-slate-400 text-sm mt-1">Enroll your first student to get started</p>
-            </div>
-          ) : (
-            filtered.map((student) => (
-              <div key={student.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all p-6 group relative">
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-                  <button onClick={() => handleOpenEdit(student)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit">
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => setDeleteId(student.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Delete">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-                
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3 pr-16">
-                    <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 text-xl font-bold flex-shrink-0">
-                      {student.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-base leading-tight">{student.name}</h3>
-                      <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                        <User className="h-3 w-3" /> {student.father_name || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <BookOpen className="h-3.5 w-3.5 text-slate-400" />
-                    <span className="font-medium">{student.class || 'N/A'}</span>
-                    {student.gender && <span className="text-slate-400">· {student.gender}</span>}
-                  </div>
-                  {student.phone && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Phone className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{student.phone}</span>
-                    </div>
-                  )}
-                  {student.admission_date && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                      <span>Admitted: {format(new Date(student.admission_date), 'MMM dd, yyyy')}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-5 pt-5 border-t border-slate-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                     <button
-                      onClick={() => handleToggleStatus(student.id, student.is_active !== false)}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        student.is_active !== false
-                          ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      }`}
-                      title="Toggle status"
-                    >
-                      {student.is_active !== false ? 'Active' : 'Inactive'}
-                    </button>
-                  </div>
-                  {student.monthly_fee ? (
-                    <span className="text-sm font-bold text-slate-900">
-                      रु {Number(student.monthly_fee).toLocaleString()}<span className="text-xs text-slate-400 font-normal">/mo</span>
-                    </span>
-                  ) : (
-                    <span className="text-sm text-slate-300 italic">No fee set</span>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
+        {/* Students Table */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Class</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Father's Name</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Fee</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-400">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-8 w-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-sm">Loading students...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center">
+                      <GraduationCap className="h-12 w-12 text-slate-200 mx-auto mb-3" />
+                      <p className="text-slate-400 text-lg font-medium">No students found</p>
+                      <p className="text-slate-400 text-sm mt-1">Enroll your first student to get started</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((student) => (
+                    <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-base flex-shrink-0">
+                            {student.name?.charAt(0)?.toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm">{student.name}</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                              {student.gender || 'Male'} · {student.admission_date ? format(new Date(student.admission_date), 'MMM yyyy') : 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold whitespace-nowrap">
+                          {student.class}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {student.father_name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                        {student.phone || (
+                          <span className="text-slate-300 italic text-xs">No contact</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleToggleStatus(student.id, student.is_active !== false)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm ${
+                            student.is_active !== false
+                              ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100'
+                              : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'
+                          }`}
+                          title="Click to toggle status"
+                        >
+                          {student.is_active !== false ? 'Active' : 'Inactive'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="text-sm font-bold text-slate-900">
+                          {student.monthly_fee ? `रु ${Number(student.monthly_fee).toLocaleString()}` : '—'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button 
+                            onClick={() => handleOpenEdit(student)} 
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                            title="Edit Student"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => setDeleteId(student.id)} 
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            title="Delete Student"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Student" : "Enroll New Student"}>
