@@ -23,8 +23,7 @@ const getNavigationItems = (hasPermission) => {
 
   const additionalNavigation = [
     { name: 'Students', href: '/students', icon: GraduationCap, permission: PERMISSIONS.STUDENTS_VIEW },
-    { name: 'Donors', href: '/donors', icon: UserRound, permission: PERMISSIONS.DONORS_VIEW },
-    { name: 'Donations', href: '/donations', icon: HandHeart, permission: PERMISSIONS.DONATIONS_VIEW },
+    { name: 'Donations & Donors', href: '/donations', icon: HandHeart, permission: PERMISSIONS.DONATIONS_VIEW },
     { name: 'Expenses', href: '/expenses', icon: Receipt, permission: PERMISSIONS.EXPENSES_VIEW },
     { name: 'Staff', href: '/staff', icon: Users, permission: PERMISSIONS.STAFF_VIEW },
     { name: 'Inventory', href: '/inventory', icon: Package, permission: PERMISSIONS.INVENTORY_VIEW },

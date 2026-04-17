@@ -7,7 +7,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Wallet,
-  DollarSign
+  DollarSign,
+  GraduationCap,
+  AlertTriangle
 } from 'lucide-react';
 import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -36,8 +38,10 @@ export default function DashboardPage() {
   const [financialData, setFinancialData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     async function fetchAllData() {
       try {
         const [statsRes, financialRes, activityRes] = await Promise.all([
@@ -52,6 +56,8 @@ export default function DashboardPage() {
             totalExpenses: statsRes.totalExpenses,
             activeStaff: statsRes.activeStaff,
             inventoryCount: statsRes.inventoryCount,
+            studentCount: statsRes.studentCount,
+            pendingFees: statsRes.pendingFees,
           });
         }
 
@@ -74,7 +80,7 @@ export default function DashboardPage() {
   const cards = [
     { 
       name: 'Total Donations', 
-      value: `रु ${stats.totalDonations.toLocaleString()}`, 
+      value: `Rs ${stats.totalDonations.toLocaleString()}`, 
       icon: TrendingUp, 
       color: 'bg-emerald-500',
       trend: '+12%',
@@ -82,19 +88,27 @@ export default function DashboardPage() {
     },
     { 
       name: 'Total Expenses', 
-      value: `रु ${stats.totalExpenses.toLocaleString()}`, 
+      value: `Rs ${stats.totalExpenses.toLocaleString()}`, 
       icon: TrendingDown, 
       color: 'bg-rose-500',
       trend: '+4%',
       trendUp: false 
     },
     { 
-      name: 'Net Balance', 
-      value: `रु ${(stats.totalDonations - stats.totalExpenses).toLocaleString()}`, 
-      icon: Wallet, 
-      color: 'bg-blue-500',
-      trend: 'Safe',
+      name: 'Students Enrolled', 
+      value: stats.studentCount, 
+      icon: GraduationCap, 
+      color: 'bg-indigo-500',
+      trend: 'Active',
       trendUp: true 
+    },
+    { 
+      name: 'Fee Accountability', 
+      value: stats.pendingFees, 
+      icon: AlertTriangle, 
+      color: stats.pendingFees > 0 ? 'bg-orange-500' : 'bg-emerald-500',
+      trend: stats.pendingFees > 0 ? 'Unpaid' : 'Clear',
+      trendUp: stats.pendingFees === 0 
     },
     { 
       name: 'Active Staff', 
@@ -102,6 +116,14 @@ export default function DashboardPage() {
       icon: Users, 
       color: 'bg-amber-500',
       trend: 'Stable',
+      trendUp: true 
+    },
+    { 
+      name: 'Inventory Items', 
+      value: stats.inventoryCount, 
+      icon: Wallet, 
+      color: 'bg-blue-500',
+      trend: 'In Stock',
       trendUp: true 
     },
   ];
@@ -115,7 +137,7 @@ export default function DashboardPage() {
             <p className="text-slate-500">Welcome back. Here's what's happening today.</p>
           </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
           {cards.map((card) => (
             <div key={card.name} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between mb-4">
@@ -143,23 +165,25 @@ export default function DashboardPage() {
               </select>
             </div>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                <AreaChart data={financialData}>
-                  <defs>
-                    <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                  <Tooltip 
-                    contentStyle={{backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
-                  />
-                  <Area type="monotone" dataKey="donations" stroke="#10b981" fillOpacity={1} fill="url(#colorDonations)" strokeWidth={3} />
-                </AreaChart>
-              </ResponsiveContainer>
+              {hasMounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={financialData}>
+                    <defs>
+                      <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                    <Tooltip 
+                      contentStyle={{backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                    />
+                    <Area type="monotone" dataKey="donations" stroke="#10b981" fillOpacity={1} fill="url(#colorDonations)" strokeWidth={3} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 

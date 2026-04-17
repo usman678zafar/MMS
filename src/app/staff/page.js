@@ -286,7 +286,7 @@ export default function StaffPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Monthly Salary (रु)</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Monthly Salary (Rs)</label>
                 <input type="number" required className="input-field text-sm" placeholder="0"
                   value={newStaff.monthly_salary} onChange={(e) => setNewStaff({ ...newStaff, monthly_salary: e.target.value })} />
               </div>

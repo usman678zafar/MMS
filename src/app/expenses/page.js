@@ -122,8 +122,8 @@ export default function ExpensesPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Total Expenses', value: `रु${totalExpenses.toLocaleString()}`, color: 'text-slate-900' },
-              { label: 'This Month', value: `रु${thisMonth.toLocaleString()}`, color: 'text-rose-500' },
+              { label: 'Total Expenses', value: `Rs ${totalExpenses.toLocaleString()}`, color: 'text-slate-900' },
+              { label: 'This Month', value: `Rs ${thisMonth.toLocaleString()}`, color: 'text-rose-500' },
               { label: 'Transactions', value: expenses.length, color: 'text-emerald-600' },
             ].map(stat => (
               <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
@@ -268,7 +268,7 @@ export default function ExpensesPage() {
                 <input type="date" required className="input-field text-sm" value={newExpense.date} onChange={(e) => setNewExpense({...newExpense, date: e.target.value})} />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Amount (रु) *</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Amount (Rs) *</label>
                 <input type="number" required className="input-field text-sm" placeholder="0" value={newExpense.amount} onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})} />
               </div>
             </div>

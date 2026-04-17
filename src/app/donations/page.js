@@ -6,31 +6,47 @@ import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton, StatsSkeleton, FilterSkeleton } from '@/components/SkeletonLoader';
-import { Plus, Search, Filter, MoreVertical, Download, Edit2, Trash2, HandHeart, Calendar, DollarSign } from 'lucide-react';
-import { format } from 'date-fns';
 import { addDonation, updateDonation, deleteDonation, getDonations, getDonors, uploadReceipt } from './actions';
+import { addDonor, updateDonor, getAllDonors, deleteDonor } from './donor-actions';
+import { UserRound, HandHeart, Plus, Search, Filter, Edit2, Trash2, Calendar, DollarSign, Package, AlertTriangle, UserCheck, UserX } from 'lucide-react';
 import { PERMISSIONS } from '@/lib/rbac';
 import { PAGINATION_DEFAULTS } from '@/lib/pagination';
+import { format } from 'date-fns';
 
 const DONATION_TYPES = ['Sadqah', 'Zakat', 'Fitra', 'Hadiya', 'Other'];
 const defaultForm = { donor_id: '', amount: '', type: 'Sadqah', date: format(new Date(), 'yyyy-MM-dd'), notes: '', receipt_url: '' };
 
 export default function DonationsPage() {
+  const [activeTab, setActiveTab] = useState('donations'); // 'donations' | 'donors'
   const [donations, setDonations] = useState([]);
+  const [donorList, setDonorList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showDonorModal, setShowDonorModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [deleteDonorId, setDeleteDonorId] = useState(null);
+  
   const [newDonation, setNewDonation] = useState(defaultForm);
+  const [newDonor, setNewDonor] = useState({ name: '', email: '', phone: '', address: '', is_active: true });
+  
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [donors, setDonors] = useState([]);
+  const [donorsForSelect, setDonorsForSelect] = useState([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { fetchDonations(); fetchDonors(); }, [currentPage, search, filterType]);
+  useEffect(() => { 
+    if (activeTab === 'donations') {
+      fetchDonations(); 
+      fetchDonorsForSelect(); 
+    } else {
+      fetchDonorsList();
+    }
+  }, [activeTab, currentPage, search, filterType, filterStatus]);
 
   async function fetchDonations() {
     setLoading(true);
@@ -41,10 +57,67 @@ export default function DonationsPage() {
     }
     setLoading(false);
   }
-  async function fetchDonors() {
+  async function fetchDonorsForSelect() {
     const res = await getDonors();
-    if (res.success) setDonors(res.data);
+    if (res.success) setDonorsForSelect(res.data);
   }
+
+  async function fetchDonorsList() {
+    setLoading(true);
+    const res = await getAllDonors(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterStatus);
+    if (res.success) {
+      setDonorList(res.data);
+      setPagination(res.pagination);
+    }
+    setLoading(false);
+  }
+
+  const handleOpenDonorEdit = (donor) => {
+    setNewDonor({ 
+      name: donor.name, 
+      email: donor.email || '', 
+      phone: donor.phone || '', 
+      address: donor.address || '',
+      is_active: donor.is_active !== false
+    });
+    setEditingId(donor.id);
+    setShowDonorModal(true);
+  };
+
+  const handleCloseDonorModal = () => {
+    setShowDonorModal(false);
+    setNewDonor({ name: '', email: '', phone: '', address: '', is_active: true });
+    setEditingId(null);
+  };
+
+  const handleSaveDonor = async (e) => {
+    e.preventDefault();
+    setUploading(true);
+    let res;
+    if (editingId) res = await updateDonor(editingId, newDonor);
+    else res = await addDonor(newDonor);
+    
+    if (res.success) { handleCloseDonorModal(); fetchDonorsList(); }
+    else alert(`Error: ${res.error}`);
+    setUploading(false);
+  };
+
+  const confirmDeleteDonor = async () => {
+    if (!deleteDonorId) return;
+    const res = await deleteDonor(deleteDonorId);
+    if (res.success) fetchDonorsList();
+    else alert(`Error: ${res.error}`);
+    setDeleteDonorId(null);
+  };
+
+  const handleToggleDonorStatus = async (id, current) => {
+    const donor = donorList.find(d => d.id === id);
+    if (donor) {
+      const res = await updateDonor(id, { ...donor, is_active: !current });
+      if (res.success) fetchDonorsList();
+      else alert(`Error: ${res.error}`);
+    }
+  };
 
   const handleFileUpload = async (file) => {
     try {
@@ -133,24 +206,82 @@ export default function DonationsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">Donations</h2>
-            <p className="text-slate-500">Manage and track all incoming contributions.</p>
+            <h2 className="text-2xl font-bold text-slate-900">Donations & Donors</h2>
+            <p className="text-slate-500">Manage contributions and donor profiles.</p>
           </div>
-          <button onClick={() => { setEditingId(null); setNewDonation(defaultForm); setShowModal(true); }} className="btn btn-primary">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Donation
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { 
+                if (activeTab === 'donations') {
+                  setEditingId(null); 
+                  setNewDonation(defaultForm); 
+                  setShowModal(true); 
+                } else {
+                  setEditingId(null);
+                  setNewDonor({ name: '', email: '', phone: '', address: '', is_active: true });
+                  setShowDonorModal(true);
+                }
+              }} 
+              className="btn btn-primary"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {activeTab === 'donations' ? 'Add Donation' : 'Add Donor'}
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex border-b border-slate-200">
+          <button
+            onClick={() => { setActiveTab('donations'); setCurrentPage(1); setSearch(''); }}
+            className={`px-6 py-3 text-sm font-semibold transition-all border-b-2 ${
+              activeTab === 'donations' 
+                ? 'border-primary-600 text-primary-600' 
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <HandHeart className="h-4 w-4" />
+              Donations
+            </div>
+          </button>
+          <button
+            onClick={() => { setActiveTab('donors'); setCurrentPage(1); setSearch(''); }}
+            className={`px-6 py-3 text-sm font-semibold transition-all border-b-2 ${
+              activeTab === 'donors' 
+                ? 'border-primary-600 text-primary-600' 
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <UserRound className="h-4 w-4" />
+              Donors
+            </div>
           </button>
         </div>
 
         {/* Stats Bar */}
         {loading ? (
           <StatsSkeleton />
+        ) : activeTab === 'donations' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {[
+              { label: 'Total Donations', value: pagination?.totalItems || 0, color: 'text-slate-900' },
+              { label: 'This Month', value: `Rs ${thisMonth.toLocaleString()}`, color: 'text-emerald-600' },
+              { label: 'Total Amount', value: `Rs ${totalAmount.toLocaleString()}`, color: 'text-primary-600' },
+            ].map(stat => (
+              <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">{stat.label}</p>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[
-              { label: 'Total Donations', value: donations.length, color: 'text-slate-900' },
-              { label: 'This Month', value: thisMonth, color: 'text-emerald-600' },
-              { label: 'Total Amount', value: `रु${totalAmount.toLocaleString()}`, color: 'text-primary-600' },
+              { label: 'Total Donors', value: pagination?.totalItems || 0, color: 'text-slate-900' },
+              { label: 'Active', value: donorList.filter(d => d.is_active !== false).length, color: 'text-emerald-600' },
+              { label: 'Inactive', value: donorList.filter(d => d.is_active === false).length, color: 'text-rose-500' },
             ].map(stat => (
               <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
                 <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
@@ -169,110 +300,172 @@ export default function DonationsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search donor or type..."
+                placeholder={activeTab === 'donations' ? "Search donor or type..." : "Search donors..."}
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
               />
             </div>
-            <select
-              value={filterType}
-              onChange={(e) => handleTypeFilter(e.target.value)}
-              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
-            >
-              <option value="">All Types</option>
-              {DONATION_TYPES.map(type => <option key={type}>{type}</option>)}
-            </select>
+            {activeTab === 'donations' ? (
+              <select
+                value={filterType}
+                onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              >
+                <option value="">All Types</option>
+                {DONATION_TYPES.map(type => <option key={type}>{type}</option>)}
+              </select>
+            ) : (
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            )}
           </div>
         )}
 
-        {/* Donations Table */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Donor</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Notes</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {loading ? (
-                  <tr>
-                    <td colSpan="6" className="p-0">
-                      <TableSkeleton columns={6} rows={5} />
-                    </td>
+        {activeTab === 'donations' ? (
+          /* Donations Table */
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Donor</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Notes</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                   </tr>
-                ) : donations.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center">
-                      <HandHeart className="h-12 w-12 text-slate-200 mx-auto mb-3" />
-                      <p className="text-slate-400 text-lg font-medium">No donations found</p>
-                      <p className="text-slate-400 text-sm mt-1">Add your first donation to get started</p>
-                    </td>
-                  </tr>
-                ) : (
-                  donations.map((d) => (
-                    <tr key={d.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
-                        {format(new Date(d.date), 'MMM dd, yyyy')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-base flex-shrink-0">
-                            {d.donors?.name?.charAt(0)?.toUpperCase() || 'W'}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 text-sm">{d.donors?.name || 'Walk-in'}</p>
-                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                              {d.type}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${d.type === 'Zakat' ? 'bg-emerald-100 text-emerald-800' : d.type === 'Sadqah' ? 'bg-blue-100 text-blue-800' : d.type === 'Masjid' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>{d.type}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-sm font-bold text-slate-900">
-                          Rs {Number(d.amount).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">
-                        {d.notes ? (
-                          <span className="truncate">{d.notes}</span>
-                        ) : (
-                          <span className="text-slate-300 italic text-xs">No notes</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button 
-                            onClick={() => handleOpenEdit(d)} 
-                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                            title="Edit Donation"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button 
-                            onClick={() => setDeleteId(d.id)} 
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                            title="Delete Donation"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {donations.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-12 text-center">
+                        <HandHeart className="h-12 w-12 text-slate-200 mx-auto mb-3" />
+                        <p className="text-slate-400 text-lg font-medium">No donations found</p>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    donations.map((d) => (
+                      <tr key={d.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                          {(() => {
+                            if (!d.date) return 'N/A';
+                            try {
+                              return format(new Date(d.date), 'MMM dd, yyyy');
+                            } catch (error) {
+                              return 'Invalid Date';
+                            }
+                          })()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-base flex-shrink-0">
+                              {d.donors?.name?.charAt(0)?.toUpperCase() || 'W'}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">{d.donors?.name || 'Walk-in'}</p>
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                                {d.type}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${d.type === 'Zakat' ? 'bg-emerald-100 text-emerald-800' : d.type === 'Sadqah' ? 'bg-blue-100 text-blue-800' : d.type === 'Masjid' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>{d.type}</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm font-bold text-slate-900">
+                            Rs {Number(d.amount).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">
+                          {d.notes ? <span className="truncate">{d.notes}</span> : <span className="text-slate-300 italic text-xs">No notes</span>}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleOpenEdit(d)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Edit Donation"><Edit2 className="h-4 w-4" /></button>
+                            <button onClick={() => setDeleteId(d.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Delete Donation"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
+        ) : (
+          /* Donors Table */
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Donor</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {donorList.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-12 text-center">
+                        <UserRound className="h-12 w-12 text-slate-200 mx-auto mb-3" />
+                        <p className="text-slate-400 text-lg font-medium">No donors found</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    donorList.map((donor) => (
+                      <tr key={donor.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-base flex-shrink-0">
+                              {donor.name?.charAt(0)?.toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 text-sm">{donor.name}</p>
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">ID: {donor.id?.slice(-8)}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{donor.phone || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-slate-600">{donor.email || 'N/A'}</td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => handleToggleDonorStatus(donor.id, donor.is_active !== false)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm ${
+                              donor.is_active !== false
+                                ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100'
+                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'
+                            }`}
+                          >
+                            {donor.is_active !== false ? 'Active' : 'Inactive'}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleOpenDonorEdit(donor)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"><Edit2 className="h-4 w-4" /></button>
+                            <button onClick={() => setDeleteDonorId(donor.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
           {pagination && (
             <Pagination
               currentPage={pagination.page}
@@ -282,7 +475,7 @@ export default function DonationsPage() {
               totalItems={pagination.totalItems}
             />
           )}
-        </div>
+
 
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Donation" : "Add Donation"}>
           <form onSubmit={handleSave} className="space-y-3">
@@ -290,14 +483,13 @@ export default function DonationsPage() {
               <label className="block text-xs font-semibold text-slate-600 mb-1">Donor *</label>
               <select required className="input-field text-sm" value={newDonation.donor_id} onChange={(e) => setNewDonation({ ...newDonation, donor_id: e.target.value })}>
                 <option value="">Select Donor</option>
-                {donors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                {donorsForSelect.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Amount (रु) *</label>
-                <input type="number" required className="input-field text-sm" placeholder="0"
-                  value={newDonation.amount} onChange={(e) => setNewDonation({ ...newDonation, amount: e.target.value })} />
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Amount (Rs) *</label>
+                <input type="number" required className="input-field text-sm" placeholder="0" value={newDonation.amount} onChange={(e) => setNewDonation({ ...newDonation, amount: e.target.value })} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Type</label>
@@ -307,8 +499,7 @@ export default function DonationsPage() {
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Date *</label>
-                <input type="date" required className="input-field text-sm"
-                  value={newDonation.date} onChange={(e) => setNewDonation({ ...newDonation, date: e.target.value })} />
+                <input type="date" required className="input-field text-sm" value={newDonation.date} onChange={(e) => setNewDonation({ ...newDonation, date: e.target.value })} />
               </div>
             </div>
             <div>
@@ -325,9 +516,35 @@ export default function DonationsPage() {
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <button type="button" onClick={handleCloseModal} className="btn btn-secondary text-sm">Cancel</button>
-              <button type="submit" disabled={uploading} className="btn btn-primary text-sm disabled:opacity-50">
-                {uploading ? 'Uploading...' : (editingId ? 'Update Donation' : 'Save Donation')}
-              </button>
+              <button type="submit" disabled={uploading} className="btn btn-primary text-sm disabled:opacity-50">{uploading ? 'Processing...' : (editingId ? 'Update Donation' : 'Save Donation')}</button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Donor Modal */}
+        <Modal open={showDonorModal} onClose={handleCloseDonorModal} title={editingId ? "Edit Donor" : "Add Donor"}>
+          <form onSubmit={handleSaveDonor} className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name *</label>
+              <input type="text" required className="input-field text-sm" placeholder="e.g. Ahmad Ali" value={newDonor.name} onChange={(e) => setNewDonor({ ...newDonor, name: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Phone</label>
+                <input type="tel" className="input-field text-sm" placeholder="03XXXXXXXXX" value={newDonor.phone} onChange={(e) => setNewDonor({ ...newDonor, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                <input type="email" className="input-field text-sm" placeholder="email@example.com" value={newDonor.email} onChange={(e) => setNewDonor({ ...newDonor, email: e.target.value })} />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Address</label>
+                <input type="text" className="input-field text-sm" placeholder="City, Area" value={newDonor.address} onChange={(e) => setNewDonor({ ...newDonor, address: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button type="button" onClick={handleCloseDonorModal} className="btn btn-secondary text-sm">Cancel</button>
+              <button type="submit" disabled={uploading} className="btn btn-primary text-sm disabled:opacity-50">{uploading ? 'Processing...' : (editingId ? 'Update Donor' : 'Add Donor')}</button>
             </div>
           </form>
         </Modal>
@@ -337,7 +554,15 @@ export default function DonationsPage() {
           onClose={() => setDeleteId(null)}
           onConfirm={confirmDelete}
           title="Delete Donation"
-          message="Are you sure you want to completely remove this donation record? This action cannot be undone."
+          message="Are you sure you want to remove this donation record?"
+        />
+
+        <ConfirmModal
+          open={!!deleteDonorId}
+          onClose={() => setDeleteDonorId(null)}
+          onConfirm={confirmDeleteDonor}
+          title="Delete Donor"
+          message="Are you sure you want to remove this donor? This will not delete their historical donations."
         />
         </div>
       </ProtectedRoute>

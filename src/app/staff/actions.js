@@ -100,3 +100,24 @@ export async function getStaff(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZ
     return { success: false, error: error.message }
   }
 }
+
+export async function getAllTeachers() {
+  try {
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('staff');
+    
+    const teachers = await collection.find({ 
+      role: { $regex: /teacher/i },
+      is_active: true 
+    }).project({ name: 1, _id: 1 }).toArray();
+    
+    return { 
+      success: true, 
+      data: teachers.map(t => ({ id: t._id.toString(), name: t.name })) 
+    };
+  } catch (error) {
+    console.error('getAllTeachers Error:', error)
+    return { success: false, error: error.message }
+  }
+}

@@ -134,11 +134,7 @@ export async function getDonations(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE
       { $limit: limit }
     ]).toArray();
     
-    // Manually serialize aggregation result to handle nested ObjectIds
-    const { serializeDocuments } = await import('@/lib/serialization');
-    const serializedData = serializeDocuments(data);
-    
-    return formatPaginatedResponse(serializedData, totalItems, page, pageSize);
+    return formatPaginatedResponse(data, totalItems, page, pageSize);
   } catch (error) {
     console.error('getDonations Error:', error)
     return { success: false, error: error.message }
