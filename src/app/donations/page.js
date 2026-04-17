@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
@@ -39,16 +39,7 @@ export default function DonationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { 
-    if (activeTab === 'donations') {
-      fetchDonations(); 
-      fetchDonorsForSelect(); 
-    } else {
-      fetchDonorsList();
-    }
-  }, [activeTab, currentPage, search, filterType, filterStatus]);
-
-  async function fetchDonations() {
+  const fetchDonations = useCallback(async () => {
     setLoading(true);
     const res = await getDonations(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterType);
     if (res.success) {
@@ -56,13 +47,14 @@ export default function DonationsPage() {
       setPagination(res.pagination);
     }
     setLoading(false);
-  }
-  async function fetchDonorsForSelect() {
+  }, [currentPage, search, filterType]);
+
+  const fetchDonorsForSelect = useCallback(async () => {
     const res = await getDonors();
     if (res.success) setDonorsForSelect(res.data);
-  }
+  }, []);
 
-  async function fetchDonorsList() {
+  const fetchDonorsList = useCallback(async () => {
     setLoading(true);
     const res = await getAllDonors(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterStatus);
     if (res.success) {
@@ -70,7 +62,19 @@ export default function DonationsPage() {
       setPagination(res.pagination);
     }
     setLoading(false);
-  }
+  }, [currentPage, search, filterStatus]);
+
+  useEffect(() => { 
+    const t = setTimeout(() => {
+      if (activeTab === 'donations') {
+        fetchDonations(); 
+        fetchDonorsForSelect(); 
+      } else {
+        fetchDonorsList();
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [activeTab, fetchDonations, fetchDonorsForSelect, fetchDonorsList]);
 
   const handleOpenDonorEdit = (donor) => {
     setNewDonor({ 

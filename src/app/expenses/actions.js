@@ -8,7 +8,7 @@ import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 export async function addExpense(expenseData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('expenses');
     
     const data = {
@@ -29,7 +29,7 @@ export async function addExpense(expenseData) {
 export async function updateExpense(id, expenseData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('expenses');
     
     const data = {
@@ -53,7 +53,7 @@ export async function updateExpense(id, expenseData) {
 export async function deleteExpense(id) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('expenses');
     
     await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
@@ -66,7 +66,7 @@ export async function deleteExpense(id) {
 export async function getExpenses(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', category = '') {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('expenses');
     
     // Build query

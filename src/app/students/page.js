@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
@@ -57,17 +57,12 @@ export default function StudentsPage() {
   const [historyList, setHistoryList] = useState([]);
   const [fetchingHistory, setFetchingHistory] = useState(false);
 
-  useEffect(() => { 
-    fetchStudents(); 
-    fetchTeachers();
-  }, [currentPage, search, filterStatus]);
-
-  async function fetchTeachers() {
+  const fetchTeachers = useCallback(async () => {
     const res = await getAllTeachers();
     if (res.success) setTeachers(res.data);
-  }
+  }, []);
 
-  async function fetchStudents() {
+  const fetchStudents = useCallback(async () => {
     setLoading(true);
     const res = await getStudents(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterStatus);
     if (res.success) {
@@ -75,7 +70,15 @@ export default function StudentsPage() {
       setPagination(res.pagination);
     }
     setLoading(false);
-  }
+  }, [currentPage, search, filterStatus]);
+
+  useEffect(() => { 
+    const t = setTimeout(() => {
+      fetchStudents(); 
+      fetchTeachers();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [fetchStudents, fetchTeachers]);
 
   const handleOpenEdit = (student) => {
     fetchTeachers();
@@ -399,8 +402,8 @@ export default function StudentsPage() {
                   value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Father's Name *</label>
-                <input type="text" required className="input-field text-sm" placeholder="Father's full name"
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Father&apos;s Name *</label>
+                <input type="text" required className="input-field text-sm" placeholder="Father&apos;s full name"
                   value={newStudent.father_name} onChange={(e) => setNewStudent({ ...newStudent, father_name: e.target.value })} />
               </div>
             </div>
@@ -573,7 +576,7 @@ export default function StudentsPage() {
                       <p className="text-sm font-medium text-slate-700">{entry.surah || 'General Progress'}</p>
                       {entry.notes && (
                         <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                          <p className="text-xs text-slate-600 italic">" {entry.notes} "</p>
+                          <p className="text-xs text-slate-600 italic">&quot; {entry.notes} &quot;</p>
                         </div>
                       )}
                       <p className="text-[10px] text-slate-400 mt-1">Verified by: {teachers.find(t => t.id === entry.teacher_id)?.name || 'Unknown Teacher'}</p>

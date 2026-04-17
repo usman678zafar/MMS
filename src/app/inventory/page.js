@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
@@ -26,9 +26,7 @@ export default function InventoryPage() {
   const [newItem, setNewItem] = useState({ item_name: '', category: 'General', quantity: '', unit: 'pcs' });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { fetchInventory(); }, [currentPage, search, filterCategory]);
-
-  async function fetchInventory() {
+  const fetchInventory = useCallback(async () => {
     setLoading(true);
     const res = await getInventory(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterCategory);
     if (res.success) {
@@ -36,7 +34,14 @@ export default function InventoryPage() {
       setPagination(res.pagination);
     }
     setLoading(false);
-  }
+  }, [currentPage, search, filterCategory]);
+
+  useEffect(() => { 
+    const t = setTimeout(() => {
+      fetchInventory(); 
+    }, 0);
+    return () => clearTimeout(t);
+  }, [fetchInventory]);
 
   const handleOpenEdit = (item) => {
     setNewItem({

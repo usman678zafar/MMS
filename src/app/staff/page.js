@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
@@ -33,9 +33,7 @@ export default function StaffPage() {
   const [saving, setSaving] = useState(false);
   const [newStaff, setNewStaff] = useState(defaultForm);
 
-  useEffect(() => { fetchStaff(); }, [currentPage, search, filterStatus]);
-
-  async function fetchStaff() {
+  const fetchStaff = useCallback(async () => {
     setLoading(true);
     const res = await getStaff(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterStatus);
     if (res.success) {
@@ -43,7 +41,14 @@ export default function StaffPage() {
       setPagination(res.pagination);
     }
     setLoading(false);
-  }
+  }, [currentPage, search, filterStatus]);
+
+  useEffect(() => { 
+    const t = setTimeout(() => {
+      fetchStaff(); 
+    }, 0);
+    return () => clearTimeout(t);
+  }, [fetchStaff]);
 
   const handleOpenEdit = (member) => {
     setNewStaff({

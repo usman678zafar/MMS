@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
@@ -26,11 +26,7 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [newUser, setNewUser] = useState(defaultForm);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage, search, filterRole]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     const res = await getUsers(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterRole);
     if (res.success) {
@@ -40,7 +36,14 @@ export default function UsersPage() {
       alert(`Error: ${res.error}`);
     }
     setLoading(false);
-  };
+  }, [currentPage, search, filterRole]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      fetchUsers();
+    }, 0);
+    return () => clearTimeout(t);
+  }, [fetchUsers]);
 
   const handleSave = async (e) => {
     e.preventDefault();

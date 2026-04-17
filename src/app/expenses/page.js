@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import NavigationLayout from '@/components/NavigationLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Modal from '@/components/Modal';
@@ -27,9 +27,7 @@ export default function ExpensesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
 
-  useEffect(() => { fetchExpenses(); }, [currentPage, search, filterCategory]);
-
-  async function fetchExpenses() {
+  const fetchExpenses = useCallback(async () => {
     setLoading(true);
     const res = await getExpenses(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterCategory);
     if (res.success) {
@@ -37,7 +35,14 @@ export default function ExpensesPage() {
       setPagination(res.pagination);
     }
     setLoading(false);
-  }
+  }, [currentPage, search, filterCategory]);
+
+  useEffect(() => { 
+    const t = setTimeout(() => {
+      fetchExpenses(); 
+    }, 0);
+    return () => clearTimeout(t);
+  }, [fetchExpenses]);
 
   const handleOpenEdit = (expense) => {
     setNewExpense({

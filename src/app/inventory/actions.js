@@ -7,7 +7,7 @@ import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 export async function addInventoryItem(itemData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('inventory');
     
     const data = {
@@ -27,7 +27,7 @@ export async function addInventoryItem(itemData) {
 export async function updateInventoryItem(id, itemData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('inventory');
     
     const data = {
@@ -50,7 +50,7 @@ export async function updateInventoryItem(id, itemData) {
 export async function deleteInventoryItem(id) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('inventory');
     
     await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
@@ -63,7 +63,7 @@ export async function deleteInventoryItem(id) {
 export async function getInventory(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', category = '') {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('inventory');
     
     // Build query

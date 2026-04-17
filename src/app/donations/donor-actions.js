@@ -7,7 +7,7 @@ import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } fro
 export async function addDonor(donorData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donors');
     
     const data = {
@@ -26,7 +26,7 @@ export async function addDonor(donorData) {
 export async function updateDonor(id, donorData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donors');
     
     const data = {
@@ -48,7 +48,7 @@ export async function updateDonor(id, donorData) {
 export async function getAllDonors(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', status = '') {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donors');
     
     // Build query
@@ -88,7 +88,7 @@ export async function getAllDonors(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE
 export async function deleteDonor(id) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donors');
     
     await collection.deleteOne({ _id: id });

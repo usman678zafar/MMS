@@ -37,7 +37,7 @@ export async function uploadReceipt(formData) {
 export async function addDonation(donationData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donations');
     
     const data = {
@@ -58,7 +58,7 @@ export async function addDonation(donationData) {
 export async function updateDonation(id, donationData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donations');
     
     const data = {
@@ -82,7 +82,7 @@ export async function updateDonation(id, donationData) {
 export async function deleteDonation(id) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donations');
     
     await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
@@ -95,7 +95,7 @@ export async function deleteDonation(id) {
 export async function getDonations(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', type = '') {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donations');
     
     // Build query
@@ -145,7 +145,7 @@ export async function getDonations(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE
 export async function getDonors() {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('donors');
     
     const data = await collection.find({}).project({ _id: 1, name: 1 }).toArray();

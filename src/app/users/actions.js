@@ -8,7 +8,7 @@ import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } fro
 export async function getUsers(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', role = '') {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('users');
     
     // Build query
@@ -134,7 +134,7 @@ export async function updateUser(userId, userData) {
 export async function deleteUser(userId) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('users');
     
     // Check if user exists
@@ -156,7 +156,7 @@ export async function deleteUser(userId) {
 export async function toggleUserStatus(userId) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('users');
     
     // Check if user exists

@@ -7,7 +7,7 @@ import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 export async function getDashboardStats() {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     
     const [donations, expenses, staffCount, inventoryCount, studentCount, pendingFeesCount] = await Promise.all([
       db.collection('donations').find({}).toArray(),
@@ -39,7 +39,7 @@ export async function getFinancialData() {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
 
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     
     const [donations, expenses] = await Promise.all([
       db.collection('donations').find({ date: { $gte: sixMonthsAgo } }).toArray(),
@@ -88,7 +88,7 @@ export async function getFinancialData() {
 export async function getRecentActivity() {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const donationsCollection = db.collection('donations');
     
     const recentDonations = await donationsCollection.find({}).sort({ created_at: -1 }).limit(4).toArray();

@@ -9,7 +9,7 @@ import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 export async function addStaffMember(staffData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('staff');
     
     const data = {

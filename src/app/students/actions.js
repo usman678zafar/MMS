@@ -7,7 +7,7 @@ import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 export async function addStudent(studentData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('students');
     
     const data = {
@@ -52,7 +52,7 @@ export async function addStudent(studentData) {
 export async function updateStudent(id, studentData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('students');
     
     const updateData = {
@@ -80,7 +80,7 @@ export async function updateStudent(id, studentData) {
 export async function getStudents(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = '', status = '') {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('students');
     
     // Build query
@@ -137,7 +137,7 @@ export async function getStudents(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_
 export async function updateStudentStatus(id, is_active) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('students');
     
     await collection.updateOne(
@@ -153,7 +153,7 @@ export async function updateStudentStatus(id, is_active) {
 export async function deleteStudent(id) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('students');
     
     await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
@@ -166,7 +166,7 @@ export async function deleteStudent(id) {
 export async function updateStudentProgress(studentId, progressData) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const students = db.collection('students');
     const history = db.collection('studentprogresses'); // Mongoose pluralizes by default
     
@@ -213,7 +213,7 @@ export async function updateStudentProgress(studentId, progressData) {
 export async function updateFeeStatus(id, fee_status) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('students');
     
     await collection.updateOne(
@@ -229,7 +229,7 @@ export async function updateFeeStatus(id, fee_status) {
 export async function getStudentProgressHistory(studentId) {
   try {
     await connectDB();
-    const db = mongoose.connection.getClient().db();
+    const db = mongoose.connection.db;
     const collection = db.collection('studentprogresses');
     
     const history = await collection.find({ 
