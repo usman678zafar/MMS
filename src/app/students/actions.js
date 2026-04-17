@@ -245,3 +245,135 @@ export async function getStudentProgressHistory(studentId) {
     return { success: false, error: error.message }
   }
 }
+
+export async function recordFeePayment(studentId, feeData) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const students = db.collection('students');
+    const fees = db.collection('studentfees');
+    
+    const sId = typeof studentId === 'string' ? new mongoose.Types.ObjectId(studentId) : studentId;
+    
+    // 1. Record in fees collection
+    const payment = {
+      student_id: sId,
+      amount: parseFloat(feeData.amount),
+      month: feeData.month, // e.g., "April"
+      year: parseInt(feeData.year),
+      date: new Date(),
+      notes: feeData.notes || '',
+      created_at: new Date()
+    };
+    
+    await fees.insertOne(payment);
+    
+    // 2. Update student fee status to Paid
+    await students.updateOne(
+      { _id: sId },
+      { $set: { fee_status: 'Paid', last_fee_paid: new Date(), updated_at: new Date() } }
+    );
+    
+    return { success: true }
+  } catch (error) {
+    console.error('recordFeePayment Error:', error);
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getStudentFeeHistory(studentId) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const collection = db.collection('studentfees');
+    
+    const history = await collection.find({ 
+      student_id: typeof studentId === 'string' ? new mongoose.Types.ObjectId(studentId) : studentId 
+    }).sort({ date: -1 }).toArray();
+    
+    return { 
+      success: true, 
+      data: serializeDocuments(history)
+    };
+  } catch (error) {
+    console.error('getStudentFeeHistory Error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function recordAttendance(attendanceRecords) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const collection = db.collection('studentattendance');
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Filter out duplicates if already marked today
+    await collection.deleteMany({
+      date: today
+    });
+
+    const records = attendanceRecords.map(record => ({
+      student_id: typeof record.student_id === 'string' ? new mongoose.Types.ObjectId(record.student_id) : record.student_id,
+      status: record.status, // 'Present', 'Absent', 'Late', 'Leave'
+      date: today,
+      notes: record.notes || '',
+      created_at: new Date()
+    }));
+    
+    await collection.insertMany(records);
+    return { success: true }
+  } catch (error) {
+    console.error('recordAttendance Error:', error);
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getAttendanceByDate(dateString) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const collection = db.collection('studentattendance');
+    
+    const date = new Date(dateString);
+    date.setHours(0, 0, 0, 0);
+    
+    const nextDay = new Date(date);
+    nextDay.setDate(date.getDate() + 1);
+
+    const attendance = await collection.find({
+      date: { $gte: date, $lt: nextDay }
+    }).toArray();
+    
+    return { success: true, data: serializeDocuments(attendance) };
+  } catch (error) {
+    console.error('getAttendanceByDate Error:', error);
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getStudentAttendanceReport(studentId) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const collection = db.collection('studentattendance');
+    
+    const sId = typeof studentId === 'string' ? new mongoose.Types.ObjectId(studentId) : studentId;
+    
+    const stats = await collection.aggregate([
+      { $match: { student_id: sId } },
+      { $group: { _id: '$status', count: { $sum: 1 } } }
+    ]).toArray();
+    
+    const formattedStats = stats.reduce((acc, curr) => {
+      acc[curr._id.toLowerCase()] = curr.count;
+      return acc;
+    }, { present: 0, absent: 0, late: 0, leave: 0 });
+
+    return { success: true, data: formattedStats };
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}

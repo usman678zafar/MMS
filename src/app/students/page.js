@@ -7,7 +7,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton, StatsSkeleton, FilterSkeleton } from '@/components/SkeletonLoader';
 import { Plus, Search, GraduationCap, Phone, Calendar, Trash2, User, BookOpen, Edit2 } from 'lucide-react';
-import { addStudent, updateStudent, getStudents, deleteStudent, updateStudentStatus, updateStudentProgress, updateFeeStatus, getStudentProgressHistory } from './actions';
+import { addStudent, updateStudent, getStudents, deleteStudent, updateStudentStatus, updateStudentProgress, updateFeeStatus, getStudentProgressHistory, recordFeePayment, getStudentFeeHistory, recordAttendance, getAttendanceByDate, getStudentAttendanceReport } from './actions';
 import { getAllTeachers } from '../staff/actions';
 import { format } from 'date-fns';
 import { PERMISSIONS } from '@/lib/rbac';
@@ -37,7 +37,10 @@ const defaultForm = {
 };
 
 export default function StudentsPage() {
+  const [activeTab, setActiveTab] = useState('management'); // 'management' | 'attendance'
   const [students, setStudents] = useState([]);
+  const [attendance, setAttendance] = useState({}); // { studentId: status }
+  const [attendanceDate, setAttendanceDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -55,7 +58,11 @@ export default function StudentsPage() {
   const [progressData, setProgressData] = useState({ type: 'Qaida', para: 1, surah: '', notes: '' });
   const [activeStudentId, setActiveStudentId] = useState(null);
   const [historyList, setHistoryList] = useState([]);
+  const [feeHistoryList, setFeeHistoryList] = useState([]);
   const [fetchingHistory, setFetchingHistory] = useState(false);
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [showFeeHistoryModal, setShowFeeHistoryModal] = useState(false);
+  const [feeData, setFeeData] = useState({ amount: '', month: format(new Date(), 'MMMM'), year: format(new Date(), 'yyyy'), notes: '' });
 
   const fetchTeachers = useCallback(async () => {
     const res = await getAllTeachers();
@@ -127,9 +134,63 @@ export default function StudentsPage() {
   };
 
   const handleToggleFeeStatus = async (id, currentStatus) => {
-    const nextStatus = currentStatus === 'Paid' ? 'Unpaid' : 'Paid';
-    const res = await updateFeeStatus(id, nextStatus);
-    if (res.success) fetchStudents();
+    if (currentStatus === 'Paid') {
+      // If already paid, toggle back to unpaid simply
+      const res = await updateFeeStatus(id, 'Unpaid');
+      if (res.success) fetchStudents();
+    } else {
+      // If unpaid, open modal to record payment details
+      const student = students.find(s => s.id === id);
+      setActiveStudentId(id);
+      setFeeData({
+        amount: student.monthly_fee || '',
+        month: format(new Date(), 'MMMM'),
+        year: format(new Date(), 'yyyy'),
+        notes: ''
+      });
+      setShowFeeModal(true);
+    }
+  };
+
+  const handleOpenFeeHistory = async (student) => {
+    setActiveStudentId(student.id);
+    setFetchingHistory(true);
+    setShowFeeHistoryModal(true);
+    const res = await getStudentFeeHistory(student.id);
+    if (res.success) setFeeHistoryList(res.data);
+    setFetchingHistory(false);
+  };
+
+  const handleSaveFee = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const res = await recordFeePayment(activeStudentId, feeData);
+    if (res.success) {
+      setShowFeeModal(false);
+      fetchStudents();
+    } else {
+      alert(`Error: ${res.error}`);
+    }
+    setSaving(false);
+  };
+
+  const handleAttendanceChange = (studentId, status) => {
+    setAttendance(prev => ({ ...prev, [studentId]: status }));
+  };
+
+  const handleSaveAttendance = async () => {
+    setSaving(true);
+    const records = students.map(s => ({
+      student_id: s.id,
+      status: attendance[s.id] || 'Present' // Default to Present
+    }));
+    const res = await recordAttendance(records);
+    if (res.success) {
+      alert('Attendance saved successfully!');
+    } else {
+      alert(`Error: ${res.error}`);
+    }
+    setSaving(false);
   };
 
   const handleSave = async (e) => {
@@ -205,6 +266,30 @@ export default function StudentsPage() {
           </button>
         </div>
 
+        {/* Tab Switcher */}
+        <div className="flex border-b border-slate-100 mb-2">
+          <button 
+            onClick={() => setActiveTab('management')}
+            className={`px-6 py-3 text-sm font-semibold transition-all relative ${
+              activeTab === 'management' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Management
+            {activeTab === 'management' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('attendance')}
+            className={`px-6 py-3 text-sm font-semibold transition-all relative ${
+              activeTab === 'attendance' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            Daily Attendance
+            {activeTab === 'attendance' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />}
+          </button>
+        </div>
+
+        {activeTab === 'management' ? (
+          <>
         {/* Stats Bar */}
         {loading ? (
           <StatsSkeleton />
@@ -391,6 +476,69 @@ export default function StudentsPage() {
             />
           )}
         </div>
+        </>
+        ) : (
+          /* Attendance Tab Content */
+          <div className="space-y-4">
+            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div>
+                <h3 className="font-bold text-slate-900">Mark Attendance</h3>
+                <p className="text-xs text-slate-500">Record daily presence for all students for {format(new Date(), 'PPP')}</p>
+              </div>
+              <button 
+                onClick={handleSaveAttendance}
+                disabled={saving}
+                className="btn btn-primary w-full sm:w-auto"
+              >
+                {saving ? 'Saving...' : 'Save Attendance'}
+              </button>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student Name</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Class</th>
+                    <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {students.map((student) => (
+                    <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <p className="font-bold text-slate-900 text-sm">{student.name}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-xs text-slate-500 font-semibold">{student.class}</span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-1">
+                          {['Present', 'Absent', 'Late', 'Leave'].map((status) => (
+                            <button
+                              key={status}
+                              onClick={() => handleAttendanceChange(student.id, status)}
+                              className={`px-3 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                                (attendance[student.id] || 'Present') === status
+                                  ? status === 'Present' ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm' 
+                                  : status === 'Absent' ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
+                                  : status === 'Late' ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+                                  : 'bg-blue-500 text-white border-blue-500 shadow-sm'
+                                  : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              {status.toUpperCase()}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         <Modal open={showModal} onClose={handleCloseModal} title={editingId ? "Edit Student" : "Enroll New Student"}>
           <form onSubmit={handleSave} className="space-y-3">
@@ -587,6 +735,76 @@ export default function StudentsPage() {
             )}
             <div className="flex justify-end pt-2">
               <button onClick={() => setShowHistoryModal(false)} className="btn btn-secondary text-sm">Close</button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal open={showFeeModal} onClose={() => setShowFeeModal(false)} title="Record Fee Payment">
+          <form onSubmit={handleSaveFee} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Month</label>
+                <select className="input-field text-sm" value={feeData.month}
+                  onChange={(e) => setFeeData({ ...feeData, month: e.target.value })}>
+                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Year</label>
+                <input type="number" className="input-field text-sm" value={feeData.year}
+                  onChange={(e) => setFeeData({ ...feeData, year: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Amount Paid (Rs)</label>
+              <input type="number" required className="input-field text-sm" 
+                value={feeData.amount} onChange={(e) => setFeeData({ ...feeData, amount: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Payment Notes</label>
+              <input type="text" className="input-field text-sm" placeholder="e.g. Paid via cash, receipt #123"
+                value={feeData.notes} onChange={(e) => setFeeData({ ...feeData, notes: e.target.value })} />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button type="button" onClick={() => setShowFeeModal(false)} className="btn btn-secondary text-sm">Cancel</button>
+              <button type="submit" disabled={saving} className="btn btn-emerald text-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50">
+                {saving ? 'Recording...' : 'Record Payment'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+
+        <Modal open={showFeeHistoryModal} onClose={() => setShowFeeHistoryModal(false)} title="Student Fee History">
+          <div className="space-y-4">
+            {fetchingHistory ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+              </div>
+            ) : feeHistoryList.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                No fee payment records found.
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                {feeHistoryList.map((fee, idx) => (
+                  <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{fee.month} {fee.year}</p>
+                      <p className="text-[10px] text-slate-500">{format(new Date(fee.date), 'MMM dd, yyyy')}</p>
+                      {fee.notes && <p className="text-[10px] text-slate-400 mt-1 italic">&quot;{fee.notes}&quot;</p>}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-emerald-600">Rs. {fee.amount}</p>
+                      <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded uppercase">Paid</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end pt-2">
+              <button onClick={() => setShowFeeHistoryModal(false)} className="btn btn-secondary text-sm">Close</button>
             </div>
           </div>
         </Modal>
