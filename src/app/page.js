@@ -137,20 +137,20 @@ export default function DashboardPage() {
             <p className="text-slate-500">Welcome back. Here's what's happening today.</p>
           </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {cards.map((card) => (
-            <div key={card.name} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+            <div key={card.name} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
               <div className="flex items-center justify-between mb-4">
-                <div className={`${card.color} p-3 rounded-xl text-white`}>
-                  <card.icon className="h-6 w-6" />
+                <div className={`${card.color} p-2.5 rounded-xl text-white shadow-lg shadow-current/20`}>
+                  <card.icon className="h-5 w-5" />
                 </div>
-                <div className={`flex items-center space-x-1 text-sm font-medium ${card.trendUp ? 'text-emerald-600' : 'text-rose-600'}`}>
+                <div className={`flex items-center space-x-1 text-[10px] uppercase tracking-wider font-bold ${card.trendUp ? 'text-emerald-600' : 'text-rose-600'}`}>
                   <span>{card.trend}</span>
-                  {card.trendUp ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                  {card.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 </div>
               </div>
-              <h3 className="text-slate-500 text-sm font-medium">{card.name}</h3>
-              <p className="text-2xl font-bold text-slate-900 mt-1">{card.value}</p>
+              <h3 className="text-slate-500 text-xs font-semibold uppercase tracking-tight">{card.name}</h3>
+              <p className="text-xl font-extrabold text-slate-900 mt-1 tracking-tight">{card.value}</p>
             </div>
           ))}
         </div>
