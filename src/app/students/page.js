@@ -78,6 +78,7 @@ export default function StudentsPage() {
   }
 
   const handleOpenEdit = (student) => {
+    fetchTeachers();
     setNewStudent({ ...student });
     setEditingId(student.id);
     setShowModal(true);
@@ -187,7 +188,15 @@ export default function StudentsPage() {
             <h2 className="text-2xl font-bold text-slate-900">Students</h2>
             <p className="text-slate-500">Manage madrasa student enrollment and records.</p>
           </div>
-          <button onClick={() => { setEditingId(null); setNewStudent(defaultForm); setShowModal(true); }} className="btn btn-primary">
+          <button 
+            onClick={() => { 
+              fetchTeachers();
+              setEditingId(null); 
+              setNewStudent(defaultForm); 
+              setShowModal(true); 
+            }} 
+            className="btn btn-primary"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Enroll Student
           </button>

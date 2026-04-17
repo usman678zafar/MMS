@@ -2,6 +2,7 @@
 import { connectDB } from '@/lib/mongoose'
 import mongoose from 'mongoose'
 import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } from '@/lib/pagination'
+import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 
 export async function addStudent(studentData) {
   try {
@@ -41,7 +42,7 @@ export async function addStudent(studentData) {
       updated_at: new Date()
     });
 
-    return { success: true, data: { ...data, id: sId.toString() } }
+    return { success: true, data: serializeDocument({ ...data, id: sId.toString() }) }
   } catch (error) {
     console.error('addStudent Error:', error)
     return { success: false, error: error.message }
@@ -69,7 +70,7 @@ export async function updateStudent(id, studentData) {
       { _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id },
       { $set: updateData }
     );
-    return { success: true, data: updateData }
+    return { success: true, data: serializeDocument(updateData) }
   } catch (error) {
     console.error('updateStudent Error:', error)
     return { success: false, error: error.message }
@@ -126,7 +127,7 @@ export async function getStudents(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_
       { $project: { teacher: 0 } }
     ]).toArray();
     
-    return formatPaginatedResponse(data, totalItems, page, pageSize);
+    return formatPaginatedResponse(serializeDocuments(data), totalItems, page, pageSize);
   } catch (error) {
     console.error('getStudents Error:', error)
     return { success: false, error: error.message }
@@ -237,12 +238,7 @@ export async function getStudentProgressHistory(studentId) {
     
     return { 
       success: true, 
-      data: history.map(h => ({
-        ...h,
-        id: h._id.toString(),
-        student_id: h.student_id.toString(),
-        teacher_id: h.teacher_id?.toString()
-      }))
+      data: serializeDocuments(history)
     };
   } catch (error) {
     console.error('getStudentProgressHistory Error:', error)

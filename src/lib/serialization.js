@@ -1,11 +1,33 @@
 // Utility functions for serializing MongoDB documents for client components
 
+// More comprehensive ObjectId detection
 const isObjectId = (obj) => {
-  return obj && typeof obj === 'object' && obj.toString && (
-    obj.constructor.name === 'ObjectId' || 
-    obj._bsontype === 'ObjectId' ||
-    (obj.buffer && typeof obj.buffer === 'object')
-  );
+  if (!obj) return false;
+  
+  // Check for MongoDB ObjectId patterns
+  if (obj.constructor && obj.constructor.name === 'ObjectId') {
+    return true;
+  }
+  
+  // Check for BSON ObjectId
+  if (obj._bsontype === 'ObjectId') {
+    return true;
+  }
+  
+  // Check for buffer-based ObjectId (common in MongoDB)
+  if (obj.buffer && typeof obj.buffer === 'object' && obj.buffer instanceof Uint8Array) {
+    return true;
+  }
+  
+  // Check if object has ObjectId-like properties
+  if (typeof obj === 'object' && obj.toString && typeof obj.toString === 'function') {
+    const str = obj.toString();
+    if (str && str.match(/^[0-9a-f]{24}$/i)) {
+      return true;
+    }
+  }
+  
+  return false;
 };
 
 export const serializeDocument = (doc) => {

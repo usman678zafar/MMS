@@ -2,6 +2,7 @@
 import { connectDB } from '@/lib/mongoose'
 import mongoose from 'mongoose'
 import User from '@/models/User'
+import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 
 export async function getDashboardStats() {
   try {
@@ -99,7 +100,7 @@ export async function getRecentActivity() {
       date: donation.created_at
     }))
 
-    return { success: true, activities }
+    return { success: true, activities: serializeDocuments(activities) }
   } catch (error) {
     console.error('getRecentActivity Error:', error)
     return { success: false, error: error.message }

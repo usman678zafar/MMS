@@ -2,6 +2,7 @@
 import { connectDB } from '@/lib/mongoose'
 import mongoose from 'mongoose'
 import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } from '@/lib/pagination'
+import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 
 export async function addInventoryItem(itemData) {
   try {
@@ -16,7 +17,7 @@ export async function addInventoryItem(itemData) {
     };
     
     const result = await collection.insertOne(data);
-    return { success: true, data }
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('addInventoryItem Error:', error)
     return { success: false, error: error.message }
@@ -36,10 +37,10 @@ export async function updateInventoryItem(id, itemData) {
     };
     
     const result = await collection.updateOne(
-      { _id: id },
+      { _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id },
       { $set: data }
     );
-    return { success: true, data }
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('updateInventoryItem Error:', error)
     return { success: false, error: error.message }
@@ -52,7 +53,7 @@ export async function deleteInventoryItem(id) {
     const db = mongoose.connection.getClient().db();
     const collection = db.collection('inventory');
     
-    await collection.deleteOne({ _id: id });
+    await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
@@ -91,7 +92,7 @@ export async function getInventory(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE
       .limit(limit)
       .toArray();
     
-    return formatPaginatedResponse(data, totalItems, page, pageSize);
+    return formatPaginatedResponse(serializeDocuments(data), totalItems, page, pageSize);
   } catch (error) {
     console.error('getInventory Error:', error)
     return { success: false, error: error.message }

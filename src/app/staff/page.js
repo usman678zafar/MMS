@@ -12,7 +12,12 @@ import { format } from 'date-fns';
 import { PERMISSIONS } from '@/lib/rbac';
 import { PAGINATION_DEFAULTS } from '@/lib/pagination';
 
-const ROLES = ['Imam', 'Moazzin', 'Teacher', 'Cleaner', 'Manager', 'Other'];
+const ROLES = ['Imam', 'Moazzin', 'Qari', 'Teacher', 'Cleaner', 'Manager', 'Other'];
+
+// Debug: Log ROLES to verify Qari is included
+if (typeof window !== 'undefined') {
+  console.log('Available ROLES:', ROLES);
+}
 const defaultForm = { name: '', role: 'Imam', monthly_salary: '', phone: '', joining_date: format(new Date(), 'yyyy-MM-dd') };
 
 export default function StaffPage() {
@@ -282,7 +287,7 @@ export default function StaffPage() {
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Role</label>
                 <select className="input-field text-sm" value={newStaff.role} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}>
-                  {ROLES.map(r => <option key={r}>{r}</option>)}
+                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div>
