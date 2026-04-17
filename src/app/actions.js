@@ -2,17 +2,20 @@
 import { connectDB } from '@/lib/mongoose'
 import mongoose from 'mongoose'
 import User from '@/models/User'
+import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 
 export async function getDashboardStats() {
   try {
     await connectDB();
     const db = mongoose.connection.getClient().db();
     
-    const [donations, expenses, staffCount, inventoryCount] = await Promise.all([
+    const [donations, expenses, staffCount, inventoryCount, studentCount, pendingFeesCount] = await Promise.all([
       db.collection('donations').find({}).toArray(),
       db.collection('expenses').find({}).toArray(),
       db.collection('staff').countDocuments(),
-      db.collection('inventory').countDocuments()
+      db.collection('inventory').countDocuments(),
+      db.collection('students').countDocuments(),
+      db.collection('students').countDocuments({ fee_status: 'Unpaid' })
     ])
 
     return {
@@ -21,6 +24,8 @@ export async function getDashboardStats() {
       totalExpenses: expenses?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0,
       activeStaff: staffCount || 0,
       inventoryCount: inventoryCount || 0,
+      studentCount: studentCount || 0,
+      pendingFees: pendingFeesCount || 0,
     }
   } catch (error) {
     console.error('getDashboardStats Error:', error)
@@ -95,7 +100,7 @@ export async function getRecentActivity() {
       date: donation.created_at
     }))
 
-    return { success: true, activities }
+    return { success: true, activities: serializeDocuments(activities) }
   } catch (error) {
     console.error('getRecentActivity Error:', error)
     return { success: false, error: error.message }

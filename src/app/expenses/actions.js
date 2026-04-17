@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/mongoose'
 import mongoose from 'mongoose'
 import Expense from '@/models/Expense'
 import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } from '@/lib/pagination'
+import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 
 export async function addExpense(expenseData) {
   try {
@@ -18,7 +19,7 @@ export async function addExpense(expenseData) {
     };
     
     const result = await collection.insertOne(data);
-    return { success: true, data }
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('addExpense Error:', error)
     return { success: false, error: error.message }
@@ -39,10 +40,10 @@ export async function updateExpense(id, expenseData) {
     };
     
     const result = await collection.updateOne(
-      { _id: id },
+      { _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id },
       { $set: data }
     );
-    return { success: true, data }
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('updateExpense Error:', error)
     return { success: false, error: error.message }
@@ -55,7 +56,7 @@ export async function deleteExpense(id) {
     const db = mongoose.connection.getClient().db();
     const collection = db.collection('expenses');
     
-    await collection.deleteOne({ _id: id });
+    await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
@@ -94,7 +95,7 @@ export async function getExpenses(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_
       .limit(limit)
       .toArray();
     
-    return formatPaginatedResponse(data, totalItems, page, pageSize);
+    return formatPaginatedResponse(serializeDocuments(data), totalItems, page, pageSize);
   } catch (error) {
     console.error('getExpenses Error:', error)
     return { success: false, error: error.message }

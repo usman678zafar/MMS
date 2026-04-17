@@ -1,8 +1,10 @@
 'use server'
 import { connectDB } from '@/lib/mongoose'
 import mongoose from 'mongoose'
+import { revalidatePath } from 'next/cache'
 import Staff from '@/models/Staff'
 import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } from '@/lib/pagination'
+import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 
 export async function addStaffMember(staffData) {
   try {
@@ -18,7 +20,9 @@ export async function addStaffMember(staffData) {
     };
     
     const result = await collection.insertOne(data);
-    return { success: true, data }
+    revalidatePath('/staff');
+    revalidatePath('/students');
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('addStaffMember Error:', error)
     return { success: false, error: error.message }
@@ -39,10 +43,12 @@ export async function updateStaffMember(id, staffData) {
     };
     
     const result = await collection.updateOne(
-      { _id: id },
+      { _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id },
       { $set: data }
     );
-    return { success: true, data }
+    revalidatePath('/staff');
+    revalidatePath('/students');
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('updateStaffMember Error:', error)
     return { success: false, error: error.message }
@@ -55,7 +61,9 @@ export async function deleteStaffMember(id) {
     const db = mongoose.connection.getClient().db();
     const collection = db.collection('staff');
     
-    await collection.deleteOne({ _id: id });
+    await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
+    revalidatePath('/staff');
+    revalidatePath('/students');
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
@@ -94,9 +102,31 @@ export async function getStaff(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZ
       .limit(limit)
       .toArray();
     
-    return formatPaginatedResponse(data, totalItems, page, pageSize);
+    return formatPaginatedResponse(serializeDocuments(data), totalItems, page, pageSize);
   } catch (error) {
     console.error('getStaff Error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export async function getAllTeachers() {
+  try {
+    await connectDB();
+    const db = mongoose.connection.getClient().db();
+    const collection = db.collection('staff');
+    
+    // Find staff with role matching Teacher or Qari, and who are not explicitly deactivated
+    const teachers = await collection.find({ 
+      role: { $regex: /teacher|qari/i },
+      is_active: { $ne: false } 
+    }).project({ name: 1, _id: 1 }).toArray();
+    
+    return { 
+      success: true, 
+      data: teachers.map(t => ({ id: t._id.toString(), name: t.name })) 
+    };
+  } catch (error) {
+    console.error('getAllTeachers Error:', error)
     return { success: false, error: error.message }
   }
 }

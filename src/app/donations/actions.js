@@ -4,6 +4,7 @@ import mongoose from 'mongoose'
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/r2";
 import { getPaginationParams, formatPaginatedResponse, PAGINATION_DEFAULTS } from '@/lib/pagination';
+import { serializeDocument, serializeDocuments } from '@/lib/serialization'
 
 export async function uploadReceipt(formData) {
   try {
@@ -47,7 +48,7 @@ export async function addDonation(donationData) {
     };
     
     const result = await collection.insertOne(data);
-    return { success: true, data }
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('addDonation Error:', error)
     return { success: false, error: error.message }
@@ -68,10 +69,10 @@ export async function updateDonation(id, donationData) {
     };
     
     const result = await collection.updateOne(
-      { _id: id },
+      { _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id },
       { $set: data }
     );
-    return { success: true, data }
+    return { success: true, data: serializeDocument(data) }
   } catch (error) {
     console.error('updateDonation Error:', error)
     return { success: false, error: error.message }
@@ -84,7 +85,7 @@ export async function deleteDonation(id) {
     const db = mongoose.connection.getClient().db();
     const collection = db.collection('donations');
     
-    await collection.deleteOne({ _id: id });
+    await collection.deleteOne({ _id: typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id });
     return { success: true }
   } catch (error) {
     return { success: false, error: error.message }
@@ -134,11 +135,7 @@ export async function getDonations(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE
       { $limit: limit }
     ]).toArray();
     
-    // Manually serialize aggregation result to handle nested ObjectIds
-    const { serializeDocuments } = await import('@/lib/serialization');
-    const serializedData = serializeDocuments(data);
-    
-    return formatPaginatedResponse(serializedData, totalItems, page, pageSize);
+    return formatPaginatedResponse(serializeDocuments(data), totalItems, page, pageSize);
   } catch (error) {
     console.error('getDonations Error:', error)
     return { success: false, error: error.message }
@@ -160,7 +157,7 @@ export async function getDonors() {
       name: item.name
     }));
     
-    return { success: true, data: serializedData }
+    return { success: true, data: serializeDocuments(data) }
   } catch (error) {
     console.error('getDonors Error:', error)
     return { success: false, error: error.message }
