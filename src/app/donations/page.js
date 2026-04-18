@@ -6,9 +6,9 @@ import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton, StatsSkeleton, FilterSkeleton } from '@/components/SkeletonLoader';
-import { addDonation, updateDonation, deleteDonation, getDonations, getDonors, uploadReceipt } from './actions';
 import { addDonor, updateDonor, getAllDonors, deleteDonor } from './donor-actions';
-import { UserRound, HandHeart, Plus, Search, Filter, Edit2, Trash2, Calendar, DollarSign, Package, AlertTriangle, UserCheck, UserX } from 'lucide-react';
+import { UserRound, HandHeart, Plus, Search, Filter, Edit2, Trash2, Calendar, DollarSign, Package, AlertTriangle, UserCheck, UserX, History } from 'lucide-react';
+import { getDonations, getDonors, uploadReceipt, getDonorDonations } from './actions';
 import { PERMISSIONS } from '@/lib/rbac';
 import { PAGINATION_DEFAULTS } from '@/lib/pagination';
 import { format } from 'date-fns';
@@ -38,6 +38,11 @@ export default function DonationsPage() {
   const [filterStatus, setFilterStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedDonorHistory, setSelectedDonorHistory] = useState(null);
+  const [donorHistory, setDonorHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchDonations = useCallback(async () => {
     setLoading(true);
@@ -180,6 +185,19 @@ export default function DonationsPage() {
     if (res.success) fetchDonations();
     else alert(`Error: ${res.error}`);
     setDeleteId(null);
+  };
+  
+  const handleViewHistory = async (donor) => {
+    setSelectedDonorHistory(donor);
+    setShowHistoryModal(true);
+    setHistoryLoading(true);
+    const res = await getDonorDonations(donor.id);
+    if (res.success) {
+      setDonorHistory(res.data);
+    } else {
+      alert(`Error fetching history: ${res.error}`);
+    }
+    setHistoryLoading(false);
   };
 
   const handleSearch = (value) => {
@@ -458,8 +476,9 @@ export default function DonationsPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => handleOpenDonorEdit(donor)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"><Edit2 className="h-4 w-4" /></button>
-                            <button onClick={() => setDeleteDonorId(donor.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"><Trash2 className="h-4 w-4" /></button>
+                            <button onClick={() => handleViewHistory(donor)} className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all" title="View History"><History className="h-4 w-4" /></button>
+                            <button onClick={() => handleOpenDonorEdit(donor)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Edit Donor"><Edit2 className="h-4 w-4" /></button>
+                            <button onClick={() => setDeleteDonorId(donor.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="Delete Donor"><Trash2 className="h-4 w-4" /></button>
                           </div>
                         </td>
                       </tr>
@@ -561,13 +580,78 @@ export default function DonationsPage() {
           message="Are you sure you want to remove this donation record?"
         />
 
-        <ConfirmModal
-          open={!!deleteDonorId}
-          onClose={() => setDeleteDonorId(null)}
-          onConfirm={confirmDeleteDonor}
-          title="Delete Donor"
-          message="Are you sure you want to remove this donor? This will not delete their historical donations."
-        />
+         <ConfirmModal
+           open={!!deleteDonorId}
+           onClose={() => setDeleteDonorId(null)}
+           onConfirm={confirmDeleteDonor}
+           title="Delete Donor"
+           message="Are you sure you want to remove this donor? This will not delete their historical donations."
+         />
+
+         {/* Donor History Modal */}
+         <Modal 
+           open={showHistoryModal} 
+           onClose={() => { setShowHistoryModal(false); setDonorHistory([]); setSelectedDonorHistory(null); }} 
+           title={`Donation History: ${selectedDonorHistory?.name || ''}`}
+         >
+           <div className="space-y-4">
+             {historyLoading ? (
+               <div className="py-12 space-y-4">
+                 {[1,2,3].map(i => (
+                   <div key={i} className="h-16 bg-slate-50 rounded-xl animate-pulse" />
+                 ))}
+               </div>
+             ) : donorHistory.length === 0 ? (
+               <div className="py-12 text-center">
+                 <History className="h-12 w-12 text-slate-200 mx-auto mb-3" />
+                 <p className="text-slate-400 font-medium">No donation history found for this donor.</p>
+               </div>
+             ) : (
+               <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                 <div className="bg-primary-50 p-4 rounded-2xl flex justify-between items-center mb-6">
+                   <div>
+                     <p className="text-xs text-primary-600 font-bold uppercase tracking-wider">Total Contributed</p>
+                     <p className="text-2xl font-black text-primary-900">
+                       Rs {donorHistory.reduce((sum, h) => sum + Number(h.amount), 0).toLocaleString()}
+                     </p>
+                   </div>
+                   <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                     <HandHeart className="h-6 w-6 text-primary-600" />
+                   </div>
+                 </div>
+
+                 {donorHistory.map((h) => (
+                   <div key={h.id} className="p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary-200 transition-all group">
+                     <div className="flex justify-between items-start mb-2">
+                       <div>
+                         <p className="text-sm font-bold text-slate-900">Rs {Number(h.amount).toLocaleString()}</p>
+                         <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">{h.type}</p>
+                       </div>
+                       <div className="text-right">
+                         <p className="text-xs font-bold text-slate-600">
+                           {h.date ? format(new Date(h.date), 'MMM dd, yyyy') : 'N/A'}
+                         </p>
+                       </div>
+                     </div>
+                     {h.notes && (
+                       <p className="text-xs text-slate-500 bg-slate-50 p-2 rounded-lg mt-2 italic line-clamp-2">
+                         &ldquo;{h.notes}&rdquo;
+                       </p>
+                     )}
+                   </div>
+                 ))}
+               </div>
+             )}
+             <div className="pt-4 border-t border-slate-100 flex justify-end">
+               <button 
+                 onClick={() => { setShowHistoryModal(false); setDonorHistory([]); setSelectedDonorHistory(null); }} 
+                 className="btn btn-secondary text-sm"
+               >
+                 Close
+               </button>
+             </div>
+           </div>
+         </Modal>
         </div>
       </ProtectedRoute>
     </NavigationLayout>

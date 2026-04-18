@@ -150,16 +150,32 @@ export async function getDonors() {
     
     const data = await collection.find({}).project({ _id: 1, name: 1 }).toArray();
     
-    // Use the serialization utility
-    const { serializeDocuments } = await import('@/lib/serialization');
-    const serializedData = serializeDocuments(data).map(item => ({
-      id: item.id,
-      name: item.name
-    }));
-    
     return { success: true, data: serializeDocuments(data) }
   } catch (error) {
     console.error('getDonors Error:', error)
     return { success: false, error: error.message }
+  }
+}
+
+export async function getDonorDonations(donorId) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const collection = db.collection('donations');
+    
+    // Search by both string and ObjectId to be robust
+    const query = {
+      $or: [
+        { donor_id: donorId },
+        { donor_id: typeof donorId === 'string' && mongoose.Types.ObjectId.isValid(donorId) ? new mongoose.Types.ObjectId(donorId) : donorId }
+      ]
+    };
+    
+    const data = await collection.find(query).sort({ date: -1 }).toArray();
+    
+    return { success: true, data: serializeDocuments(data) };
+  } catch (error) {
+    console.error('getDonorDonations Error:', error);
+    return { success: false, error: error.message };
   }
 }
