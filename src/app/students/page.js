@@ -16,13 +16,15 @@ import { PAGINATION_DEFAULTS } from '@/lib/pagination';
 const PROGRESS_TYPES = ['Qaida', 'Quran', 'Hifz'];
 const PARA_NUMBERS = Array.from({ length: 30 }, (_, i) => i + 1);
 
-const CLASSES = ['Hifz', 'Nazra', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Dars-e-Nizami', 'Other'];
+const RELIGIOUS_CLASSES = ['Hifz', 'Nazra', 'Qaida', 'Dars-e-Nizami', 'Tajweed', 'None'];
+const CONTEMPORARY_CLASSES = ['Nursery', 'KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Inter', 'Bachelor', 'None'];
 const GENDERS = ['Male', 'Female'];
 
 const defaultForm = {
   name: '',
   father_name: '',
-  class: 'Hifz',
+  religious_class: 'Hifz',
+  contemporary_class: 'None',
   admission_date: format(new Date(), 'yyyy-MM-dd'),
   phone: '',
   address: '',
@@ -337,8 +339,9 @@ export default function StudentsPage() {
               onChange={(e) => setFilterClass(e.target.value)}
               className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all"
             >
-              <option value="All">All Classes</option>
-              {CLASSES.map(c => <option key={c}>{c}</option>)}
+              <option value="All">All Education</option>
+              {RELIGIOUS_CLASSES.filter(c => c !== 'None').map(c => <option key={c} value={c}>{c} (Religious)</option>)}
+              {CONTEMPORARY_CLASSES.filter(c => c !== 'None').map(c => <option key={c} value={c}>{c} (Contemporary)</option>)}
             </select>
           </div>
         )}
@@ -350,6 +353,7 @@ export default function StudentsPage() {
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Education Track</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Teacher / Qari</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Progress</th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
@@ -389,12 +393,19 @@ export default function StudentsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-slate-700">
-                            {student.teacher_name || <span className="text-slate-300 italic">Unassigned</span>}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-semibold">{student.class}</span>
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                            <span className="text-xs font-bold text-slate-700">{student.religious_class || student.class || 'N/A'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                            <span className="text-[10px] font-semibold text-slate-400">{student.contemporary_class || 'No Schooling'}</span>
+                          </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                        {student.teacher_name || <span className="text-slate-300 italic text-xs">Unassigned</span>}
                       </td>
                       <td className="px-6 py-4">
                         <button 
@@ -555,21 +566,20 @@ export default function StudentsPage() {
                   value={newStudent.father_name} onChange={(e) => setNewStudent({ ...newStudent, father_name: e.target.value })} />
               </div>
             </div>
-
-            {/* Class & Gender */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Education Track */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-blue-50/50 rounded-2xl">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Class / Level</label>
-                <select className="input-field text-sm" value={newStudent.class}
-                  onChange={(e) => setNewStudent({ ...newStudent, class: e.target.value })}>
-                  {CLASSES.map(c => <option key={c}>{c}</option>)}
+                <label className="block text-xs font-bold text-emerald-700 mb-1 leading-none">Religious Education</label>
+                <select className="input-field text-sm border-emerald-100 focus:ring-emerald-500" value={newStudent.religious_class}
+                  onChange={(e) => setNewStudent({ ...newStudent, religious_class: e.target.value })}>
+                  {RELIGIOUS_CLASSES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Gender</label>
-                <select className="input-field text-sm" value={newStudent.gender}
-                  onChange={(e) => setNewStudent({ ...newStudent, gender: e.target.value })}>
-                  {GENDERS.map(g => <option key={g}>{g}</option>)}
+                <label className="block text-xs font-bold text-blue-700 mb-1 leading-none">Contemporary Education</label>
+                <select className="input-field text-sm border-blue-100 focus:ring-blue-500" value={newStudent.contemporary_class}
+                  onChange={(e) => setNewStudent({ ...newStudent, contemporary_class: e.target.value })}>
+                  {CONTEMPORARY_CLASSES.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -588,7 +598,8 @@ export default function StudentsPage() {
               </div>
             </div>
 
-            {/* Phone & Address */}
+
+            {/* Phone & Teacher */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Contact Phone</label>
@@ -602,6 +613,22 @@ export default function StudentsPage() {
                   <option value="">Unassigned</option>
                   {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
+              </div>
+            </div>
+
+            {/* Gender & Address */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Gender</label>
+                <select className="input-field text-sm" value={newStudent.gender}
+                  onChange={(e) => setNewStudent({ ...newStudent, gender: e.target.value })}>
+                  {GENDERS.map(g => <option key={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Address</label>
+                <input type="text" className="input-field text-sm" placeholder="Village, City"
+                  value={newStudent.address} onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })} />
               </div>
             </div>
 
@@ -634,12 +661,6 @@ export default function StudentsPage() {
                 </div>
               </div>
             )}
-
-            <div className="col-span-2">
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Address</label>
-                <input type="text" className="input-field text-sm" placeholder="Village, City"
-                  value={newStudent.address} onChange={(e) => setNewStudent({ ...newStudent, address: e.target.value })} />
-            </div>
 
             <div className="flex gap-2 justify-end pt-2 text-sm">
               <button type="button" onClick={handleCloseModal} className="btn btn-secondary text-sm">Cancel</button>
