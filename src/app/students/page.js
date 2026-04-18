@@ -43,6 +43,7 @@ import { getAllTeachers } from "../staff/actions";
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
+import { useLanguage } from "@/context/LanguageContext";
 
 const PROGRESS_TYPES = ["Qaida", "Quran", "Hifz"];
 const PARA_NUMBERS = Array.from({ length: 30 }, (_, i) => i + 1);
@@ -111,6 +112,7 @@ const defaultForm = {
 };
 
 export default function StudentsPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("management"); // 'management' | 'attendance'
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({}); // { studentId: status }
@@ -392,9 +394,9 @@ export default function StudentsPage() {
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Students</h2>
+              <h2 className="text-2xl font-bold text-slate-900">{t("students", "title")}</h2>
               <p className="text-slate-500">
-                Manage madrasa student enrollment and records.
+                {t("students", "subtitle")}
               </p>
             </div>
             <button
@@ -407,7 +409,7 @@ export default function StudentsPage() {
               className="btn btn-primary"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Enroll Student
+              {t("students", "enrollBtn")}
             </button>
           </div>
 
@@ -421,7 +423,7 @@ export default function StudentsPage() {
                   : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              Management
+              {t("students", "tabManagement")}
               {activeTab === "management" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
               )}
@@ -434,7 +436,7 @@ export default function StudentsPage() {
                   : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              Fee Tracking
+              {t("students", "tabFees")}
               {activeTab === "fees" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
               )}
@@ -447,7 +449,7 @@ export default function StudentsPage() {
                   : "text-slate-400 hover:text-slate-600"
               }`}
             >
-              Daily Attendance
+              {t("students", "tabAttendance")}
               {activeTab === "attendance" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
               )}
@@ -497,7 +499,7 @@ export default function StudentsPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
                       type="text"
-                      placeholder="Search by name or father's name..."
+                      placeholder={t("students", "searchPlaceholder")}
                       value={search}
                       onChange={(e) => handleSearch(e.target.value)}
                       className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
@@ -508,16 +510,16 @@ export default function StudentsPage() {
                     onChange={(e) => handleStatusFilter(e.target.value)}
                     className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
                   >
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="">{t("students", "allStatus")}</option>
+                    <option value="active">{t("students", "active")}</option>
+                    <option value="inactive">{t("students", "inactive")}</option>
                   </select>
                   <select
                     value={filterClass}
                     onChange={(e) => setFilterClass(e.target.value)}
                     className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
                   >
-                    <option value="All">All Education</option>
+                    <option value="All">{t("students", "allEducation")}</option>
                     {RELIGIOUS_CLASSES.filter((c) => c !== "None").map((c) => (
                       <option key={c} value={c}>
                         {c} (Religious)
@@ -541,25 +543,25 @@ export default function StudentsPage() {
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-100">
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Student
+                          {t("students", "colStudent")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Father Name
+                          {t("students", "colFather")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-44">
-                          Education Track
+                          {t("students", "colEducation")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
-                          Teacher / Qari
+                          {t("students", "colTeacher")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
-                          Current Progress
+                          {t("students", "colProgress")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">
-                          Status
+                          {t("students", "colStatus")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right w-32">
-                          Actions
+                          {t("students", "colActions")}
                         </th>
                       </tr>
                     </thead>

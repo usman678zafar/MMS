@@ -13,8 +13,10 @@ import {
   GraduationCap,
   Menu,
   X,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { PERMISSIONS } from "@/lib/rbac";
 
 const getNavigationItems = (hasPermission) => {
@@ -86,6 +88,7 @@ const getNavigationItems = (hasPermission) => {
 
 export default function Header() {
   const { signOut, profile, hasPermission } = useAuth();
+  const { language, toggleLanguage, t } = useLanguage();
   const pathname = usePathname();
   const navigation = getNavigationItems(hasPermission);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -127,7 +130,7 @@ export default function Header() {
                     }`}
                   >
                     <item.icon className="h-4 w-4 mr-2" />
-                    {item.name}
+                    {t("sidebar", item.name.toLowerCase())}
                   </Link>
                 );
               })}
@@ -154,9 +157,18 @@ export default function Header() {
               </div>
 
               <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-1 p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-300 font-bold text-xs"
+                title="Toggle Language"
+              >
+                <Globe className="h-4 w-4" />
+                {language === "en" ? "اردو" : "EN"}
+              </button>
+
+              <button
                 onClick={() => signOut()}
                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-300"
-                title="Sign Out"
+                title={t("header", "signOut")}
               >
                 <LogOut className="h-5 w-5" />
               </button>
@@ -197,7 +209,7 @@ export default function Header() {
                   }`}
                 >
                   <item.icon className="h-5 w-5 mr-3" />
-                  {item.name}
+                  {t("sidebar", item.name.toLowerCase())}
                 </Link>
               );
             })}
@@ -227,7 +239,7 @@ export default function Header() {
                 className="flex w-full items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-600"
               >
                 <LogOut className="h-5 w-5 mr-3" />
-                Sign Out
+                {t("header", "signOut")}
               </button>
             </div>
           </div>
