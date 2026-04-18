@@ -38,8 +38,12 @@ import {
   getAttendanceByDate,
   getStudentAttendanceReport,
   getMonthlyFeeStatus,
+  recordBulkFeePayments,
+  deleteFeePayment,
+  deleteBulkFeePayments,
 } from "./actions";
 import { getAllTeachers } from "../staff/actions";
+
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
@@ -160,6 +164,9 @@ export default function StudentsPage() {
   const [monthlyPayments, setMonthlyPayments] = useState({}); // { studentId: true/false }
   const [loadingFeeStatus, setLoadingFeeStatus] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [selectedFeeStudents, setSelectedFeeStudents] = useState(new Set());
+  const [selectedAttendanceStudents, setSelectedAttendanceStudents] = useState(new Set());
+  const [isBulkMarking, setIsBulkMarking] = useState(false);
 
   const fetchTeachers = useCallback(async () => {
     const res = await getAllTeachers();
@@ -189,7 +196,9 @@ export default function StudentsPage() {
     const res = await getMonthlyFeeStatus(feeMonth, feeYear);
     if (res.success) setMonthlyPayments(res.data);
     setLoadingFeeStatus(false);
+    setSelectedFeeStudents(new Set());
   }, [feeMonth, feeYear]);
+
 
   const fetchAttendanceForDate = useCallback(async () => {
     setLoading(true);
@@ -199,6 +208,7 @@ export default function StudentsPage() {
       res.data.forEach((rec) => (attMap[rec.student_id] = rec.status));
       setAttendance(attMap);
     }
+    setSelectedAttendanceStudents(new Set());
     setLoading(false);
   }, [attendanceDate]);
 
@@ -273,7 +283,7 @@ export default function StudentsPage() {
 
     let res;
     if (newStatus === "Unpaid") {
-      res = await updateFeeStatus(id, "Unpaid");
+      res = await deleteFeePayment(id, feeMonth, feeYear);
     } else {
       // Record payment for the SELECTED filter month/year
       res = await recordFeePayment(id, {
@@ -298,6 +308,44 @@ export default function StudentsPage() {
     }
   };
 
+  const handleBulkMarkPaid = async () => {
+    setIsBulkMarking(true);
+    const paymentsData = Array.from(selectedFeeStudents).map((id) => {
+      const student = students.find((s) => s.id === id);
+      return {
+        studentId: id,
+        amount: student.monthly_fee || 0,
+        month: feeMonth,
+        year: feeYear,
+        notes: `Bulk Mark Paid (${feeMonth} ${feeYear})`,
+      };
+    });
+
+    const res = await recordBulkFeePayments(paymentsData);
+    if (res.success) {
+      await fetchMonthlyFeeStatus();
+      await fetchStudents(true);
+      setSelectedFeeStudents(new Set());
+    } else {
+      alert(`Error: ${res.error}`);
+    }
+    setIsBulkMarking(false);
+  };
+
+  const handleBulkMarkUnpaid = async () => {
+    setIsBulkMarking(true);
+    const ids = Array.from(selectedFeeStudents);
+    const res = await deleteBulkFeePayments(ids, feeMonth, feeYear);
+    if (res.success) {
+      await fetchMonthlyFeeStatus();
+      await fetchStudents(true);
+      setSelectedFeeStudents(new Set());
+    } else {
+      alert(`Error: ${res.error}`);
+    }
+    setIsBulkMarking(false);
+  };
+
   const handleOpenFeeHistory = async (student) => {
     setActiveStudentId(student.id);
     setFetchingHistory(true);
@@ -305,6 +353,16 @@ export default function StudentsPage() {
     const res = await getStudentFeeHistory(student.id);
     if (res.success) setFeeHistoryList(res.data);
     setFetchingHistory(false);
+  };
+
+  const handleBulkAttendanceChange = (status) => {
+    setAttendance((prev) => {
+      const next = { ...prev };
+      selectedAttendanceStudents.forEach((id) => {
+        next[id] = status;
+      });
+      return next;
+    });
   };
 
   const handleAttendanceChange = (studentId, status) => {
@@ -769,21 +827,52 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                    Paid:{" "}
-                    {
-                      Object.values(monthlyPayments).filter((v) => v === true)
-                        .length
-                    }
-                  </div>
-                  <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-lg">
-                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
-                    Unpaid:{" "}
-                    {students.length -
-                      Object.values(monthlyPayments).filter((v) => v === true)
-                        .length}
+                <div className="flex items-center gap-4">
+                  {selectedFeeStudents.size > 0 && (
+                    <div className="flex items-center bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden text-xs">
+                      <button
+                        onClick={handleBulkMarkPaid}
+                        disabled={isBulkMarking}
+                        className="flex items-center gap-1 hover:bg-emerald-50 text-emerald-600 px-3 py-1.5 transition-colors font-semibold"
+                      >
+                        {isBulkMarking ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-3 w-3" />
+                        )}
+                        Mark Paid
+                      </button>
+                      <div className="w-px h-5 bg-slate-200" />
+                      <button
+                        onClick={handleBulkMarkUnpaid}
+                        disabled={isBulkMarking}
+                        className="flex items-center gap-1 hover:bg-rose-50 text-rose-600 px-3 py-1.5 transition-colors font-semibold"
+                      >
+                        {isBulkMarking ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )}
+                        Mark Unpaid
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                      Paid:{" "}
+                      {
+                        Object.values(monthlyPayments).filter((v) => v === true)
+                          .length
+                      }
+                    </div>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-lg">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
+                      Unpaid:{" "}
+                      {students.length -
+                        Object.values(monthlyPayments).filter((v) => v === true)
+                          .length}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -793,6 +882,23 @@ export default function StudentsPage() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-100">
+                        <th className="px-6 py-4 w-12">
+                          <input
+                            type="checkbox"
+                            checked={
+                              students.length > 0 &&
+                              selectedFeeStudents.size === students.length
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedFeeStudents(new Set(students.map((s) => s.id)));
+                              } else {
+                                setSelectedFeeStudents(new Set());
+                              }
+                            }}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                          />
+                        </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                           Student Name
                         </th>
@@ -817,8 +923,27 @@ export default function StudentsPage() {
                       {students.map((student) => (
                         <tr
                           key={student.id}
-                          className="hover:bg-slate-50/50 transition-colors"
+                          className={`transition-colors ${
+                            monthlyPayments[student.id]
+                              ? "bg-emerald-50/30"
+                              : selectedFeeStudents.has(student.id)
+                                ? "bg-slate-50"
+                                : "hover:bg-slate-50/50"
+                          }`}
                         >
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedFeeStudents.has(student.id)}
+                              onChange={(e) => {
+                                const next = new Set(selectedFeeStudents);
+                                if (e.target.checked) next.add(student.id);
+                                else next.delete(student.id);
+                                setSelectedFeeStudents(next);
+                              }}
+                              className="rounded w-4 h-4 cursor-pointer border-slate-300 text-emerald-600 focus:ring-emerald-500 transition-opacity"
+                            />
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
@@ -888,7 +1013,7 @@ export default function StudentsPage() {
                               ) : monthlyPayments[student.id] ? (
                                 "PAID"
                               ) : (
-                                "MARK PAID"
+                                "UNPAID"
                               )}
                             </button>
                           </td>
@@ -919,6 +1044,27 @@ export default function StudentsPage() {
                     onChange={(e) => setAttendanceDate(e.target.value)}
                     className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none w-full sm:w-auto"
                   />
+                  {selectedAttendanceStudents.size > 0 && (
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg ml-0 sm:ml-4">
+                      {["Present", "Absent", "Late", "Leave"].map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => handleBulkAttendanceChange(status)}
+                          className={`text-xs px-3 py-1.5 rounded-md font-semibold transition-colors ${
+                            status === "Present"
+                              ? "hover:bg-emerald-100 text-emerald-700"
+                              : status === "Absent"
+                                ? "hover:bg-rose-100 text-rose-700"
+                                : status === "Late"
+                                  ? "hover:bg-amber-100 text-amber-700"
+                                  : "hover:bg-blue-100 text-blue-700"
+                          } bg-white shadow-sm border border-slate-200`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={handleSaveAttendance}
@@ -933,6 +1079,25 @@ export default function StudentsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
+                      <th className="px-6 py-4 w-12">
+                        <input
+                          type="checkbox"
+                          checked={
+                            students.length > 0 &&
+                            selectedAttendanceStudents.size === students.length
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedAttendanceStudents(
+                                new Set(students.map((s) => s.id))
+                              );
+                            } else {
+                              setSelectedAttendanceStudents(new Set());
+                            }
+                          }}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                        />
+                      </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Student Name
                       </th>
@@ -951,8 +1116,25 @@ export default function StudentsPage() {
                     {students.map((student) => (
                       <tr
                         key={student.id}
-                        className="hover:bg-slate-50/50 transition-colors group"
+                        className={`transition-colors group ${
+                          selectedAttendanceStudents.has(student.id)
+                            ? "bg-blue-50/30"
+                            : "hover:bg-slate-50/50"
+                        }`}
                       >
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedAttendanceStudents.has(student.id)}
+                            onChange={(e) => {
+                              const next = new Set(selectedAttendanceStudents);
+                              if (e.target.checked) next.add(student.id);
+                              else next.delete(student.id);
+                              setSelectedAttendanceStudents(next);
+                            }}
+                            className="rounded w-4 h-4 cursor-pointer border-slate-300 text-blue-600 focus:ring-blue-500 transition-opacity"
+                          />
+                        </td>
                         <td className="px-6 py-4">
                           <p className="font-bold text-slate-900 text-sm">
                             {student.name}

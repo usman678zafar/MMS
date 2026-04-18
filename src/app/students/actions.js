@@ -334,6 +334,75 @@ export async function recordFeePayment(studentId, feeData) {
   }
 }
 
+export async function deleteFeePayment(studentId, month, year) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const students = db.collection("students");
+    const fees = db.collection("studentfees");
+
+    const sId =
+      typeof studentId === "string"
+        ? new mongoose.Types.ObjectId(studentId)
+        : studentId;
+
+    await fees.deleteMany({
+      student_id: sId,
+      month: month,
+      year: parseInt(year),
+    });
+
+    await students.updateOne(
+      { _id: sId },
+      {
+        $set: {
+          fee_status: "Unpaid",
+          updated_at: new Date(),
+        },
+      },
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("deleteFeePayment Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteBulkFeePayments(studentIds, month, year) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const students = db.collection("students");
+    const fees = db.collection("studentfees");
+
+    const objectIds = studentIds.map((id) =>
+      typeof id === "string" ? new mongoose.Types.ObjectId(id) : id
+    );
+
+    await fees.deleteMany({
+      student_id: { $in: objectIds },
+      month: month,
+      year: parseInt(year),
+    });
+
+    await students.updateMany(
+      { _id: { $in: objectIds } },
+      {
+        $set: {
+          fee_status: "Unpaid",
+          updated_at: new Date(),
+        },
+      }
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("deleteBulkFeePayments Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getStudentFeeHistory(studentId) {
   try {
     await connectDB();
@@ -474,6 +543,48 @@ export async function getMonthlyFeeStatus(month, year) {
     return { success: true, data: statusMap };
   } catch (error) {
     console.error("getMonthlyFeeStatus Error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function recordBulkFeePayments(paymentsData) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const students = db.collection("students");
+    const fees = db.collection("studentfees");
+
+    const feeRecords = paymentsData.map((data) => ({
+      student_id:
+        typeof data.studentId === "string"
+          ? new mongoose.Types.ObjectId(data.studentId)
+          : data.studentId,
+      amount: parseFloat(data.amount || 0),
+      month: data.month,
+      year: parseInt(data.year),
+      date: new Date(),
+      notes: data.notes || "",
+      created_at: new Date(),
+    }));
+
+    if (feeRecords.length > 0) {
+      await fees.insertMany(feeRecords);
+
+      const studentIds = feeRecords.map((r) => r.student_id);
+      await students.updateMany(
+        { _id: { $in: studentIds } },
+        {
+          $set: {
+            fee_status: "Paid",
+            last_fee_paid: new Date(),
+            updated_at: new Date(),
+          },
+        },
+      );
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("recordBulkFeePayments Error:", error);
     return { success: false, error: error.message };
   }
 }
