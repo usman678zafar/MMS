@@ -44,8 +44,9 @@ export async function getDashboardStats() {
 
 export async function getFinancialData() {
   try {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const now = new Date();
+    // Start from the beginning of the month 5 months ago
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
     await connectDB();
     const db = mongoose.connection.db;
@@ -61,37 +62,37 @@ export async function getFinancialData() {
         .toArray(),
     ]);
 
-    // Group by month
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-    const currentMonth = new Date().getMonth();
+    const ALL_MONTHS = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+
     const data = [];
-
     for (let i = 5; i >= 0; i--) {
-      const monthIndex = (currentMonth - i + 12) % 12;
-      const monthStart = new Date();
-      monthStart.setMonth(monthIndex);
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
+      // Calculate correct month and year
+      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const targetYear = targetDate.getFullYear();
+      const targetMonth = targetDate.getMonth();
 
-      const monthEnd = new Date(monthStart);
-      monthEnd.setMonth(monthEnd.getMonth() + 1);
-      monthEnd.setDate(0);
-      monthEnd.setHours(23, 59, 59, 999);
+      const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0);
+      const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
 
       const monthDonations = donations
-        .filter(
-          (d) => new Date(d.date) >= monthStart && new Date(d.date) <= monthEnd,
-        )
+        .filter((d) => {
+          const d2 = new Date(d.date);
+          return d2 >= monthStart && d2 <= monthEnd;
+        })
         .reduce((sum, d) => sum + Number(d.amount), 0);
 
       const monthExpenses = expenses
-        .filter(
-          (e) => new Date(e.date) >= monthStart && new Date(e.date) <= monthEnd,
-        )
+        .filter((e) => {
+          const e2 = new Date(e.date);
+          return e2 >= monthStart && e2 <= monthEnd;
+        })
         .reduce((sum, e) => sum + Number(e.amount), 0);
 
       data.push({
-        name: monthNames[monthIndex],
+        name: ALL_MONTHS[targetMonth],
         donations: monthDonations,
         expenses: monthExpenses,
       });

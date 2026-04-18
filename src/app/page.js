@@ -14,8 +14,6 @@ import {
 import NavigationLayout from "@/components/NavigationLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -23,6 +21,7 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
+  Legend,
 } from "recharts";
 import { PERMISSIONS } from "@/lib/rbac";
 
@@ -190,25 +189,24 @@ export default function DashboardPage() {
               <div className="h-72">
                 {hasMounted && (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={financialData}>
+                    <AreaChart
+                      data={financialData}
+                      margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                    >
                       <defs>
                         <linearGradient
                           id="colorDonations"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
+                          x1="0" y1="0" x2="0" y2="1"
                         >
-                          <stop
-                            offset="5%"
-                            stopColor="#10b981"
-                            stopOpacity={0.1}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="#10b981"
-                            stopOpacity={0}
-                          />
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient
+                          id="colorExpenses"
+                          x1="0" y1="0" x2="0" y2="1"
+                        >
+                          <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -226,15 +224,30 @@ export default function DashboardPage() {
                       <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        tickFormatter={(v) =>
+                          v === 0 ? "0" : `${(v / 1000).toFixed(0)}k`
+                        }
+                        width={40}
                       />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: "#fff",
                           borderRadius: "12px",
-                          border: "none",
-                          boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                          border: "1px solid #f1f5f9",
+                          boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.08)",
+                          fontSize: "12px",
                         }}
+                        formatter={(value, name) => [
+                          `Rs ${Number(value).toLocaleString()}`,
+                          name.charAt(0).toUpperCase() + name.slice(1),
+                        ]}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }}
+                        formatter={(value) =>
+                          value.charAt(0).toUpperCase() + value.slice(1)
+                        }
                       />
                       <Area
                         type="monotone"
@@ -242,7 +255,19 @@ export default function DashboardPage() {
                         stroke="#10b981"
                         fillOpacity={1}
                         fill="url(#colorDonations)"
-                        strokeWidth={3}
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#10b981" }}
+                        activeDot={{ r: 5 }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="expenses"
+                        stroke="#f43f5e"
+                        fillOpacity={1}
+                        fill="url(#colorExpenses)"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#f43f5e" }}
+                        activeDot={{ r: 5 }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
