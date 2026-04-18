@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import Sidebar from './Sidebar';
+import Header from './Header';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -26,19 +26,14 @@ export default function NavigationLayout({ children }) {
   if (!user) return null;
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
-      <div className="md:relative md:translate-x-0">
-        <Sidebar />
-      </div>
-
-      <div className="flex flex-col flex-1 min-w-0">
-        <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 w-full max-w-full">
-          <div className="max-w-7xl mx-auto w-full">
-            {children}
-          </div>
-        </main>
-      </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <Header />
+      
+      <main className="flex-1 px-4 sm:px-8 py-6 sm:py-8 w-full max-w-full">
+        <div className="max-w-7xl mx-auto w-full">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
