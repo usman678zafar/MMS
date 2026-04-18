@@ -111,15 +111,30 @@ export async function getRecentActivity() {
     const donationsCollection = db.collection("donations");
 
     const recentDonations = await donationsCollection
-      .find({})
-      .sort({ created_at: -1 })
-      .limit(4)
+      .aggregate([
+        { $sort: { created_at: -1 } },
+        { $limit: 4 },
+        {
+          $lookup: {
+            from: "donors",
+            localField: "donor_id",
+            foreignField: "_id",
+            as: "donorData",
+          },
+        },
+        {
+          $unwind: {
+            path: "$donorData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+      ])
       .toArray();
 
     const activities = recentDonations.map((donation) => ({
       type: "donation",
       amount: Number(donation.amount),
-      donor: donation.donors?.name || "Anonymous",
+      donor: donation.donorData?.name || "Anonymous",
       date: donation.created_at,
     }));
 
