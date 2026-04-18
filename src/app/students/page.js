@@ -169,13 +169,54 @@ export default function StudentsPage() {
   const [isBulkMarking, setIsBulkMarking] = useState(false);
 
   useEffect(() => {
-    const savedTab = localStorage.getItem("studentsActiveTab");
-    if (savedTab) setActiveTab(savedTab);
+    // 1. Initialize from URL hash/query or localStorage initially
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get("tab");
+
+    if (
+      tabFromUrl &&
+      ["management", "fees", "attendance"].includes(tabFromUrl)
+    ) {
+      setActiveTab(tabFromUrl);
+      localStorage.setItem("studentsActiveTab", tabFromUrl);
+    } else {
+      const savedTab = localStorage.getItem("studentsActiveTab");
+      if (
+        savedTab &&
+        ["management", "fees", "attendance"].includes(savedTab)
+      ) {
+        setActiveTab(savedTab);
+        window.history.replaceState(
+          { activeTab: savedTab },
+          "",
+          `?tab=${savedTab}`
+        );
+      } else {
+        window.history.replaceState(
+          { activeTab: "management" },
+          "",
+          `?tab=management`
+        );
+      }
+    }
+
+    // 2. Listen to browser back/forward buttons
+    const handlePopState = (event) => {
+      const currentUrlParams = new URLSearchParams(window.location.search);
+      const poppedTab = currentUrlParams.get("tab") || "management";
+      setActiveTab(poppedTab);
+      localStorage.setItem("studentsActiveTab", poppedTab);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     localStorage.setItem("studentsActiveTab", tab);
+    // Push new state to history stack so "Back" works
+    window.history.pushState({ activeTab: tab }, "", `?tab=${tab}`);
   };
 
   const fetchTeachers = useCallback(async () => {

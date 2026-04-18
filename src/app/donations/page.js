@@ -33,6 +33,9 @@ import {
   History,
 } from "lucide-react";
 import {
+  addDonation,
+  updateDonation,
+  deleteDonation,
   getDonations,
   getDonors,
   uploadReceipt,
@@ -54,6 +57,52 @@ const defaultForm = {
 
 export default function DonationsPage() {
   const [activeTab, setActiveTab] = useState("donations"); // 'donations' | 'donors'
+
+  useEffect(() => {
+    // 1. Initialize from URL hash/query or localStorage initially
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabFromUrl = urlParams.get("tab");
+
+    if (tabFromUrl && ["donations", "donors"].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+      localStorage.setItem("donationsActiveTab", tabFromUrl);
+    } else {
+      const savedTab = localStorage.getItem("donationsActiveTab");
+      if (savedTab && ["donations", "donors"].includes(savedTab)) {
+        setActiveTab(savedTab);
+        window.history.replaceState(
+          { activeTab: savedTab },
+          "",
+          `?tab=${savedTab}`
+        );
+      } else {
+        window.history.replaceState(
+          { activeTab: "donations" },
+          "",
+          `?tab=donations`
+        );
+      }
+    }
+
+    // 2. Listen to browser back/forward buttons
+    const handlePopState = (event) => {
+      const currentUrlParams = new URLSearchParams(window.location.search);
+      const poppedTab = currentUrlParams.get("tab") || "donations";
+      setActiveTab(poppedTab);
+      localStorage.setItem("donationsActiveTab", poppedTab);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem("donationsActiveTab", tab);
+    // Push new state to history stack so "Back" works
+    window.history.pushState({ activeTab: tab }, "", `?tab=${tab}`);
+  };
+
   const [donations, setDonations] = useState([]);
   const [donorList, setDonorList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -345,7 +394,7 @@ export default function DonationsPage() {
           <div className="flex border-b border-slate-200">
             <button
               onClick={() => {
-                setActiveTab("donations");
+                handleTabChange("donations");
                 setCurrentPage(1);
                 setSearch("");
               }}
@@ -362,7 +411,7 @@ export default function DonationsPage() {
             </button>
             <button
               onClick={() => {
-                setActiveTab("donors");
+                handleTabChange("donors");
                 setCurrentPage(1);
                 setSearch("");
               }}
