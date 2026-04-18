@@ -168,6 +168,16 @@ export default function StudentsPage() {
   const [selectedAttendanceStudents, setSelectedAttendanceStudents] = useState(new Set());
   const [isBulkMarking, setIsBulkMarking] = useState(false);
 
+  useEffect(() => {
+    const savedTab = localStorage.getItem("studentsActiveTab");
+    if (savedTab) setActiveTab(savedTab);
+  }, []);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem("studentsActiveTab", tab);
+  };
+
   const fetchTeachers = useCallback(async () => {
     const res = await getAllTeachers();
     if (res.success) setTeachers(res.data);
@@ -474,7 +484,7 @@ export default function StudentsPage() {
           {/* Tab Switcher */}
           <div className="flex border-b border-slate-100 mb-2 overflow-x-auto no-scrollbar">
             <button
-              onClick={() => setActiveTab("management")}
+              onClick={() => handleTabChange("management")}
               className={`px-6 py-3 text-sm font-semibold transition-all relative whitespace-nowrap ${
                 activeTab === "management"
                   ? "text-blue-600"
@@ -487,7 +497,7 @@ export default function StudentsPage() {
               )}
             </button>
             <button
-              onClick={() => setActiveTab("fees")}
+              onClick={() => handleTabChange("fees")}
               className={`px-6 py-3 text-sm font-semibold transition-all relative whitespace-nowrap ${
                 activeTab === "fees"
                   ? "text-blue-600"
@@ -500,7 +510,7 @@ export default function StudentsPage() {
               )}
             </button>
             <button
-              onClick={() => setActiveTab("attendance")}
+              onClick={() => handleTabChange("attendance")}
               className={`px-6 py-3 text-sm font-semibold transition-all relative whitespace-nowrap ${
                 activeTab === "attendance"
                   ? "text-blue-600"
