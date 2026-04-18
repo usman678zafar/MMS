@@ -46,6 +46,11 @@ export async function addDonation(donationData) {
 
     const data = {
       ...donationData,
+      donor_id:
+        donationData.donor_id &&
+        mongoose.Types.ObjectId.isValid(donationData.donor_id)
+          ? new mongoose.Types.ObjectId(donationData.donor_id)
+          : null,
       amount: donationData.amount ? parseFloat(donationData.amount) : 0,
       date: donationData.date ? new Date(donationData.date) : null,
       created_at: new Date(),
@@ -67,6 +72,11 @@ export async function updateDonation(id, donationData) {
 
     const data = {
       ...donationData,
+      donor_id:
+        donationData.donor_id &&
+        mongoose.Types.ObjectId.isValid(donationData.donor_id)
+          ? new mongoose.Types.ObjectId(donationData.donor_id)
+          : null,
       amount: donationData.amount ? parseFloat(donationData.amount) : undefined,
       date: donationData.date ? new Date(donationData.date) : undefined,
       updated_at: new Date(),
