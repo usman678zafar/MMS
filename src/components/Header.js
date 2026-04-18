@@ -1,42 +1,77 @@
-'use client'
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  HandHeart, 
-  Receipt, 
-  Users, 
-  Package, 
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  HandHeart,
+  Receipt,
+  Users,
+  Package,
   LogOut,
   Settings,
   GraduationCap,
   Menu,
-  X
-} from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { PERMISSIONS } from '@/lib/rbac';
+  X,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { PERMISSIONS } from "@/lib/rbac";
 
 const getNavigationItems = (hasPermission) => {
   const baseNavigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard, permission: PERMISSIONS.DASHBOARD_VIEW },
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: LayoutDashboard,
+      permission: PERMISSIONS.DASHBOARD_VIEW,
+    },
   ];
 
   const additionalNavigation = [
-    { name: 'Students', href: '/students', icon: GraduationCap, permission: PERMISSIONS.STUDENTS_VIEW },
-    { name: 'Donations', href: '/donations', icon: HandHeart, permission: PERMISSIONS.DONATIONS_VIEW },
-    { name: 'Expenses', href: '/expenses', icon: Receipt, permission: PERMISSIONS.EXPENSES_VIEW },
-    { name: 'Staff', href: '/staff', icon: Users, permission: PERMISSIONS.STAFF_VIEW },
-    { name: 'Inventory', href: '/inventory', icon: Package, permission: PERMISSIONS.INVENTORY_VIEW },
+    {
+      name: "Students",
+      href: "/students",
+      icon: GraduationCap,
+      permission: PERMISSIONS.STUDENTS_VIEW,
+    },
+    {
+      name: "Donations",
+      href: "/donations",
+      icon: HandHeart,
+      permission: PERMISSIONS.DONATIONS_VIEW,
+    },
+    {
+      name: "Expenses",
+      href: "/expenses",
+      icon: Receipt,
+      permission: PERMISSIONS.EXPENSES_VIEW,
+    },
+    {
+      name: "Staff",
+      href: "/staff",
+      icon: Users,
+      permission: PERMISSIONS.STAFF_VIEW,
+    },
+    {
+      name: "Inventory",
+      href: "/inventory",
+      icon: Package,
+      permission: PERMISSIONS.INVENTORY_VIEW,
+    },
   ];
 
   const adminNavigation = [
-    { name: 'Users', href: '/users', icon: Settings, permission: PERMISSIONS.USERS_VIEW },
+    {
+      name: "Users",
+      href: "/users",
+      icon: Settings,
+      permission: PERMISSIONS.USERS_VIEW,
+    },
   ];
 
   let navigation = [...baseNavigation];
 
-  additionalNavigation.forEach(item => {
+  additionalNavigation.forEach((item) => {
     if (hasPermission(item.permission)) {
       navigation.push(item);
     }
@@ -56,18 +91,24 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <header className="bg-white border-b border-slate-200 sticky top-0 z-50 ">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             {/* Logo */}
             <Link href="/" className="flex items-center flex-shrink-0">
-              <div className="h-9 w-9 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200 transform transition-transform duration-300 hover:scale-105">
-                <span className="text-white font-bold text-lg uppercase">M</span>
+              <div className="h-9 w-9 bg-primary-600 rounded-xl flex items-center justify-center transform transition-transform duration-300 hover:scale-105">
+                <span className="text-white font-bold text-lg uppercase">
+                  M
+                </span>
               </div>
               <div className="ml-3 hidden sm:block">
-                <h1 className="text-lg font-bold text-slate-900 leading-none">MMS</h1>
-                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Masjid Mgmt</p>
+                <h1 className="text-lg font-bold text-slate-900 leading-none">
+                  MMS
+                </h1>
+                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
+                  Masjid Mgmt
+                </p>
               </div>
             </Link>
 
@@ -80,9 +121,9 @@ export default function Header() {
                     key={item.name}
                     href={item.href}
                     className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${
-                      isActive 
-                        ? 'text-primary-700 bg-primary-50' 
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      isActive
+                        ? "text-primary-700 bg-primary-50"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                     }`}
                   >
                     <item.icon className="h-4 w-4 mr-2" />
@@ -97,19 +138,21 @@ export default function Header() {
             {/* Profile & Sign Out - Desktop */}
             <div className="hidden md:flex md:items-center md:ml-4 space-x-4">
               <div className="flex items-center space-x-3 pr-4 border-r border-slate-200">
-                <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center shadow-md ring-2 ring-white">
-                  <span className="text-white text-xs font-bold uppercase">{profile?.full_name?.charAt(0) || 'A'}</span>
+                <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center ">
+                  <span className="text-white text-xs font-bold uppercase">
+                    {profile?.full_name?.charAt(0) || "A"}
+                  </span>
                 </div>
                 <div className="hidden lg:block text-left">
                   <p className="text-xs font-bold text-slate-800 line-clamp-1">
-                    {profile?.full_name || 'Admin User'}
+                    {profile?.full_name || "Admin User"}
                   </p>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">
-                    {profile?.role || 'Admin'}
+                    {profile?.role || "Admin"}
                   </p>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => signOut()}
                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-300"
@@ -149,8 +192,8 @@ export default function Header() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
                     isActive
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      ? "bg-primary-50 text-primary-700"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`}
                 >
                   <item.icon className="h-5 w-5 mr-3" />
@@ -162,11 +205,17 @@ export default function Header() {
           <div className="pt-4 pb-3 border-t border-slate-100 px-4">
             <div className="flex items-center">
               <div className="h-10 w-10 rounded-full bg-primary-600 flex items-center justify-center">
-                <span className="text-white text-sm font-bold uppercase">{profile?.full_name?.charAt(0) || 'A'}</span>
+                <span className="text-white text-sm font-bold uppercase">
+                  {profile?.full_name?.charAt(0) || "A"}
+                </span>
               </div>
               <div className="ml-3">
-                <div className="text-base font-medium text-slate-800">{profile?.full_name || 'Admin User'}</div>
-                <div className="text-sm font-medium text-slate-500">{profile?.email}</div>
+                <div className="text-base font-medium text-slate-800">
+                  {profile?.full_name || "Admin User"}
+                </div>
+                <div className="text-sm font-medium text-slate-500">
+                  {profile?.email}
+                </div>
               </div>
             </div>
             <div className="mt-3 space-y-1">

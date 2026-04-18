@@ -1,6 +1,6 @@
-'use client'
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { hasPermission } from '@/lib/rbac';
+"use client";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { hasPermission } from "@/lib/rbac";
 
 const AuthContext = createContext({});
 
@@ -15,8 +15,8 @@ export const AuthProvider = ({ children }) => {
       try {
         // First check localStorage for user data
         let storedUser = null;
-        if (typeof window !== 'undefined') {
-          const userStr = localStorage.getItem('user');
+        if (typeof window !== "undefined") {
+          const userStr = localStorage.getItem("user");
           if (userStr) {
             storedUser = JSON.parse(userStr);
           }
@@ -24,20 +24,22 @@ export const AuthProvider = ({ children }) => {
 
         if (storedUser && storedUser.email) {
           // Verify user with API
-          const response = await fetch(`/api/auth/me?email=${encodeURIComponent(storedUser.email)}`);
+          const response = await fetch(
+            `/api/auth/me?email=${encodeURIComponent(storedUser.email)}`,
+          );
           const data = await response.json();
-          
+
           if (data.success) {
             setUser(data.user);
             setProfile({
               full_name: data.user.name,
               email: data.user.email,
-              role: data.user.role
+              role: data.user.role,
             });
           } else {
             // Clear invalid stored user
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('user');
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("user");
             }
             setUser(null);
             setProfile(null);
@@ -47,12 +49,12 @@ export const AuthProvider = ({ children }) => {
           setProfile(null);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error("Auth check failed:", error);
         setUser(null);
         setProfile(null);
         // Clear potentially corrupted localStorage data
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('user');
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("user");
         }
       } finally {
         setLoading(false);
@@ -70,10 +72,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setProfile(null);
     // Clear any session/storage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('user');
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user");
     }
-    window.location.href = '/login';
+    window.location.href = "/login";
   };
 
   const value = {
@@ -81,7 +83,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     loading,
     hasPermission: checkPermission,
-    signOut
+    signOut,
   };
 
   return (
@@ -92,12 +94,8 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const AuthContextProvider = ({ children }) => {
-  return (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
-  );
-}
+  return <AuthProvider>{children}</AuthProvider>;
+};
 
 export const useAuth = () => {
   return useContext(AuthContext);

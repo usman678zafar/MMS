@@ -1,9 +1,11 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const MONGODB_URI = process.env.DATABASE_URL;
 
 if (!MONGODB_URI) {
-  console.error('❌ Error: DATABASE_URL is not defined in environment variables.');
+  console.error(
+    "❌ Error: DATABASE_URL is not defined in environment variables.",
+  );
 }
 
 /**
@@ -28,7 +30,7 @@ export async function connectDB() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log('✅ Connected to MongoDB');
+      console.log("✅ Connected to MongoDB");
       return mongoose;
     });
   }

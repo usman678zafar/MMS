@@ -1,8 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { connectDB } from '@/lib/mongoose';
-import User from '@/models/User';
-import bcrypt from 'bcryptjs';
+import { connectDB } from "@/lib/mongoose";
+import User from "@/models/User";
+import bcrypt from "bcryptjs";
 
 const authOptions = {
   providers: [
@@ -10,45 +10,48 @@ const authOptions = {
       name: "Admin Login",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         try {
           await connectDB();
-          
+
           // Find user in database
           const user = await User.findOne({ email: credentials.email });
-          
+
           if (!user) {
             return null;
           }
-          
+
           // Compare password
-          const isValidPassword = await bcrypt.compare(credentials.password, user.password);
-          
+          const isValidPassword = await bcrypt.compare(
+            credentials.password,
+            user.password,
+          );
+
           if (!isValidPassword) {
             return null;
           }
-          
+
           // Return user object
           return {
             id: user._id.toString(),
             name: user.name,
             email: user.email,
-            role: user.role
+            role: user.role,
           };
         } catch (error) {
-          console.error('Auth error:', error);
+          console.error("Auth error:", error);
           return null;
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
   },
   pages: {
-    signIn: "/login"
+    signIn: "/login",
   },
   callbacks: {
     async session({ session, token }) {
@@ -63,9 +66,9 @@ const authOptions = {
         token.user = user;
       }
       return token;
-    }
+    },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development',
+  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-key-for-development",
 };
 
 const handler = NextAuth(authOptions);
