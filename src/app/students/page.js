@@ -6,7 +6,7 @@ import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import Pagination from '@/components/Pagination';
 import { TableSkeleton, StatsSkeleton, FilterSkeleton } from '@/components/SkeletonLoader';
-import { Plus, Search, GraduationCap, Phone, Calendar, Trash2, User, BookOpen, Edit2 } from 'lucide-react';
+import { Plus, Search, GraduationCap, Phone, Calendar, Trash2, User, BookOpen, Edit2, Loader2 } from 'lucide-react';
 import { addStudent, updateStudent, getStudents, deleteStudent, updateStudentStatus, updateStudentProgress, updateFeeStatus, getStudentProgressHistory, recordFeePayment, getStudentFeeHistory, recordAttendance, getAttendanceByDate, getStudentAttendanceReport } from './actions';
 import { getAllTeachers } from '../staff/actions';
 import { format } from 'date-fns';
@@ -65,14 +65,16 @@ export default function StudentsPage() {
   const [showFeeModal, setShowFeeModal] = useState(false);
   const [showFeeHistoryModal, setShowFeeHistoryModal] = useState(false);
   const [feeData, setFeeData] = useState({ amount: '', month: format(new Date(), 'MMMM'), year: format(new Date(), 'yyyy'), notes: '' });
+  const [updatingStatusIds, setUpdatingStatusIds] = useState(new Set());
+  const [updatingFeeIds, setUpdatingFeeIds] = useState(new Set());
 
   const fetchTeachers = useCallback(async () => {
     const res = await getAllTeachers();
     if (res.success) setTeachers(res.data);
   }, []);
 
-  const fetchStudents = useCallback(async () => {
-    setLoading(true);
+  const fetchStudents = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     const res = await getStudents(currentPage, PAGINATION_DEFAULTS.PAGE_SIZE, search, filterStatus);
     if (res.success) {
       setStudents(res.data);
@@ -136,22 +138,34 @@ export default function StudentsPage() {
   };
 
   const handleToggleFeeStatus = async (id, currentStatus) => {
-    if (currentStatus === 'Paid') {
-      // If already paid, toggle back to unpaid simply
-      const res = await updateFeeStatus(id, 'Unpaid');
-      if (res.success) fetchStudents();
+    const newStatus = currentStatus === 'Paid' ? 'Unpaid' : 'Paid';
+    const student = students.find(s => s.id === id);
+
+    // Optimistic update
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, fee_status: newStatus } : s));
+    setUpdatingFeeIds(prev => new Set(prev).add(id));
+
+    let res;
+    if (newStatus === 'Unpaid') {
+      res = await updateFeeStatus(id, 'Unpaid');
     } else {
-      // If unpaid, open modal to record payment details
-      const student = students.find(s => s.id === id);
-      setActiveStudentId(id);
-      setFeeData({
-        amount: student.monthly_fee || '',
+      // When toggling to Paid, record a standard fee payment automatically
+      res = await recordFeePayment(id, {
+        amount: student.monthly_fee || 0,
         month: format(new Date(), 'MMMM'),
         year: format(new Date(), 'yyyy'),
-        notes: ''
+        notes: 'Quick Toggle Payment'
       });
-      setShowFeeModal(true);
     }
+
+    setUpdatingFeeIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+    if (res.success) fetchStudents(true);
+    else fetchStudents();
   };
 
   const handleOpenFeeHistory = async (student) => {
@@ -161,19 +175,6 @@ export default function StudentsPage() {
     const res = await getStudentFeeHistory(student.id);
     if (res.success) setFeeHistoryList(res.data);
     setFetchingHistory(false);
-  };
-
-  const handleSaveFee = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const res = await recordFeePayment(activeStudentId, feeData);
-    if (res.success) {
-      setShowFeeModal(false);
-      fetchStudents();
-    } else {
-      alert(`Error: ${res.error}`);
-    }
-    setSaving(false);
   };
 
   const handleAttendanceChange = (studentId, status) => {
@@ -223,8 +224,17 @@ export default function StudentsPage() {
   };
 
   const handleToggleStatus = async (id, current) => {
-    await updateStudentStatus(id, !current);
-    fetchStudents();
+    // Optimistic update
+    setStudents(prev => prev.map(s => s.id === id ? { ...s, is_active: !current } : s));
+    setUpdatingStatusIds(prev => new Set(prev).add(id));
+    const res = await updateStudentStatus(id, !current);
+    setUpdatingStatusIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    if (res.success) fetchStudents(true);
+    else fetchStudents(); // Fallback on error
   };
 
   const handleSearch = (value) => {
@@ -353,12 +363,12 @@ export default function StudentsPage() {
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Education Track</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Teacher / Qari</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Progress</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Fee Status</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-44">Education Track</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">Teacher / Qari</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">Current Progress</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">Status</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right w-28">Fee Status</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right w-32">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -424,27 +434,43 @@ export default function StudentsPage() {
                       <td className="px-6 py-4">
                         <button
                           onClick={() => handleToggleStatus(student.id, student.is_active !== false)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm ${
+                          disabled={updatingStatusIds.has(student.id)}
+                          className={`w-20 h-6 flex items-center justify-center rounded-full text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm ${
+                            updatingStatusIds.has(student.id) ? 'opacity-50 cursor-wait' : ''
+                          } ${
                             student.is_active !== false
                               ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100'
                               : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100'
                           }`}
                         >
-                          {student.is_active !== false ? 'Active' : 'Inactive'}
+                          {updatingStatusIds.has(student.id) ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            student.is_active !== false ? 'Active' : 'Inactive'
+                          )}
                         </button>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => handleToggleFeeStatus(student.id, student.fee_status)}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                            student.fee_status === 'Paid'
-                              ? 'bg-emerald-500 text-white shadow-sm'
-                              : 'bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-100'
-                          }`}
-                        >
-                          {student.fee_status === 'Paid' ? 'PAID' : 'UNPAID'}
-                        </button>
-                        <p className="text-[10px] text-slate-400 mt-1">Rs {Number(student.monthly_fee).toLocaleString()}</p>
+                        <div className="flex flex-col items-end gap-1">
+                          <button
+                            onClick={() => handleToggleFeeStatus(student.id, student.fee_status)}
+                            disabled={updatingFeeIds.has(student.id)}
+                            className={`w-16 h-6 flex items-center justify-center rounded-lg text-[10px] font-bold transition-all ${
+                              updatingFeeIds.has(student.id) ? 'opacity-50 cursor-wait' : ''
+                            } ${
+                              student.fee_status === 'Paid'
+                                ? 'bg-emerald-500 text-white shadow-sm'
+                                : 'bg-rose-50 text-rose-500 border border-rose-100 hover:bg-rose-100'
+                            }`}
+                          >
+                            {updatingFeeIds.has(student.id) ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              student.fee_status === 'Paid' ? 'PAID' : 'UNPAID'
+                            )}
+                          </button>
+                          <p className="text-[10px] text-slate-400 font-semibold tracking-tight">Rs {Number(student.monthly_fee).toLocaleString()}</p>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -760,42 +786,7 @@ export default function StudentsPage() {
           </div>
         </Modal>
 
-        <Modal open={showFeeModal} onClose={() => setShowFeeModal(false)} title="Record Fee Payment">
-          <form onSubmit={handleSaveFee} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Month</label>
-                <select className="input-field text-sm" value={feeData.month}
-                  onChange={(e) => setFeeData({ ...feeData, month: e.target.value })}>
-                  {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Year</label>
-                <input type="number" className="input-field text-sm" value={feeData.year}
-                  onChange={(e) => setFeeData({ ...feeData, year: e.target.value })} />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Amount Paid (Rs)</label>
-              <input type="number" required className="input-field text-sm" 
-                value={feeData.amount} onChange={(e) => setFeeData({ ...feeData, amount: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Payment Notes</label>
-              <input type="text" className="input-field text-sm" placeholder="e.g. Paid via cash, receipt #123"
-                value={feeData.notes} onChange={(e) => setFeeData({ ...feeData, notes: e.target.value })} />
-            </div>
-            <div className="flex gap-2 justify-end pt-2">
-              <button type="button" onClick={() => setShowFeeModal(false)} className="btn btn-secondary text-sm">Cancel</button>
-              <button type="submit" disabled={saving} className="btn btn-emerald text-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50">
-                {saving ? 'Recording...' : 'Record Payment'}
-              </button>
-            </div>
-          </form>
-        </Modal>
+
 
         <Modal open={showFeeHistoryModal} onClose={() => setShowFeeHistoryModal(false)} title="Student Fee History">
           <div className="space-y-4">
