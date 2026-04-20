@@ -853,7 +853,7 @@ export default function StudentsPage() {
               {loading ? (
                 <StatsSkeleton />
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
                     <p className="text-2xl font-bold text-slate-900">
                       {students.length}
@@ -878,7 +878,7 @@ export default function StudentsPage() {
                       Inactive
                     </p>
                   </div>
-                  <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center col-span-2 sm:col-span-1">
+                  <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
                     <p className={`text-2xl font-bold ${students.filter(s => {
                       if (!s.current_progress?.last_updated) return true;
                       const d = new Date(s.current_progress.last_updated);
