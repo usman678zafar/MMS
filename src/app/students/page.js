@@ -1973,17 +1973,37 @@ export default function StudentsPage() {
             title="Update Progress Milestone"
           >
             <form onSubmit={handleSaveProgress} className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                    Reporting Month
+                  </p>
+                  <p className="text-sm font-bold text-slate-900 mt-1">
+                    {MONTHS[new Date().getMonth()]} {new Date().getFullYear()}
+                  </p>
+                </div>
+                <div className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">
+                  CURRENT
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Progress Type
+                    Religious Education Type
                   </label>
-                  <div className="input-field text-sm bg-slate-50 flex items-center justify-between cursor-not-allowed select-none">
-                    <span className="font-semibold text-slate-700">{progressData.type}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded">
-                      Locked
-                    </span>
-                  </div>
+                  <select
+                    className="input-field text-sm"
+                    value={progressData.type}
+                    onChange={(e) =>
+                      setProgressData({ ...progressData, type: e.target.value })
+                    }
+                  >
+                    {RELIGIOUS_CLASSES.filter((c) => c !== "None").map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div
                   className={progressData.type === "Qaida" || progressData.type === "Girdan" ? "opacity-50" : ""}
