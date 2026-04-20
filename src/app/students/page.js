@@ -1158,6 +1158,57 @@ export default function StudentsPage() {
 
           {activeTab === "fees" && (
             <div className="space-y-4">
+              {/* Filters */}
+              {loading ? (
+                <FilterSkeleton />
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={t("students", "searchPlaceholder")}
+                      value={search}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
+                    />
+                  </div>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => handleStatusFilter(e.target.value)}
+                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
+                  >
+                    <option value="">{t("students", "allStatus")}</option>
+                    <option value="active">{t("students", "active")}</option>
+                    <option value="inactive">{t("students", "inactive")}</option>
+                  </select>
+                  <div className="flex bg-white border border-slate-200 rounded-xl p-1 gap-1 overflow-x-auto no-scrollbar">
+                    <button
+                      onClick={() => { setFilterClass("All"); setCurrentPage(1); }}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        filterClass === "All"
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      All
+                    </button>
+                    {RELIGIOUS_CLASSES.filter(c => c !== "None").map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => { setFilterClass(c); setCurrentPage(1); }}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                          filterClass === c
+                            ? "bg-emerald-500 text-white shadow-sm"
+                            : "text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                   <div>
@@ -1330,7 +1381,7 @@ export default function StudentsPage() {
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] font-bold text-emerald-600">
-                                {student.religious_class || "N/A"}
+                                {student.religious_class || student.class || "N/A"}
                               </span>
                               <span className="text-[10px] font-semibold text-slate-400">
                                 {student.contemporary_class || "None"}
@@ -1396,6 +1447,57 @@ export default function StudentsPage() {
 
           {activeTab === "attendance" && (
             <div className="space-y-4">
+              {/* Filters */}
+              {loading ? (
+                <FilterSkeleton />
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={t("students", "searchPlaceholder")}
+                      value={search}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
+                    />
+                  </div>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => handleStatusFilter(e.target.value)}
+                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
+                  >
+                    <option value="">{t("students", "allStatus")}</option>
+                    <option value="active">{t("students", "active")}</option>
+                    <option value="inactive">{t("students", "inactive")}</option>
+                  </select>
+                  <div className="flex bg-white border border-slate-200 rounded-xl p-1 gap-1 overflow-x-auto no-scrollbar">
+                    <button
+                      onClick={() => { setFilterClass("All"); setCurrentPage(1); }}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        filterClass === "All"
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      All
+                    </button>
+                    {RELIGIOUS_CLASSES.filter(c => c !== "None").map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => { setFilterClass(c); setCurrentPage(1); }}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                          filterClass === c
+                            ? "bg-emerald-500 text-white shadow-sm"
+                            : "text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                   <div>
@@ -1473,7 +1575,7 @@ export default function StudentsPage() {
                         Father Name
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Class
+                        Education track
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
                         Status
@@ -1514,9 +1616,14 @@ export default function StudentsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-xs text-slate-500 font-semibold">
-                            {student.class}
-                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-bold text-emerald-600">
+                              {student.religious_class || student.class || "N/A"}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400">
+                              {student.contemporary_class || "None"}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-1">
