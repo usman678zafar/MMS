@@ -32,6 +32,7 @@ export async function addStudent(studentData) {
           ? parseInt(studentData.progress_para)
           : 1,
         surah: studentData.progress_surah || "",
+        ayat: studentData.progress_ayat ? parseInt(studentData.progress_ayat) : null,
         last_updated: new Date(),
       },
       created_at: new Date(),
@@ -48,6 +49,7 @@ export async function addStudent(studentData) {
       type: data.current_progress.type,
       para: data.current_progress.para,
       surah: data.current_progress.surah,
+      ayat: data.current_progress.ayat,
       notes: "Initial enrollment progress",
       date: new Date(),
       created_at: new Date(),
@@ -103,6 +105,7 @@ export async function getStudents(
   pageSize = PAGINATION_DEFAULTS.PAGE_SIZE,
   search = "",
   status = "",
+  educationClass = "All",
 ) {
   try {
     await connectDB();
@@ -110,20 +113,38 @@ export async function getStudents(
     const collection = db.collection("students");
 
     // Build query
-    const query = {};
+    const filterConditions = [];
 
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { father_name: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
-        { address: { $regex: search, $options: "i" } },
-      ];
+      filterConditions.push({
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { father_name: { $regex: search, $options: "i" } },
+          { phone: { $regex: search, $options: "i" } },
+          { address: { $regex: search, $options: "i" } },
+        ],
+      });
     }
 
     if (status) {
-      query.is_active = status === "active";
+      filterConditions.push({ is_active: status === "active" });
     }
+
+    if (educationClass && educationClass !== "All") {
+      filterConditions.push({
+        $or: [
+          { religious_class: { $regex: `^${educationClass}$`, $options: "i" } },
+          {
+            contemporary_class: {
+              $regex: `^${educationClass}$`,
+              $options: "i",
+            },
+          },
+        ],
+      });
+    }
+
+    const query = filterConditions.length > 0 ? { $and: filterConditions } : {};
 
     // Get total count
     const totalItems = await collection.countDocuments(query);
@@ -222,6 +243,7 @@ export async function updateStudentProgress(studentId, progressData) {
               ? parseInt(progressData.surahNumber)
               : null,
             surah: progressData.surah,
+            ayat: progressData.ayat ? parseInt(progressData.ayat) : null,
             last_updated: new Date(),
           },
           updated_at: new Date(),
@@ -241,6 +263,7 @@ export async function updateStudentProgress(studentId, progressData) {
           ? parseInt(progressData.surahNumber)
           : null,
         surah: progressData.surah,
+        ayat: progressData.ayat ? parseInt(progressData.ayat) : null,
         notes: progressData.notes,
         date: new Date(),
         created_at: new Date(),

@@ -341,13 +341,6 @@ const CONTEMPORARY_CLASSES = [
   "Class 3",
   "Class 4",
   "Class 5",
-  "Class 6",
-  "Class 7",
-  "Class 8",
-  "Class 9",
-  "Class 10",
-  "Inter",
-  "Bachelor",
   "None",
 ];
 const GENDERS = ["Male", "Female"];
@@ -506,6 +499,7 @@ export default function StudentsPage() {
         PAGINATION_DEFAULTS.PAGE_SIZE,
         search,
         filterStatus,
+        filterClass,
       );
       if (res.success) {
         setStudents(res.data);
@@ -513,7 +507,7 @@ export default function StudentsPage() {
       }
       setLoading(false);
     },
-    [currentPage, search, filterStatus],
+    [currentPage, search, filterStatus, filterClass],
   );
 
   const fetchMonthlyFeeStatus = useCallback(async () => {
@@ -591,6 +585,7 @@ export default function StudentsPage() {
       para: student.current_progress?.para || 1,
       surahNumber: currentSurahNumber,
       surah: initialSurahDisplay,
+      ayat: student.current_progress?.ayat || "",
       notes: "",
     });
     setShowProgressModal(true);
@@ -883,6 +878,22 @@ export default function StudentsPage() {
                       Inactive
                     </p>
                   </div>
+                  <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center col-span-2 sm:col-span-1">
+                    <p className={`text-2xl font-bold ${students.filter(s => {
+                      if (!s.current_progress?.last_updated) return true;
+                      const d = new Date(s.current_progress.last_updated);
+                      return d.getMonth() !== new Date().getMonth() || d.getFullYear() !== new Date().getFullYear();
+                    }).length > 0 ? "text-amber-500" : "text-emerald-500"}`}>
+                      {students.filter(s => {
+                        if (!s.current_progress?.last_updated) return true;
+                        const d = new Date(s.current_progress.last_updated);
+                        return d.getMonth() !== new Date().getMonth() || d.getFullYear() !== new Date().getFullYear();
+                      }).length}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">
+                      Pending Progress
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -910,25 +921,31 @@ export default function StudentsPage() {
                     <option value="active">{t("students", "active")}</option>
                     <option value="inactive">{t("students", "inactive")}</option>
                   </select>
-                  <select
-                    value={filterClass}
-                    onChange={(e) => setFilterClass(e.target.value)}
-                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
-                  >
-                    <option value="All">{t("students", "allEducation")}</option>
-                    {RELIGIOUS_CLASSES.filter((c) => c !== "None").map((c) => (
-                      <option key={c} value={c}>
-                        {c} (Religious)
-                      </option>
+                  <div className="flex bg-white border border-slate-200 rounded-xl p-1 gap-1 overflow-x-auto no-scrollbar">
+                    <button
+                      onClick={() => { setFilterClass("All"); setCurrentPage(1); }}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        filterClass === "All"
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      All
+                    </button>
+                    {RELIGIOUS_CLASSES.filter(c => c !== "None").map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => { setFilterClass(c); setCurrentPage(1); }}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                          filterClass === c
+                            ? "bg-emerald-500 text-white shadow-sm"
+                            : "text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        {c}
+                      </button>
                     ))}
-                    {CONTEMPORARY_CLASSES.filter((c) => c !== "None").map(
-                      (c) => (
-                        <option key={c} value={c}>
-                          {c} (Contemporary)
-                        </option>
-                      ),
-                    )}
-                  </select>
+                  </div>
                 </div>
               )}
 
@@ -1046,11 +1063,24 @@ export default function StudentsPage() {
                                 <span className="text-xs font-bold text-blue-600">
                                   {student.current_progress?.type || "Qaida"}
                                 </span>
-                                <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                                  {student.current_progress?.type === "Qaida"
-                                    ? "Progressing"
-                                    : `${PARA_NAMES[student.current_progress?.para || 1]} (${student.current_progress?.para || 1})`}
-                                  <BookOpen className="h-2.5 w-2.5 opacity-0 group-hover/progress:opacity-50 transition-opacity" />
+                                <span className="text-[10px] text-slate-500 flex flex-col items-start gap-0.5">
+                                  <span>
+                                    {!student.current_progress?.type || student.current_progress?.type === "Qaida"
+                                      ? "Progressing"
+                                      : `${PARA_NAMES[student.current_progress?.para || 1]} (${student.current_progress?.para || 1})${student.current_progress?.ayat ? ` · Ayat ${student.current_progress.ayat}` : ""}`}
+                                  </span>
+                                  <span className={`text-[9px] font-bold uppercase tracking-tighter flex items-center gap-1 ${
+                                    (!student.current_progress?.last_updated || 
+                                     new Date(student.current_progress.last_updated).getMonth() !== new Date().getMonth() ||
+                                     new Date(student.current_progress.last_updated).getFullYear() !== new Date().getFullYear())
+                                    ? "text-rose-400"
+                                    : "text-emerald-500"
+                                  }`}>
+                                    {student.current_progress?.last_updated 
+                                      ? `Last Update: ${format(new Date(student.current_progress.last_updated), "MMM dd")}`
+                                      : "No Update This Month"}
+                                    <BookOpen className="h-2 w-2 opacity-50 transition-opacity" />
+                                  </span>
                                 </span>
                               </button>
                             </td>
@@ -1573,39 +1603,43 @@ export default function StudentsPage() {
                   <label className="block text-xs font-bold text-emerald-700 mb-1 leading-none">
                     Religious Education
                   </label>
-                  <select
-                    className="input-field text-sm border-emerald-100 "
-                    value={newStudent.religious_class}
-                    onChange={(e) =>
-                      setNewStudent({
-                        ...newStudent,
-                        religious_class: e.target.value,
-                      })
-                    }
-                  >
+                  <div className="flex flex-wrap gap-2 mt-1">
                     {RELIGIOUS_CLASSES.map((c) => (
-                      <option key={c}>{c}</option>
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setNewStudent({ ...newStudent, religious_class: c })}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                          newStudent.religious_class === c
+                            ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-emerald-200"
+                        }`}
+                      >
+                        {c}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-blue-700 mb-1 leading-none">
                     Contemporary Education
                   </label>
-                  <select
-                    className="input-field text-sm border-blue-100 "
-                    value={newStudent.contemporary_class}
-                    onChange={(e) =>
-                      setNewStudent({
-                        ...newStudent,
-                        contemporary_class: e.target.value,
-                      })
-                    }
-                  >
+                  <div className="flex flex-wrap gap-1.5 mt-1">
                     {CONTEMPORARY_CLASSES.map((c) => (
-                      <option key={c}>{c}</option>
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setNewStudent({ ...newStudent, contemporary_class: c })}
+                        className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all border ${
+                          newStudent.contemporary_class === c
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-200"
+                        }`}
+                      >
+                        {c}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
               </div>
 
@@ -1731,20 +1765,22 @@ export default function StudentsPage() {
                       <label className="block text-[10px] text-slate-500 mb-1">
                         Type
                       </label>
-                      <select
-                        className="input-field text-xs py-1"
-                        value={newStudent.progress_type}
-                        onChange={(e) =>
-                          setNewStudent({
-                            ...newStudent,
-                            progress_type: e.target.value,
-                          })
-                        }
-                      >
+                      <div className="flex flex-wrap gap-1 mt-1">
                         {PROGRESS_TYPES.map((t) => (
-                          <option key={t}>{t}</option>
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setNewStudent({ ...newStudent, progress_type: t })}
+                            className={`px-2 py-1 rounded-lg text-[9px] font-bold transition-all border ${
+                              newStudent.progress_type === t
+                                ? "bg-slate-700 text-white border-slate-700"
+                                : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                            }`}
+                          >
+                            {t}
+                          </button>
                         ))}
-                      </select>
+                      </div>
                     </div>
                     <div
                       className={
@@ -1896,8 +1932,21 @@ export default function StudentsPage() {
                     ))}
                   </select>
                 </div>
-
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Ayat Number
+                  </label>
+                  <input
+                    type="number"
+                    className="input-field text-sm"
+                    placeholder="0"
+                    value={progressData.ayat}
+                    onChange={(e) =>
+                      setProgressData({ ...progressData, ayat: e.target.value })
+                    }
+                  />
                 </div>
+              </div>
 
               <div className="flex gap-2 justify-end pt-2">
                 <button
@@ -1942,6 +1991,7 @@ export default function StudentsPage() {
                           <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
                             {entry.type}{" "}
                             {entry.para ? `· Para ${entry.para}` : ""}
+                            {entry.ayat ? ` · Ayat ${entry.ayat}` : ""}
                           </span>
                           <span className="text-[10px] text-slate-400 font-medium">
                             {format(new Date(entry.date), "MMM dd, yyyy")}
