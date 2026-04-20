@@ -2141,7 +2141,7 @@ export default function StudentsPage() {
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
                             {entry.type}{" "}
-                            {entry.para ? `· Para ${entry.para}` : ""}
+                            {entry.para ? `· ${PARA_NAMES[entry.para]} (${entry.para})` : ""}
                             {entry.ayat ? ` · Ayat ${entry.ayat}` : ""}
                           </span>
                           <span className="text-[10px] text-slate-400 font-medium">
