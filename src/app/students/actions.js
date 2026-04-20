@@ -133,13 +133,9 @@ export async function getStudents(
     if (educationClass && educationClass !== "All") {
       filterConditions.push({
         $or: [
-          { religious_class: { $regex: `^${educationClass}$`, $options: "i" } },
-          {
-            contemporary_class: {
-              $regex: `^${educationClass}$`,
-              $options: "i",
-            },
-          },
+          { religious_class: { $regex: educationClass, $options: "i" } },
+          { contemporary_class: { $regex: educationClass, $options: "i" } },
+          { class: { $regex: educationClass, $options: "i" } },
         ],
       });
     }
