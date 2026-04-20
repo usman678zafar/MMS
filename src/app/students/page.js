@@ -41,6 +41,7 @@ import {
   recordBulkFeePayments,
   deleteFeePayment,
   deleteBulkFeePayments,
+  deleteProgressHistory,
 } from "./actions";
 import { getAllTeachers } from "../staff/actions";
 
@@ -586,9 +587,23 @@ export default function StudentsPage() {
       surahNumber: currentSurahNumber,
       surah: initialSurahDisplay,
       ayat: student.current_progress?.ayat || "",
+      month: MONTHS[new Date().getMonth()],
+      year: new Date().getFullYear(),
       notes: "",
     });
     setShowProgressModal(true);
+  };
+
+  const handleDeleteProgress = async (id) => {
+    if (!confirm("Are you sure you want to delete this progress record?")) return;
+    const res = await deleteProgressHistory(id);
+    if (res.success) {
+      const student = students.find((s) => s.id === activeStudentId);
+      handleOpenHistory(student);
+      fetchStudents(true);
+    } else {
+      alert(`Error: ${res.error}`);
+    }
   };
 
   const handleSaveProgress = async (e) => {
@@ -1973,17 +1988,25 @@ export default function StudentsPage() {
             title="Update Progress Milestone"
           >
             <form onSubmit={handleSaveProgress} className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
-                    Reporting Month
-                  </p>
-                  <p className="text-sm font-bold text-slate-900 mt-1">
-                    {MONTHS[new Date().getMonth()]} {new Date().getFullYear()}
-                  </p>
-                </div>
-                <div className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">
-                  CURRENT
+              <div className="p-3 bg-slate-50 rounded-xl">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">
+                  Select Reporting Month & Year
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-700 outline-none"
+                    value={progressData.month}
+                    onChange={(e) => setProgressData({ ...progressData, month: e.target.value })}
+                  >
+                    {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <select
+                    className="w-24 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-700 outline-none"
+                    value={progressData.year}
+                    onChange={(e) => setProgressData({ ...progressData, year: e.target.value })}
+                  >
+                    {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -2006,13 +2029,13 @@ export default function StudentsPage() {
                   </select>
                 </div>
                 <div
-                  className={progressData.type === "Qaida" || progressData.type === "Girdan" ? "opacity-50" : ""}
+                  className={progressData.type === "Qaida" ? "opacity-50" : ""}
                 >
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Para
                   </label>
                   <select
-                    disabled={progressData.type === "Qaida" || progressData.type === "Girdan"}
+                    disabled={progressData.type === "Qaida"}
                     className="input-field text-sm"
                     value={progressData.para}
                     onChange={(e) =>
@@ -2029,13 +2052,13 @@ export default function StudentsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div
-                  className={progressData.type === "Qaida" || progressData.type === "Girdan" ? "opacity-50" : ""}
+                  className={progressData.type === "Qaida" ? "opacity-50" : ""}
                 >
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Surah
                   </label>
                   <select
-                    disabled={progressData.type === "Qaida" || progressData.type === "Girdan"}
+                    disabled={progressData.type === "Qaida"}
                     readOnly
                     title="Surah number is automatically updated based on current progress"
                     className="input-field text-sm"
@@ -2059,12 +2082,13 @@ export default function StudentsPage() {
                     ))}
                   </select>
                 </div>
-                <div>
+                <div className={progressData.type === "Qaida" ? "opacity-50" : ""}>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Ayat Number
                   </label>
                   <input
                     type="number"
+                    disabled={progressData.type === "Qaida"}
                     className="input-field text-sm"
                     placeholder="0"
                     value={progressData.ayat}
@@ -2123,9 +2147,19 @@ export default function StudentsPage() {
                           <span className="text-[10px] text-slate-400 font-medium">
                             {format(new Date(entry.date), "MMM dd, yyyy")}
                           </span>
+                          <button 
+                            onClick={() => handleDeleteProgress(entry.id)}
+                            className="bg-white hover:bg-rose-50 text-rose-400 hover:text-rose-600 p-1 rounded-lg transition-all ml-2"
+                            title="Delete this milestone"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </div>
                         <p className="text-sm font-medium text-slate-700">
-                          {entry.surah || "General Progress"}
+                          {entry.surah ||
+                            (entry.surah_number
+                              ? `${getArabicScript(entry.surah_number)} (${entry.surah_number})`
+                              : "General Progress")}
                         </p>
                         {entry.notes && (
                           <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">

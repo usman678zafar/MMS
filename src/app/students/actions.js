@@ -261,7 +261,10 @@ export async function updateStudentProgress(studentId, progressData) {
         surah: progressData.surah,
         ayat: progressData.ayat ? parseInt(progressData.ayat) : null,
         notes: progressData.notes,
-        date: new Date(),
+        date:
+          progressData.month && progressData.year
+            ? new Date(`${progressData.month} 1, ${progressData.year}`)
+            : new Date(),
         created_at: new Date(),
         updated_at: new Date(),
       });
@@ -542,6 +545,23 @@ export async function getStudentAttendanceReport(studentId) {
     );
 
     return { success: true, data: formattedStats };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteProgressHistory(entryId) {
+  try {
+    await connectDB();
+    const db = mongoose.connection.db;
+    const collection = db.collection("studentprogresses");
+    await collection.deleteOne({
+      _id:
+        typeof entryId === "string"
+          ? new mongoose.Types.ObjectId(entryId)
+          : entryId,
+    });
+    return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
   }
