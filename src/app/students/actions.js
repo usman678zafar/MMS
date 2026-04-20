@@ -216,8 +216,12 @@ export async function updateStudentProgress(studentId, progressData) {
       {
         $set: {
           current_progress: {
-            ...progressData,
+            type: progressData.type,
             para: parseInt(progressData.para),
+            surah_number: progressData.surahNumber
+              ? parseInt(progressData.surahNumber)
+              : null,
+            surah: progressData.surah,
             last_updated: new Date(),
           },
           updated_at: new Date(),
@@ -233,6 +237,9 @@ export async function updateStudentProgress(studentId, progressData) {
         teacher_id: student.teacher_id,
         type: progressData.type,
         para: parseInt(progressData.para),
+        surah_number: progressData.surahNumber
+          ? parseInt(progressData.surahNumber)
+          : null,
         surah: progressData.surah,
         notes: progressData.notes,
         date: new Date(),

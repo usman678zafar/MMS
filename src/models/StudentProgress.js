@@ -14,13 +14,18 @@ const studentProgressSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Qaida", "Quran", "Hifz"],
+      enum: ["Qaida", "Nazra", "Hifz", "Girdan"],
       required: true,
     },
     para: {
       type: Number,
       min: 1,
       max: 30,
+    },
+    surah_number: {
+      type: Number,
+      min: 1,
+      max: 114,
     },
     surah: {
       type: String,

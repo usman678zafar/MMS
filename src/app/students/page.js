@@ -49,15 +49,288 @@ import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { useLanguage } from "@/context/LanguageContext";
 
-const PROGRESS_TYPES = ["Qaida", "Quran", "Hifz"];
+const PROGRESS_TYPES = ["Qaida", "Nazra", "Hifz", "Girdan"];
 const PARA_NUMBERS = Array.from({ length: 30 }, (_, i) => i + 1);
+const SURAH_NUMBERS = Array.from({ length: 114 }, (_, i) => i + 1);
+
+// Mapping of Surah numbers to their names
+const SURAH_NAMES = {
+  1: "Al-Fatihah",
+  2: "Al-Baqarah", 
+  3: "Aali Imran",
+  4: "An-Nisa",
+  5: "Al-Maidah",
+  6: "Al-Anam",
+  7: "Al-Araf",
+  8: "At-Tawbah",
+  9: "At-Tawbah",
+  10: "Yunus",
+  11: "Hud",
+  12: "Yusuf",
+  13: "Ar-Rad",
+  14: "Ibrahim",
+  15: "Al-Hijr",
+  16: "An-Nahl",
+  17: "Al-Isra",
+  18: "Al-Kahf",
+  19: "Maryam",
+  20: "Ta-Ha",
+  21: "Al-Anbiya",
+  22: "Al-Hajj",
+  23: "Al-Muminun",
+  24: "An-Nur",
+  25: "Al-Furqan",
+  26: "Ash-Shuara",
+  27: "An-Naml",
+  28: "Al-Qasas",
+  29: "Al-Ankabut",
+  30: "Ar-Rum",
+  31: "Luqman",
+  32: "As-Sajdah",
+  33: "Al-Ahzab",
+  34: "Saba",
+  35: "Fatir",
+  36: "Ya-Sin",
+  37: "As-Saffat",
+  38: "Sad",
+  39: "Az-Zumar",
+  40: "Ghafir",
+  41: "Fussilat",
+  42: "Ash-Shura",
+  43: "Az-Zukhruf",
+  44: "Ad-Dukhan",
+  45: "Al-Jathiyah",
+  46: "Al-Ahqaf",
+  47: "Muhammad",
+  48: "Al-Fath",
+  49: "Al-Hujurat",
+  50: "Qaf",
+  51: "Adh-Dhariyat",
+  52: "At-Tur",
+  53: "An-Najm",
+  54: "Al-Qamar",
+  55: "Ar-Rahman",
+  56: "Al-Waqiah",
+  57: "Al-Hadid",
+  58: "An-Nisa",
+  59: "Al-Hashr",
+  60: "Al-Mumtahanah",
+  61: "As-Saff",
+  62: "Al-Jumuah",
+  63: "Al-Munafiqun",
+  64: "At-Taghabun",
+  65: "At-Talaq",
+  66: "At-Tahrim",
+  67: "Al-Mulk",
+  68: "Al-Haqqah",
+  69: "Al-Maarij",
+  70: "Nuh",
+  71: "Al-Jinn",
+  72: "Al-Muzzammil",
+  73: "Al-Muddaththir",
+  74: "Al-Qiyamah",
+  75: "Al-Insan",
+  76: "Al-Mursalat",
+  77: "An-Naba",
+  78: "An-Nazi'at",
+  79: "Abasa",
+  80: "At-Takwir",
+  81: "Al-Infitar",
+  82: "Al-Mutaffifin",
+  83: "Al-Inshiqaq",
+  84: "Al-Buruj",
+  85: "At-Tariq",
+  86: "Al-Ala",
+  87: "Al-Ghashiyah",
+  88: "Al-Fajr",
+  89: "Al-Balad",
+  90: "Ash-Shams",
+  91: "Ad-Duha",
+  92: "Al-Lail",
+  93: "Al-Lail",
+  94: "Ad-Duha",
+  95: "At-Tin",
+  96: "Al-Alaq",
+  97: "Al-Qadr",
+  98: "Al-Bayyinah",
+  99: "Az-Zalzalah",
+  100: "Al-Adiyat",
+  101: "Al-Qariah",
+  102: "At-Takathur",
+  103: "Al-Asr",
+  104: "Al-Humazah",
+  105: "Al-Fil",
+  106: "Quraysh",
+  107: "Al-Maun",
+  108: "Al-Kawthar",
+  109: "Al-Kafirun",
+  110: "An-Nasr",
+  111: "Al-Masad",
+  112: "Al-Ikhlas",
+  113: "Al-Falaq",
+  114: "An-Nas"
+};
+
+const PARA_NAMES = {
+  1: "الم",
+  2: "سيقول",
+  3: "تلك الرسل",
+  4: "لن تنالوا",
+  5: "والمحصنات",
+  6: "لا يحب الله",
+  7: "واذا سمعوا",
+  8: "ولو اننا",
+  9: "قال الملاء",
+  10: "واعلموا",
+  11: "يعتذرون",
+  12: "وما من دابة",
+  13: "وما ابرئ",
+  14: "ربما",
+  15: "سبحان الذي",
+  16: "قال الم",
+  17: "اقترب",
+  18: "قد افلح",
+  19: "وقال الذين",
+  20: "امن خلق",
+  21: "اتل ما اوحي",
+  22: "ومن يقنت",
+  23: "وما لي",
+  24: "فمن اظلم",
+  25: "اليه يرد",
+  26: "ح م",
+  27: "قال فما خطبكم",
+  28: "قد سمع الله",
+  29: "تبارك الذي",
+  30: "عم"
+};
+
+// Arabic script display for Surah names
+const getArabicScript = (surahNumber) => {
+  const arabicScripts = {
+    1: "الفاتحة",
+    2: "البقرة",
+    3: "آل عمران",
+    4: "النساء",
+    5: "المائدة",
+    6: "الأنعام",
+    7: "الأعراف",
+    8: "الأنفال",
+    9: "التوبة",
+    10: "يونس",
+    11: "هود",
+    12: "يوسف",
+    13: "الرعد",
+    14: "إبراهيم",
+    15: "الحجر",
+    16: "النحل",
+    17: "الإسراء",
+    18: "الكهف",
+    19: "مريم",
+    20: "طه",
+    21: "الأنبياء",
+    22: "الحج",
+    23: "المؤمنون",
+    24: "النور",
+    25: "الفرقان",
+    26: "الشعراء",
+    27: "النمل",
+    28: "القصص",
+    29: "العنكبوت",
+    30: "الروم",
+    31: "لقمان",
+    32: "السجدة",
+    33: "الأحزاب",
+    34: "سبأ",
+    35: "فاطر",
+    36: "يس",
+    37: "الصافات",
+    38: "ص",
+    39: "الزمر",
+    40: "غافر",
+    41: "فصلت",
+    42: "الشورى",
+    43: "الزخرف",
+    44: "الدخان",
+    45: "الجاثية",
+    46: "الأحقاف",
+    47: "محمد",
+    48: "الفتح",
+    49: "الحجرات",
+    50: "ق",
+    51: "الذاريات",
+    52: "الطور",
+    53: "النجم",
+    54: "القمر",
+    55: "الرحمن",
+    56: "الواقعة",
+    57: "الحديد",
+    58: "المجادلة",
+    59: "الحشر",
+    60: "الممتحنة",
+    61: "الصف",
+    62: "الجمعة",
+    63: "المنافقون",
+    64: "التغابن",
+    65: "الطلاق",
+    66: "التحريم",
+    67: "الملك",
+    68: "القلم",
+    69: "الحاقة",
+    70: "المعارج",
+    71: "نوح",
+    72: "الجن",
+    73: "المزمل",
+    74: "المدثر",
+    75: "القيامة",
+    76: "الإنسان",
+    77: "المرسلات",
+    78: "النبأ",
+    79: "النازعات",
+    80: "عبس",
+    81: "التكوير",
+    82: "الانفطار",
+    83: "المطففين",
+    84: "الانشقاق",
+    85: "البروج",
+    86: "الطارق",
+    87: "الأعلى",
+    88: "الغاشية",
+    89: "الفجر",
+    90: "البلد",
+    91: "الشمس",
+    92: "الليل",
+    93: "الضحى",
+    94: "الشرح",
+    95: "التين",
+    96: "العلق",
+    97: "القدر",
+    98: "البينة",
+    99: "الزلزلة",
+    100: "العاديات",
+    101: "القارعة",
+    102: "التكاثر",
+    103: "العصر",
+    104: "الهمزة",
+    105: "الفيل",
+    106: "قريش",
+    107: "الماعون",
+    108: "الكوثر",
+    109: "الكافرون",
+    110: "النصر",
+    111: "المسد",
+    112: "الإخلاص",
+    113: "الفلق",
+    114: "الناس"
+  };
+
+  return arabicScripts[surahNumber] || "";
+};
 
 const RELIGIOUS_CLASSES = [
   "Hifz",
   "Nazra",
   "Qaida",
-  "Dars-e-Nizami",
-  "Tajweed",
+  "Girdan",
   "None",
 ];
 const CONTEMPORARY_CLASSES = [
@@ -140,6 +413,7 @@ export default function StudentsPage() {
   const [progressData, setProgressData] = useState({
     type: "Qaida",
     para: 1,
+    surahNumber: "",
     surah: "",
     notes: "",
   });
@@ -300,10 +574,23 @@ export default function StudentsPage() {
 
   const handleOpenProgress = (student) => {
     setActiveStudentId(student.id);
+    // Lock progress type to student's religious class
+    const classToType = { Hifz: "Hifz", Nazra: "Nazra", Qaida: "Qaida", Girdan: "Girdan" };
+    const lockedType =
+      classToType[student.religious_class] ||
+      student.current_progress?.type ||
+      "Qaida";
+    
+    // Always use student's current Surah number, not allow manual override
+    const currentSurahNumber = student.current_progress?.surah_number || "";
+    const surahName = getArabicScript(currentSurahNumber);
+    const initialSurahDisplay = surahName ? `${surahName} (${currentSurahNumber})` : "";
+    
     setProgressData({
-      type: student.current_progress?.type || "Qaida",
+      type: lockedType,
       para: student.current_progress?.para || 1,
-      surah: student.current_progress?.surah || "",
+      surahNumber: currentSurahNumber,
+      surah: initialSurahDisplay,
       notes: "",
     });
     setShowProgressModal(true);
@@ -762,7 +1049,7 @@ export default function StudentsPage() {
                                 <span className="text-[10px] text-slate-500 flex items-center gap-1">
                                   {student.current_progress?.type === "Qaida"
                                     ? "Progressing"
-                                    : `Para ${student.current_progress?.para || 1}`}
+                                    : `${PARA_NAMES[student.current_progress?.para || 1]} (${student.current_progress?.para || 1})`}
                                   <BookOpen className="h-2.5 w-2.5 opacity-0 group-hover/progress:opacity-50 transition-opacity" />
                                 </span>
                               </button>
@@ -1548,26 +1835,21 @@ export default function StudentsPage() {
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Progress Type
                   </label>
-                  <select
-                    className="input-field text-sm"
-                    value={progressData.type}
-                    onChange={(e) =>
-                      setProgressData({ ...progressData, type: e.target.value })
-                    }
-                  >
-                    {PROGRESS_TYPES.map((t) => (
-                      <option key={t}>{t}</option>
-                    ))}
-                  </select>
+                  <div className="input-field text-sm bg-slate-50 flex items-center justify-between cursor-not-allowed select-none">
+                    <span className="font-semibold text-slate-700">{progressData.type}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded">
+                      Locked
+                    </span>
+                  </div>
                 </div>
                 <div
-                  className={progressData.type === "Qaida" ? "opacity-50" : ""}
+                  className={progressData.type === "Qaida" || progressData.type === "Girdan" ? "opacity-50" : ""}
                 >
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Para Number
+                    Para
                   </label>
                   <select
-                    disabled={progressData.type === "Qaida"}
+                    disabled={progressData.type === "Qaida" || progressData.type === "Girdan"}
                     className="input-field text-sm"
                     value={progressData.para}
                     onChange={(e) =>
@@ -1576,39 +1858,47 @@ export default function StudentsPage() {
                   >
                     {PARA_NUMBERS.map((n) => (
                       <option key={n} value={n}>
-                        {n}
+                        {PARA_NAMES[n]} ({n})
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Current Surah / Lesson
-                </label>
-                <input
-                  type="text"
-                  className="input-field text-sm"
-                  placeholder="Name of Surah or lesson"
-                  value={progressData.surah}
-                  onChange={(e) =>
-                    setProgressData({ ...progressData, surah: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Academic Notes
-                </label>
-                <textarea
-                  className="input-field text-sm h-20"
-                  placeholder="Observations about progress, memorization quality, etc."
-                  value={progressData.notes}
-                  onChange={(e) =>
-                    setProgressData({ ...progressData, notes: e.target.value })
-                  }
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className={progressData.type === "Qaida" || progressData.type === "Girdan" ? "opacity-50" : ""}
+                >
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Surah
+                  </label>
+                  <select
+                    disabled={progressData.type === "Qaida" || progressData.type === "Girdan"}
+                    readOnly
+                    title="Surah number is automatically updated based on current progress"
+                    className="input-field text-sm"
+                    value={progressData.surahNumber}
+                    onChange={(e) => {
+                      const newSurahNumber = e.target.value;
+                      const surahName = getArabicScript(newSurahNumber);
+                      const displayName = surahName ? `${surahName} (${newSurahNumber})` : "";
+                      setProgressData({ 
+                        ...progressData, 
+                        surahNumber: newSurahNumber,
+                        surah: displayName 
+                      });
+                    }}
+                  >
+                    <option value="">— Select —</option>
+                    {SURAH_NUMBERS.map((n) => (
+                      <option key={n} value={n}>
+                        {getArabicScript(n)} ({n})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                </div>
+
               <div className="flex gap-2 justify-end pt-2">
                 <button
                   type="button"
