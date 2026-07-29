@@ -38,14 +38,11 @@ const userSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     toJSON: {
       transform: function (doc, ret) {
-        const userObject = ret;
-        // Include password for server-side comparison
-        userObject.password = doc.password;
-        delete userObject.password;
-        return userObject;
+        delete ret.password;
+        return ret;
       },
     },
   },

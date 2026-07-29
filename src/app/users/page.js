@@ -454,6 +454,7 @@ export default function UsersPage() {
                     </label>
                     <input
                       type="password"
+                      minLength={8}
                       required
                       value={newUser.password}
                       onChange={(e) =>

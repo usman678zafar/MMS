@@ -1,47 +1,21 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongoose";
-import User from "@/models/User";
+import { getCurrentUser } from "@/lib/auth";
 
-export async function GET(request) {
+export async function GET() {
   try {
-    // Get session or token from request
-    // For now, we'll use a simple email query param
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get("email");
-
-    if (!email) {
-      return NextResponse.json(
-        { success: false, error: "Email required" },
-        { status: 400 },
-      );
-    }
-
-    await connectDB();
-
-    // Find user in MongoDB
-    const user = await User.findOne({ email });
-
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 },
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
       );
     }
 
-    // Return user data (without password)
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-    });
+    return NextResponse.json({ success: true, user });
   } catch (error) {
     console.error("Get user error:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: "Unable to load session" },
       { status: 500 },
     );
   }

@@ -441,32 +441,22 @@ export default function StudentsPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get("tab");
 
-    if (
-      tabFromUrl &&
-      ["management", "fees", "attendance"].includes(tabFromUrl)
-    ) {
-      setActiveTab(tabFromUrl);
-      localStorage.setItem("studentsActiveTab", tabFromUrl);
-    } else {
-      const savedTab = localStorage.getItem("studentsActiveTab");
-      if (
-        savedTab &&
-        ["management", "fees", "attendance"].includes(savedTab)
-      ) {
-        setActiveTab(savedTab);
-        window.history.replaceState(
-          { activeTab: savedTab },
-          "",
-          `?tab=${savedTab}`
-        );
-      } else {
-        window.history.replaceState(
-          { activeTab: "management" },
-          "",
-          `?tab=management`
-        );
-      }
-    }
+    const savedTab = localStorage.getItem("studentsActiveTab");
+    const initialTab =
+      tabFromUrl && ["management", "fees", "attendance"].includes(tabFromUrl)
+        ? tabFromUrl
+        : savedTab && ["management", "fees", "attendance"].includes(savedTab)
+          ? savedTab
+          : "management";
+    const timer = setTimeout(() => {
+      setActiveTab(initialTab);
+      localStorage.setItem("studentsActiveTab", initialTab);
+      window.history.replaceState(
+        { activeTab: initialTab },
+        "",
+        `?tab=${initialTab}`,
+      );
+    }, 0);
 
     // 2. Listen to browser back/forward buttons
     const handlePopState = (event) => {
@@ -477,7 +467,10 @@ export default function StudentsPage() {
     };
 
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   const handleTabChange = (tab) => {
@@ -541,8 +534,11 @@ export default function StudentsPage() {
   }, [fetchStudents, fetchTeachers]);
 
   useEffect(() => {
-    if (activeTab === "fees") fetchMonthlyFeeStatus();
-    if (activeTab === "attendance") fetchAttendanceForDate();
+    const timer = setTimeout(() => {
+      if (activeTab === "fees") fetchMonthlyFeeStatus();
+      if (activeTab === "attendance") fetchAttendanceForDate();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [activeTab, fetchMonthlyFeeStatus, fetchAttendanceForDate]);
 
   const handleOpenEdit = (student) => {

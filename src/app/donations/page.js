@@ -63,26 +63,22 @@ export default function DonationsPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get("tab");
 
-    if (tabFromUrl && ["donations", "donors"].includes(tabFromUrl)) {
-      setActiveTab(tabFromUrl);
-      localStorage.setItem("donationsActiveTab", tabFromUrl);
-    } else {
-      const savedTab = localStorage.getItem("donationsActiveTab");
-      if (savedTab && ["donations", "donors"].includes(savedTab)) {
-        setActiveTab(savedTab);
-        window.history.replaceState(
-          { activeTab: savedTab },
-          "",
-          `?tab=${savedTab}`
-        );
-      } else {
-        window.history.replaceState(
-          { activeTab: "donations" },
-          "",
-          `?tab=donations`
-        );
-      }
-    }
+    const savedTab = localStorage.getItem("donationsActiveTab");
+    const initialTab =
+      tabFromUrl && ["donations", "donors"].includes(tabFromUrl)
+        ? tabFromUrl
+        : savedTab && ["donations", "donors"].includes(savedTab)
+          ? savedTab
+          : "donations";
+    const timer = setTimeout(() => {
+      setActiveTab(initialTab);
+      localStorage.setItem("donationsActiveTab", initialTab);
+      window.history.replaceState(
+        { activeTab: initialTab },
+        "",
+        `?tab=${initialTab}`,
+      );
+    }, 0);
 
     // 2. Listen to browser back/forward buttons
     const handlePopState = (event) => {
@@ -93,7 +89,10 @@ export default function DonationsPage() {
     };
 
     window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   const handleTabChange = (tab) => {

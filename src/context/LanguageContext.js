@@ -11,10 +11,13 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     const savedLang = localStorage.getItem("app_lang");
-    if (savedLang) {
-      setLanguage(savedLang);
-    }
-    setMounted(true);
+    const timer = setTimeout(() => {
+      if (savedLang === "en" || savedLang === "ur") {
+        setLanguage(savedLang);
+      }
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {

@@ -1,26 +1,23 @@
 "use server";
-import { connectDB } from "@/lib/mongoose";
+
 import mongoose from "mongoose";
-import Donor from "@/models/Donor";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/rbac";
 import {
-  getPaginationParams,
-  formatPaginatedResponse,
-  PAGINATION_DEFAULTS,
-} from "@/lib/pagination";
+  donorSchema,
+  escapeRegex,
+  objectId,
+  parsePagination,
+} from "@/lib/validation";
+import { formatPaginatedResponse, PAGINATION_DEFAULTS } from "@/lib/pagination";
+import { serializeDocument, serializeDocuments } from "@/lib/serialization";
 
 export async function addDonor(donorData) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("donors");
-
-    const data = {
-      ...donorData,
-      created_at: new Date(),
-    };
-
-    const result = await collection.insertOne(data);
-    return { success: true, data };
+    await requirePermission(PERMISSIONS.DONORS_CREATE);
+    const data = { ...donorSchema.parse(donorData), created_at: new Date() };
+    const result = await mongoose.connection.db.collection("donors").insertOne(data);
+    return { success: true, data: serializeDocument({ ...data, _id: result.insertedId }) };
   } catch (error) {
     console.error("addDonor Error:", error);
     return { success: false, error: error.message };
@@ -29,17 +26,14 @@ export async function addDonor(donorData) {
 
 export async function updateDonor(id, donorData) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("donors");
-
-    const data = {
-      ...donorData,
-      updated_at: new Date(),
-    };
-
-    const result = await collection.updateOne({ _id: id }, { $set: data });
-    return { success: true, data };
+    await requirePermission(PERMISSIONS.DONORS_UPDATE);
+    const data = { ...donorSchema.parse(donorData), updated_at: new Date() };
+    const result = await mongoose.connection.db
+      .collection("donors")
+      .updateOne({ _id: objectId(id, "donor id") }, { $set: data });
+    return result.matchedCount === 1
+      ? { success: true, data: serializeDocument(data) }
+      : { success: false, error: "Donor not found" };
   } catch (error) {
     console.error("updateDonor Error:", error);
     return { success: false, error: error.message };
@@ -53,39 +47,38 @@ export async function getAllDonors(
   status = "",
 ) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("donors");
-
-    // Build query
+    await requirePermission(PERMISSIONS.DONORS_VIEW);
+    const pagination = parsePagination(page, pageSize);
     const query = {};
-
-    if (search) {
+    const safeSearch = escapeRegex(search);
+    if (safeSearch) {
       query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
-        { address: { $regex: search, $options: "i" } },
+        { name: { $regex: safeSearch, $options: "i" } },
+        { email: { $regex: safeSearch, $options: "i" } },
+        { phone: { $regex: safeSearch, $options: "i" } },
+        { address: { $regex: safeSearch, $options: "i" } },
       ];
     }
-
-    if (status) {
+    if (status === "active" || status === "inactive") {
       query.is_active = status === "active";
     }
 
-    // Get total count
-    const totalItems = await collection.countDocuments(query);
-
-    // Get paginated data
-    const { skip, limit } = getPaginationParams(page, pageSize);
-    const data = await collection
-      .find(query)
-      .sort({ name: 1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-
-    return formatPaginatedResponse(data, totalItems, page, pageSize);
+    const collection = mongoose.connection.db.collection("donors");
+    const [totalItems, data] = await Promise.all([
+      collection.countDocuments(query),
+      collection
+        .find(query)
+        .sort({ name: 1 })
+        .skip((pagination.page - 1) * pagination.pageSize)
+        .limit(pagination.pageSize)
+        .toArray(),
+    ]);
+    return formatPaginatedResponse(
+      serializeDocuments(data),
+      totalItems,
+      pagination.page,
+      pagination.pageSize,
+    );
   } catch (error) {
     console.error("getAllDonors Error:", error);
     return { success: false, error: error.message };
@@ -94,12 +87,21 @@ export async function getAllDonors(
 
 export async function deleteDonor(id) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("donors");
-
-    await collection.deleteOne({ _id: id });
-    return { success: true };
+    await requirePermission(PERMISSIONS.DONORS_DELETE);
+    const donorId = objectId(id, "donor id");
+    const donations = mongoose.connection.db.collection("donations");
+    if (await donations.countDocuments({ donor_id: donorId }, { limit: 1 })) {
+      return {
+        success: false,
+        error: "This donor has donations and cannot be deleted",
+      };
+    }
+    const result = await mongoose.connection.db
+      .collection("donors")
+      .deleteOne({ _id: donorId });
+    return result.deletedCount === 1
+      ? { success: true }
+      : { success: false, error: "Donor not found" };
   } catch (error) {
     return { success: false, error: error.message };
   }

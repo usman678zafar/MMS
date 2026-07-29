@@ -1,40 +1,49 @@
 "use server";
-import { connectDB } from "@/lib/mongoose";
+
 import mongoose from "mongoose";
-import User from "@/models/User";
-import { serializeDocument, serializeDocuments } from "@/lib/serialization";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/rbac";
+import { serializeDocuments } from "@/lib/serialization";
+
+const sumAmount = (collection, match = {}) =>
+  collection
+    .aggregate([
+      { $match: match },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ])
+    .toArray();
 
 export async function getDashboardStats() {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.DASHBOARD_VIEW);
     const db = mongoose.connection.db;
-
     const [
-      donations,
-      expenses,
+      donationTotal,
+      expenseTotal,
       staffCount,
       inventoryCount,
       studentCount,
       pendingFeesCount,
     ] = await Promise.all([
-      db.collection("donations").find({}).toArray(),
-      db.collection("expenses").find({}).toArray(),
-      db.collection("staff").countDocuments(),
+      sumAmount(db.collection("donations")),
+      sumAmount(db.collection("expenses")),
+      db.collection("staff").countDocuments({ is_active: { $ne: false } }),
       db.collection("inventory").countDocuments(),
-      db.collection("students").countDocuments(),
-      db.collection("students").countDocuments({ fee_status: "Unpaid" }),
+      db.collection("students").countDocuments({ is_active: { $ne: false } }),
+      db.collection("students").countDocuments({
+        fee_status: "Unpaid",
+        is_active: { $ne: false },
+      }),
     ]);
 
     return {
       success: true,
-      totalDonations:
-        donations?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0,
-      totalExpenses:
-        expenses?.reduce((acc, curr) => acc + Number(curr.amount), 0) || 0,
-      activeStaff: staffCount || 0,
-      inventoryCount: inventoryCount || 0,
-      studentCount: studentCount || 0,
-      pendingFees: pendingFeesCount || 0,
+      totalDonations: Number(donationTotal[0]?.total || 0),
+      totalExpenses: Number(expenseTotal[0]?.total || 0),
+      activeStaff: staffCount,
+      inventoryCount,
+      studentCount,
+      pendingFees: pendingFeesCount,
     };
   } catch (error) {
     console.error("getDashboardStats Error:", error);
@@ -44,57 +53,41 @@ export async function getDashboardStats() {
 
 export async function getFinancialData() {
   try {
-    const now = new Date();
-    // Start from the beginning of the month 5 months ago
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-
-    await connectDB();
+    await requirePermission(PERMISSIONS.DASHBOARD_VIEW);
     const db = mongoose.connection.db;
-
-    const [donations, expenses] = await Promise.all([
-      db
-        .collection("donations")
-        .find({ date: { $gte: sixMonthsAgo } })
-        .toArray(),
-      db
-        .collection("expenses")
-        .find({ date: { $gte: sixMonthsAgo } })
-        .toArray(),
-    ]);
-
-    const ALL_MONTHS = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const monthlyPipeline = [
+      { $match: { date: { $gte: start, $lt: end } } },
+      {
+        $group: {
+          _id: { year: { $year: "$date" }, month: { $month: "$date" } },
+          total: { $sum: "$amount" },
+        },
+      },
     ];
-
+    const [donations, expenses] = await Promise.all([
+      db.collection("donations").aggregate(monthlyPipeline).toArray(),
+      db.collection("expenses").aggregate(monthlyPipeline).toArray(),
+    ]);
+    const key = (year, month) => `${year}-${month}`;
+    const donationMap = new Map(
+      donations.map((item) => [key(item._id.year, item._id.month), item.total]),
+    );
+    const expenseMap = new Map(
+      expenses.map((item) => [key(item._id.year, item._id.month), item.total]),
+    );
+    const formatter = new Intl.DateTimeFormat("en", { month: "short" });
     const data = [];
-    for (let i = 5; i >= 0; i--) {
-      // Calculate correct month and year
-      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const targetYear = targetDate.getFullYear();
-      const targetMonth = targetDate.getMonth();
 
-      const monthStart = new Date(targetYear, targetMonth, 1, 0, 0, 0, 0);
-      const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
-
-      const monthDonations = donations
-        .filter((d) => {
-          const d2 = new Date(d.date);
-          return d2 >= monthStart && d2 <= monthEnd;
-        })
-        .reduce((sum, d) => sum + Number(d.amount), 0);
-
-      const monthExpenses = expenses
-        .filter((e) => {
-          const e2 = new Date(e.date);
-          return e2 >= monthStart && e2 <= monthEnd;
-        })
-        .reduce((sum, e) => sum + Number(e.amount), 0);
-
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const monthKey = key(date.getFullYear(), date.getMonth() + 1);
       data.push({
-        name: ALL_MONTHS[targetMonth],
-        donations: monthDonations,
-        expenses: monthExpenses,
+        name: formatter.format(date),
+        donations: Number(donationMap.get(monthKey) || 0),
+        expenses: Number(expenseMap.get(monthKey) || 0),
       });
     }
 
@@ -107,13 +100,11 @@ export async function getFinancialData() {
 
 export async function getRecentActivity() {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const donationsCollection = db.collection("donations");
-
-    const recentDonations = await donationsCollection
+    await requirePermission(PERMISSIONS.DASHBOARD_VIEW);
+    const recentDonations = await mongoose.connection.db
+      .collection("donations")
       .aggregate([
-        { $sort: { created_at: -1 } },
+        { $sort: { created_at: -1, date: -1 } },
         { $limit: 4 },
         {
           $lookup: {
@@ -123,23 +114,21 @@ export async function getRecentActivity() {
             as: "donorData",
           },
         },
-        {
-          $unwind: {
-            path: "$donorData",
-            preserveNullAndEmptyArrays: true,
-          },
-        },
+        { $unwind: { path: "$donorData", preserveNullAndEmptyArrays: true } },
       ])
       .toArray();
 
-    const activities = recentDonations.map((donation) => ({
-      type: "donation",
-      amount: Number(donation.amount),
-      donor: donation.donorData?.name || "Anonymous",
-      date: donation.created_at,
-    }));
-
-    return { success: true, activities: serializeDocuments(activities) };
+    return {
+      success: true,
+      activities: serializeDocuments(
+        recentDonations.map((donation) => ({
+          type: "donation",
+          amount: Number(donation.amount),
+          donor: donation.donorData?.name || "Anonymous",
+          date: donation.created_at || donation.date,
+        })),
+      ),
+    };
   } catch (error) {
     console.error("getRecentActivity Error:", error);
     return { success: false, error: error.message };

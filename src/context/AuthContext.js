@@ -1,6 +1,13 @@
 "use client";
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
 import { hasPermission } from "@/lib/rbac";
+import { useRouter } from "next/navigation";
 
 const AuthContext = createContext({});
 
@@ -8,74 +15,54 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const router = useRouter();
 
-  // Check authentication on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // First check localStorage for user data
-        let storedUser = null;
-        if (typeof window !== "undefined") {
-          const userStr = localStorage.getItem("user");
-          if (userStr) {
-            storedUser = JSON.parse(userStr);
-          }
-        }
+  const refreshAuth = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/me", {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const data = await response.json();
 
-        if (storedUser && storedUser.email) {
-          // Verify user with API
-          const response = await fetch(
-            `/api/auth/me?email=${encodeURIComponent(storedUser.email)}`,
-          );
-          const data = await response.json();
-
-          if (data.success) {
-            setUser(data.user);
-            setProfile({
-              full_name: data.user.name,
-              email: data.user.email,
-              role: data.user.role,
-            });
-          } else {
-            // Clear invalid stored user
-            if (typeof window !== "undefined") {
-              localStorage.removeItem("user");
-            }
-            setUser(null);
-            setProfile(null);
-          }
-        } else {
-          setUser(null);
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error);
+      if (response.ok && data.success) {
+        setUser(data.user);
+        setProfile({
+          full_name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+        });
+      } else {
         setUser(null);
         setProfile(null);
-        // Clear potentially corrupted localStorage data
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("user");
-        }
-      } finally {
-        setLoading(false);
       }
-    };
-
-    checkAuth();
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      setUser(null);
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(refreshAuth, 0);
+    return () => clearTimeout(timer);
+  }, [refreshAuth]);
 
   const checkPermission = (permission) => {
     return hasPermission(profile?.role, permission);
   };
 
-  const signOut = () => {
+  const signOut = async () => {
+    await fetch("/api/auth/signout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
     setUser(null);
     setProfile(null);
-    // Clear any session/storage
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("user");
-    }
-    window.location.href = "/login";
+    router.replace("/login");
+    router.refresh();
   };
 
   const value = {
@@ -83,6 +70,7 @@ export const AuthProvider = ({ children }) => {
     profile,
     loading,
     hasPermission: checkPermission,
+    refreshAuth,
     signOut,
   };
 

@@ -10,7 +10,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { user } = useAuth();
+  const { user, refreshAuth } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -27,17 +27,18 @@ export default function Login() {
       const response = await fetch("/api/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // Store user in localStorage or context
-        localStorage.setItem("user", JSON.stringify(data.user));
-        router.push("/");
+        await refreshAuth();
+        router.replace("/");
+        router.refresh();
       } else {
-        throw new Error("Invalid email or password");
+        throw new Error(data.error || "Invalid email or password");
       }
     } catch (err) {
       setError(err.message);

@@ -1,60 +1,72 @@
 "use server";
-import { connectDB } from "@/lib/mongoose";
 import mongoose from "mongoose";
 import {
-  getPaginationParams,
   formatPaginatedResponse,
   PAGINATION_DEFAULTS,
 } from "@/lib/pagination";
 import { serializeDocument, serializeDocuments } from "@/lib/serialization";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/rbac";
+import {
+  attendanceSchema,
+  escapeRegex,
+  feeSchema,
+  objectId,
+  parsePagination,
+  progressSchema,
+  studentSchema,
+} from "@/lib/validation";
 
 export async function addStudent(studentData) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_CREATE);
+    const parsed = studentSchema.parse(studentData);
     const db = mongoose.connection.db;
     const collection = db.collection("students");
 
     const data = {
-      ...studentData,
-      monthly_fee: studentData.monthly_fee
-        ? parseFloat(studentData.monthly_fee)
-        : 0,
-      admission_date: studentData.admission_date
-        ? new Date(studentData.admission_date)
+      ...parsed,
+      admission_date: new Date(parsed.admission_date),
+      teacher_id: parsed.teacher_id
+        ? objectId(parsed.teacher_id, "teacher id")
         : null,
-      teacher_id: studentData.teacher_id
-        ? new mongoose.Types.ObjectId(studentData.teacher_id)
-        : null,
-      fee_status: studentData.fee_status || "Unpaid",
+      fee_status: parsed.fee_status,
       current_progress: {
-        type: studentData.progress_type || "Qaida",
-        para: studentData.progress_para
-          ? parseInt(studentData.progress_para)
-          : 1,
-        surah: studentData.progress_surah || "",
-        ayat: studentData.progress_ayat ? parseInt(studentData.progress_ayat) : null,
+        type: parsed.progress_type,
+        para: parsed.progress_para,
+        surah: parsed.progress_surah,
+        ayat: null,
         last_updated: new Date(),
       },
       created_at: new Date(),
     };
 
-    const result = await collection.insertOne(data);
-    const sId = result.insertedId;
-
-    // 2. Add initial history record
     const history = db.collection("studentprogresses");
-    await history.insertOne({
-      student_id: sId,
-      teacher_id: data.teacher_id,
-      type: data.current_progress.type,
-      para: data.current_progress.para,
-      surah: data.current_progress.surah,
-      ayat: data.current_progress.ayat,
-      notes: "Initial enrollment progress",
-      date: new Date(),
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
+    const session = await mongoose.connection.getClient().startSession();
+    let sId;
+    try {
+      await session.withTransaction(async () => {
+        const result = await collection.insertOne(data, { session });
+        sId = result.insertedId;
+        await history.insertOne(
+          {
+            student_id: sId,
+            teacher_id: data.teacher_id,
+            type: data.current_progress.type,
+            para: data.current_progress.para,
+            surah: data.current_progress.surah,
+            ayat: data.current_progress.ayat,
+            notes: "Initial enrollment progress",
+            date: new Date(),
+            created_at: new Date(),
+            updated_at: new Date(),
+          },
+          { session },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
 
     return {
       success: true,
@@ -68,32 +80,27 @@ export async function addStudent(studentData) {
 
 export async function updateStudent(id, studentData) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    const parsed = studentSchema.parse(studentData);
     const db = mongoose.connection.db;
     const collection = db.collection("students");
 
     const updateData = {
-      ...studentData,
-      monthly_fee: studentData.monthly_fee
-        ? parseFloat(studentData.monthly_fee)
-        : 0,
-      admission_date: studentData.admission_date
-        ? new Date(studentData.admission_date)
+      ...parsed,
+      admission_date: new Date(parsed.admission_date),
+      teacher_id: parsed.teacher_id
+        ? objectId(parsed.teacher_id, "teacher id")
         : null,
       updated_at: new Date(),
     };
 
-    if (studentData.teacher_id) {
-      updateData.teacher_id = new mongoose.Types.ObjectId(
-        studentData.teacher_id,
-      );
-    }
-
     const result = await collection.updateOne(
-      { _id: typeof id === "string" ? new mongoose.Types.ObjectId(id) : id },
+      { _id: objectId(id, "student id") },
       { $set: updateData },
     );
-    return { success: true, data: serializeDocument(updateData) };
+    return result.matchedCount === 1
+      ? { success: true, data: serializeDocument(updateData) }
+      : { success: false, error: "Student not found" };
   } catch (error) {
     console.error("updateStudent Error:", error);
     return { success: false, error: error.message };
@@ -108,34 +115,36 @@ export async function getStudents(
   educationClass = "All",
 ) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    const pagination = parsePagination(page, pageSize);
     const db = mongoose.connection.db;
     const collection = db.collection("students");
 
     // Build query
     const filterConditions = [];
 
-    if (search) {
+    const safeSearch = escapeRegex(search);
+    if (safeSearch) {
       filterConditions.push({
         $or: [
-          { name: { $regex: search, $options: "i" } },
-          { father_name: { $regex: search, $options: "i" } },
-          { phone: { $regex: search, $options: "i" } },
-          { address: { $regex: search, $options: "i" } },
+          { name: { $regex: safeSearch, $options: "i" } },
+          { father_name: { $regex: safeSearch, $options: "i" } },
+          { phone: { $regex: safeSearch, $options: "i" } },
+          { address: { $regex: safeSearch, $options: "i" } },
         ],
       });
     }
 
-    if (status) {
+    if (status === "active" || status === "inactive") {
       filterConditions.push({ is_active: status === "active" });
     }
 
     if (educationClass && educationClass !== "All") {
       filterConditions.push({
         $or: [
-          { religious_class: { $regex: educationClass, $options: "i" } },
-          { contemporary_class: { $regex: educationClass, $options: "i" } },
-          { class: { $regex: educationClass, $options: "i" } },
+          { religious_class: escapeRegex(educationClass) },
+          { contemporary_class: escapeRegex(educationClass) },
+          { class: escapeRegex(educationClass) },
         ],
       });
     }
@@ -146,7 +155,8 @@ export async function getStudents(
     const totalItems = await collection.countDocuments(query);
 
     // Get paginated data with teacher join
-    const { skip, limit } = getPaginationParams(page, pageSize);
+    const skip = (pagination.page - 1) * pagination.pageSize;
+    const limit = pagination.pageSize;
 
     const data = await collection
       .aggregate([
@@ -175,8 +185,8 @@ export async function getStudents(
     return formatPaginatedResponse(
       serializeDocuments(data),
       totalItems,
-      page,
-      pageSize,
+      pagination.page,
+      pagination.pageSize,
     );
   } catch (error) {
     console.error("getStudents Error:", error);
@@ -186,15 +196,17 @@ export async function getStudents(
 
 export async function updateStudentStatus(id, is_active) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
     const db = mongoose.connection.db;
     const collection = db.collection("students");
 
-    await collection.updateOne(
-      { _id: id },
-      { $set: { is_active, updated_at: new Date() } },
+    const result = await collection.updateOne(
+      { _id: objectId(id, "student id") },
+      { $set: { is_active: Boolean(is_active), updated_at: new Date() } },
     );
-    return { success: true };
+    return result.matchedCount === 1
+      ? { success: true }
+      : { success: false, error: "Student not found" };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -202,14 +214,28 @@ export async function updateStudentStatus(id, is_active) {
 
 export async function deleteStudent(id) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_DELETE);
     const db = mongoose.connection.db;
-    const collection = db.collection("students");
-
-    await collection.deleteOne({
-      _id: typeof id === "string" ? new mongoose.Types.ObjectId(id) : id,
-    });
-    return { success: true };
+    const studentId = objectId(id, "student id");
+    const session = await mongoose.connection.getClient().startSession();
+    let deleted = 0;
+    try {
+      await session.withTransaction(async () => {
+        const result = await db
+          .collection("students")
+          .deleteOne({ _id: studentId }, { session });
+        deleted = result.deletedCount;
+        if (deleted !== 1) throw new Error("Student not found");
+        await Promise.all([
+          db.collection("studentfees").deleteMany({ student_id: studentId }, { session }),
+          db.collection("studentattendance").deleteMany({ student_id: studentId }, { session }),
+          db.collection("studentprogresses").deleteMany({ student_id: studentId }, { session }),
+        ]);
+      });
+    } finally {
+      await session.endSession();
+    }
+    return deleted === 1 ? { success: true } : { success: false, error: "Student not found" };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -217,59 +243,49 @@ export async function deleteStudent(id) {
 
 export async function updateStudentProgress(studentId, progressData) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    const parsed = progressSchema.parse(progressData);
     const db = mongoose.connection.db;
     const students = db.collection("students");
-    const history = db.collection("studentprogresses"); // Mongoose pluralizes by default
-
-    const sId =
-      typeof studentId === "string"
-        ? new mongoose.Types.ObjectId(studentId)
-        : studentId;
-
-    // 1. Update current progress on student record
-    const updateResult = await students.updateOne(
-      { _id: sId },
-      {
-        $set: {
-          current_progress: {
-            type: progressData.type,
-            para: parseInt(progressData.para),
-            surah_number: progressData.surahNumber
-              ? parseInt(progressData.surahNumber)
-              : null,
-            surah: progressData.surah,
-            ayat: progressData.ayat ? parseInt(progressData.ayat) : null,
-            last_updated: new Date(),
+    const history = db.collection("studentprogresses");
+    const sId = objectId(studentId, "student id");
+    const session = await mongoose.connection.getClient().startSession();
+    try {
+      await session.withTransaction(async () => {
+        const student = await students.findOne({ _id: sId }, { session });
+        if (!student) throw new Error("Student not found");
+        const currentProgress = {
+          type: parsed.type,
+          para: parsed.para,
+          surah_number: parsed.surahNumber || null,
+          surah: parsed.surah,
+          ayat: parsed.ayat || null,
+          last_updated: new Date(),
+        };
+        await students.updateOne(
+          { _id: sId },
+          { $set: { current_progress: currentProgress, updated_at: new Date() } },
+          { session },
+        );
+        await history.insertOne(
+          {
+            student_id: sId,
+            teacher_id: student.teacher_id,
+            ...currentProgress,
+            notes: parsed.notes,
+            date:
+              parsed.month && parsed.year
+                ? new Date(`${parsed.month} 1, ${parsed.year}`)
+                : new Date(),
+            created_at: new Date(),
+            updated_at: new Date(),
           },
-          updated_at: new Date(),
-        },
-      },
-    );
-
-    // 2. Record in history
-    if (updateResult.modifiedCount > 0) {
-      const student = await students.findOne({ _id: sId });
-      await history.insertOne({
-        student_id: sId,
-        teacher_id: student.teacher_id,
-        type: progressData.type,
-        para: parseInt(progressData.para),
-        surah_number: progressData.surahNumber
-          ? parseInt(progressData.surahNumber)
-          : null,
-        surah: progressData.surah,
-        ayat: progressData.ayat ? parseInt(progressData.ayat) : null,
-        notes: progressData.notes,
-        date:
-          progressData.month && progressData.year
-            ? new Date(`${progressData.month} 1, ${progressData.year}`)
-            : new Date(),
-        created_at: new Date(),
-        updated_at: new Date(),
+          { session },
+        );
       });
+    } finally {
+      await session.endSession();
     }
-
     return { success: true };
   } catch (error) {
     console.error("updateStudentProgress Error:", error);
@@ -279,15 +295,20 @@ export async function updateStudentProgress(studentId, progressData) {
 
 export async function updateFeeStatus(id, fee_status) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    if (!["Paid", "Unpaid"].includes(fee_status)) {
+      throw new Error("Invalid fee status");
+    }
     const db = mongoose.connection.db;
     const collection = db.collection("students");
 
-    await collection.updateOne(
-      { _id: typeof id === "string" ? new mongoose.Types.ObjectId(id) : id },
+    const result = await collection.updateOne(
+      { _id: objectId(id, "student id") },
       { $set: { fee_status, updated_at: new Date() } },
     );
-    return { success: true };
+    return result.matchedCount === 1
+      ? { success: true }
+      : { success: false, error: "Student not found" };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -295,16 +316,13 @@ export async function updateFeeStatus(id, fee_status) {
 
 export async function getStudentProgressHistory(studentId) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
     const db = mongoose.connection.db;
     const collection = db.collection("studentprogresses");
 
     const history = await collection
       .find({
-        student_id:
-          typeof studentId === "string"
-            ? new mongoose.Types.ObjectId(studentId)
-            : studentId,
+        student_id: objectId(studentId, "student id"),
       })
       .sort({ date: -1 })
       .toArray();
@@ -321,41 +339,44 @@ export async function getStudentProgressHistory(studentId) {
 
 export async function recordFeePayment(studentId, feeData) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    const parsed = feeSchema.parse(feeData);
     const db = mongoose.connection.db;
     const students = db.collection("students");
     const fees = db.collection("studentfees");
-
-    const sId =
-      typeof studentId === "string"
-        ? new mongoose.Types.ObjectId(studentId)
-        : studentId;
-
-    // 1. Record in fees collection
+    const sId = objectId(studentId, "student id");
     const payment = {
       student_id: sId,
-      amount: parseFloat(feeData.amount),
-      month: feeData.month, // e.g., "April"
-      year: parseInt(feeData.year),
+      ...parsed,
       date: new Date(),
-      notes: feeData.notes || "",
-      created_at: new Date(),
+      updated_at: new Date(),
     };
-
-    await fees.insertOne(payment);
-
-    // 2. Update student fee status to Paid
-    await students.updateOne(
-      { _id: sId },
-      {
-        $set: {
-          fee_status: "Paid",
-          last_fee_paid: new Date(),
-          updated_at: new Date(),
-        },
-      },
-    );
-
+    const session = await mongoose.connection.getClient().startSession();
+    try {
+      await session.withTransaction(async () => {
+        if (!(await students.findOne({ _id: sId }, { session }))) {
+          throw new Error("Student not found");
+        }
+        await fees.updateOne(
+          { student_id: sId, month: parsed.month, year: parsed.year },
+          { $set: payment, $setOnInsert: { created_at: new Date() } },
+          { upsert: true, session },
+        );
+        await students.updateOne(
+          { _id: sId },
+          {
+            $set: {
+              fee_status: "Paid",
+              last_fee_paid: new Date(),
+              updated_at: new Date(),
+            },
+          },
+          { session },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
     return { success: true };
   } catch (error) {
     console.error("recordFeePayment Error:", error);
@@ -365,32 +386,30 @@ export async function recordFeePayment(studentId, feeData) {
 
 export async function deleteFeePayment(studentId, month, year) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
     const db = mongoose.connection.db;
     const students = db.collection("students");
     const fees = db.collection("studentfees");
 
-    const sId =
-      typeof studentId === "string"
-        ? new mongoose.Types.ObjectId(studentId)
-        : studentId;
-
-    await fees.deleteMany({
-      student_id: sId,
-      month: month,
-      year: parseInt(year),
-    });
-
-    await students.updateOne(
-      { _id: sId },
-      {
-        $set: {
-          fee_status: "Unpaid",
-          updated_at: new Date(),
-        },
-      },
-    );
-
+    const sId = objectId(studentId, "student id");
+    const parsedPeriod = feeSchema.pick({ month: true, year: true }).parse({ month, year });
+    const session = await mongoose.connection.getClient().startSession();
+    try {
+      await session.withTransaction(async () => {
+        await fees.deleteMany(
+          { student_id: sId, month: parsedPeriod.month, year: parsedPeriod.year },
+          { session },
+        );
+        const result = await students.updateOne(
+          { _id: sId },
+          { $set: { fee_status: "Unpaid", updated_at: new Date() } },
+          { session },
+        );
+        if (result.matchedCount !== 1) throw new Error("Student not found");
+      });
+    } finally {
+      await session.endSession();
+    }
     return { success: true };
   } catch (error) {
     console.error("deleteFeePayment Error:", error);
@@ -400,31 +419,36 @@ export async function deleteFeePayment(studentId, month, year) {
 
 export async function deleteBulkFeePayments(studentIds, month, year) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
     const db = mongoose.connection.db;
     const students = db.collection("students");
     const fees = db.collection("studentfees");
 
-    const objectIds = studentIds.map((id) =>
-      typeof id === "string" ? new mongoose.Types.ObjectId(id) : id
-    );
-
-    await fees.deleteMany({
-      student_id: { $in: objectIds },
-      month: month,
-      year: parseInt(year),
-    });
-
-    await students.updateMany(
-      { _id: { $in: objectIds } },
-      {
-        $set: {
-          fee_status: "Unpaid",
-          updated_at: new Date(),
-        },
-      }
-    );
-
+    if (!Array.isArray(studentIds) || studentIds.length > 500) {
+      throw new Error("Invalid student list");
+    }
+    const objectIds = studentIds.map((id) => objectId(id, "student id"));
+    const parsedPeriod = feeSchema.pick({ month: true, year: true }).parse({ month, year });
+    const session = await mongoose.connection.getClient().startSession();
+    try {
+      await session.withTransaction(async () => {
+        await fees.deleteMany(
+          {
+            student_id: { $in: objectIds },
+            month: parsedPeriod.month,
+            year: parsedPeriod.year,
+          },
+          { session },
+        );
+        await students.updateMany(
+          { _id: { $in: objectIds } },
+          { $set: { fee_status: "Unpaid", updated_at: new Date() } },
+          { session },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
     return { success: true };
   } catch (error) {
     console.error("deleteBulkFeePayments Error:", error);
@@ -434,16 +458,13 @@ export async function deleteBulkFeePayments(studentIds, month, year) {
 
 export async function getStudentFeeHistory(studentId) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
     const db = mongoose.connection.db;
     const collection = db.collection("studentfees");
 
     const history = await collection
       .find({
-        student_id:
-          typeof studentId === "string"
-            ? new mongoose.Types.ObjectId(studentId)
-            : studentId,
+        student_id: objectId(studentId, "student id"),
       })
       .sort({ date: -1 })
       .toArray();
@@ -460,31 +481,34 @@ export async function getStudentFeeHistory(studentId) {
 
 export async function recordAttendance(attendanceRecords, dateString = null) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    if (!Array.isArray(attendanceRecords) || attendanceRecords.length > 1000) {
+      throw new Error("Invalid attendance records");
+    }
     const db = mongoose.connection.db;
     const collection = db.collection("studentattendance");
 
     const recordDate = dateString ? new Date(dateString) : new Date();
+    if (Number.isNaN(recordDate.getTime())) throw new Error("Invalid attendance date");
     recordDate.setHours(0, 0, 0, 0);
-
-    // Clear existing records for this specific date
-    await collection.deleteMany({
+    const records = attendanceRecords.map((record) => {
+      const parsed = attendanceSchema.parse(record);
+      return {
+      student_id: objectId(parsed.student_id, "student id"),
+      status: parsed.status,
       date: recordDate,
-    });
-
-    const records = attendanceRecords.map((record) => ({
-      student_id:
-        typeof record.student_id === "string"
-          ? new mongoose.Types.ObjectId(record.student_id)
-          : record.student_id,
-      status: record.status, // 'Present', 'Absent', 'Late', 'Leave'
-      date: recordDate,
-      notes: record.notes || "",
+      notes: parsed.notes,
       created_at: new Date(),
-    }));
-
-    if (records.length > 0) {
-      await collection.insertMany(records);
+    };
+    });
+    const session = await mongoose.connection.getClient().startSession();
+    try {
+      await session.withTransaction(async () => {
+        await collection.deleteMany({ date: recordDate }, { session });
+        if (records.length > 0) await collection.insertMany(records, { session });
+      });
+    } finally {
+      await session.endSession();
     }
     return { success: true };
   } catch (error) {
@@ -495,11 +519,12 @@ export async function recordAttendance(attendanceRecords, dateString = null) {
 
 export async function getAttendanceByDate(dateString) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
     const db = mongoose.connection.db;
     const collection = db.collection("studentattendance");
 
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) throw new Error("Invalid attendance date");
     date.setHours(0, 0, 0, 0);
 
     const nextDay = new Date(date);
@@ -520,14 +545,11 @@ export async function getAttendanceByDate(dateString) {
 
 export async function getStudentAttendanceReport(studentId) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
     const db = mongoose.connection.db;
     const collection = db.collection("studentattendance");
 
-    const sId =
-      typeof studentId === "string"
-        ? new mongoose.Types.ObjectId(studentId)
-        : studentId;
+    const sId = objectId(studentId, "student id");
 
     const stats = await collection
       .aggregate([
@@ -552,16 +574,15 @@ export async function getStudentAttendanceReport(studentId) {
 
 export async function deleteProgressHistory(entryId) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
     const db = mongoose.connection.db;
     const collection = db.collection("studentprogresses");
-    await collection.deleteOne({
-      _id:
-        typeof entryId === "string"
-          ? new mongoose.Types.ObjectId(entryId)
-          : entryId,
+    const result = await collection.deleteOne({
+      _id: objectId(entryId, "progress id"),
     });
-    return { success: true };
+    return result.deletedCount === 1
+      ? { success: true }
+      : { success: false, error: "Progress record not found" };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -569,14 +590,15 @@ export async function deleteProgressHistory(entryId) {
 
 export async function getMonthlyFeeStatus(month, year) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
     const db = mongoose.connection.db;
     const collection = db.collection("studentfees");
 
+    const parsedPeriod = feeSchema.pick({ month: true, year: true }).parse({ month, year });
     const payments = await collection
       .find({
-        month: month,
-        year: parseInt(year),
+        month: parsedPeriod.month,
+        year: parsedPeriod.year,
       })
       .toArray();
 
@@ -595,38 +617,65 @@ export async function getMonthlyFeeStatus(month, year) {
 
 export async function recordBulkFeePayments(paymentsData) {
   try {
-    await connectDB();
+    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    if (!Array.isArray(paymentsData) || paymentsData.length > 500) {
+      throw new Error("Invalid payment list");
+    }
     const db = mongoose.connection.db;
     const students = db.collection("students");
     const fees = db.collection("studentfees");
 
-    const feeRecords = paymentsData.map((data) => ({
-      student_id:
-        typeof data.studentId === "string"
-          ? new mongoose.Types.ObjectId(data.studentId)
-          : data.studentId,
-      amount: parseFloat(data.amount || 0),
-      month: data.month,
-      year: parseInt(data.year),
+    const feeRecords = paymentsData.map((data) => {
+      const parsed = feeSchema.parse(data);
+      return {
+      student_id: objectId(data.studentId, "student id"),
+      ...parsed,
       date: new Date(),
-      notes: data.notes || "",
       created_at: new Date(),
-    }));
+    };
+    });
 
     if (feeRecords.length > 0) {
-      await fees.insertMany(feeRecords);
-
       const studentIds = feeRecords.map((r) => r.student_id);
-      await students.updateMany(
-        { _id: { $in: studentIds } },
-        {
-          $set: {
-            fee_status: "Paid",
-            last_fee_paid: new Date(),
-            updated_at: new Date(),
-          },
-        },
-      );
+      const session = await mongoose.connection.getClient().startSession();
+      try {
+        await session.withTransaction(async () => {
+          const studentCount = await students.countDocuments(
+            { _id: { $in: studentIds } },
+            { session },
+          );
+          if (studentCount !== new Set(studentIds.map(String)).size) {
+            throw new Error("One or more students were not found");
+          }
+          await fees.bulkWrite(
+            feeRecords.map((record) => ({
+              updateOne: {
+                filter: {
+                  student_id: record.student_id,
+                  month: record.month,
+                  year: record.year,
+                },
+                update: { $set: record },
+                upsert: true,
+              },
+            })),
+            { session },
+          );
+          await students.updateMany(
+            { _id: { $in: studentIds } },
+            {
+              $set: {
+                fee_status: "Paid",
+                last_fee_paid: new Date(),
+                updated_at: new Date(),
+              },
+            },
+            { session },
+          );
+        });
+      } finally {
+        await session.endSession();
+      }
     }
     return { success: true };
   } catch (error) {

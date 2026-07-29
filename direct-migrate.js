@@ -1,19 +1,33 @@
 // Direct MongoDB approach to create super admin
 const { MongoClient } = require('mongodb');
+const bcrypt = require('bcryptjs');
 
 async function createSuperAdmin() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is required');
+  }
+
+  if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+    throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD are required');
+  }
+
   const client = new MongoClient(process.env.DATABASE_URL);
   
   try {
     await client.connect();
     const db = client.db();
     const usersCollection = db.collection('users');
+    const email = process.env.ADMIN_EMAIL.trim().toLowerCase();
+    if (process.env.ADMIN_PASSWORD.length < 8) {
+      throw new Error('ADMIN_PASSWORD must contain at least 8 characters');
+    }
+    const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
     
     const user = {
-      email: 'usman@gmail.com',
+      email,
       name: 'Muhammad Usman',
       role: 'super_admin',
-      password: '$2a$10$placeholder', // Will be set via login
+      password: hashedPassword,
       is_active: true,
       created_at: new Date(),
       updated_at: new Date()
@@ -26,7 +40,14 @@ async function createSuperAdmin() {
       // Update to super admin
       await usersCollection.updateOne(
         { email: user.email },
-        { $set: { role: 'super_admin', updated_at: new Date() } }
+        {
+          $set: {
+            role: 'super_admin',
+            password: hashedPassword,
+            is_active: true,
+            updated_at: new Date()
+          }
+        }
       );
       console.log('✅ User updated to Super Admin!');
     } else {

@@ -16,6 +16,34 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+Create or synchronize the initial administrator from the values in `.env`:
+
+```bash
+npm run admin:sync
+```
+
+Authentication uses an opaque, database-backed session stored in an HttpOnly
+cookie. Public account registration and browser-based administrator setup are
+disabled.
+
+Database integrity indexes and legacy-data repair can be applied with:
+
+```bash
+npm run db:repair
+```
+
+Records removed by the repair are copied into a timestamped
+`integrity_backup_*` collection before deletion.
+
+Run all verification checks with:
+
+```bash
+npm test
+npm run lint
+npm run build
+npm audit
+```
+
 You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

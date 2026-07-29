@@ -1,13 +1,28 @@
 "use server";
-import { connectDB } from "@/lib/mongoose";
+
 import mongoose from "mongoose";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS, ROLES } from "@/lib/rbac";
 import {
-  getPaginationParams,
-  formatPaginatedResponse,
-  PAGINATION_DEFAULTS,
-} from "@/lib/pagination";
+  escapeRegex,
+  objectId,
+  parsePagination,
+  userCreateSchema,
+  userUpdateSchema,
+} from "@/lib/validation";
+import { formatPaginatedResponse, PAGINATION_DEFAULTS } from "@/lib/pagination";
+
+const sanitizeUser = (user) => ({
+  id: user._id.toString(),
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  is_active: user.is_active !== false,
+  created_at: user.created_at || null,
+  updated_at: user.updated_at || null,
+});
 
 export async function getUsers(
   page = 1,
@@ -16,44 +31,35 @@ export async function getUsers(
   role = "",
 ) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("users");
-
-    // Build query
+    await requirePermission(PERMISSIONS.USERS_VIEW);
+    const pagination = parsePagination(page, pageSize);
+    const collection = mongoose.connection.db.collection("users");
     const query = {};
+    const safeSearch = escapeRegex(search);
 
-    if (search) {
+    if (safeSearch) {
       query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { role: { $regex: search, $options: "i" } },
+        { name: { $regex: safeSearch, $options: "i" } },
+        { email: { $regex: safeSearch, $options: "i" } },
+        { role: { $regex: safeSearch, $options: "i" } },
       ];
     }
+    if (Object.values(ROLES).includes(role)) query.role = role;
 
-    if (role) {
-      query.role = role;
-    }
-
-    // Get total count
     const totalItems = await collection.countDocuments(query);
-
-    // Get paginated data
-    const { skip, limit } = getPaginationParams(page, pageSize);
     const users = await collection
-      .find(query)
+      .find(query, { projection: { password: 0 } })
       .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limit)
+      .skip((pagination.page - 1) * pagination.pageSize)
+      .limit(pagination.pageSize)
       .toArray();
 
-    // Remove password field before serialization
-    const sanitizedUsers = users.map((user) => ({
-      ...user,
-      password: undefined, // Don't send password to client
-    }));
-
-    return formatPaginatedResponse(sanitizedUsers, totalItems, page, pageSize);
+    return formatPaginatedResponse(
+      users.map(sanitizeUser),
+      totalItems,
+      pagination.page,
+      pagination.pageSize,
+    );
   } catch (error) {
     console.error("getUsers Error:", error);
     return { success: false, error: error.message };
@@ -62,31 +68,18 @@ export async function getUsers(
 
 export async function addUser(userData) {
   try {
-    const { name, email, role, password } = userData;
-    await connectDB();
-
-    // Check if user already exists
-    const db = mongoose.connection.getClient().db();
-    const collection = db.collection("users");
-    const existingUser = await collection.findOne({ email });
-
+    await requirePermission(PERMISSIONS.USERS_CREATE);
+    const data = userCreateSchema.parse(userData);
+    const existingUser = await User.exists({ email: data.email });
     if (existingUser) {
       return { success: false, error: "User with this email already exists" };
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      name,
-      email,
-      role: role || "super_admin",
-      password: hashedPassword,
+    const user = await User.create({
+      ...data,
+      password: await bcrypt.hash(data.password, 12),
     });
-
-    await user.save();
-
-    return { success: true, user };
+    return { success: true, user: sanitizeUser(user.toObject()) };
   } catch (error) {
     console.error("addUser Error:", error);
     return { success: false, error: error.message };
@@ -95,43 +88,46 @@ export async function addUser(userData) {
 
 export async function updateUser(userId, userData) {
   try {
-    const { name, email, role, password } = userData;
+    await requirePermission(PERMISSIONS.USERS_UPDATE);
+    const id = objectId(userId, "user id");
+    const data = userUpdateSchema.parse(userData);
+    const collection = mongoose.connection.db.collection("users");
+    const existingUser = await collection.findOne({ _id: id });
+    if (!existingUser) return { success: false, error: "User not found" };
 
-    // Check if user exists
-    const db = mongoose.connection.getClient().db();
-    const collection = db.collection("users");
-    const existingUser = await collection.findOne({ _id: userId });
-
-    if (!existingUser) {
-      return { success: false, error: "User not found" };
-    }
-
-    // Check if email is being changed and if new email already exists
-    if (email !== existingUser.email) {
-      const emailExists = await collection.findOne({ email });
-
-      if (emailExists) {
-        return { success: false, error: "User with this email already exists" };
-      }
+    const emailOwner = await collection.findOne({
+      email: data.email,
+      _id: { $ne: id },
+    });
+    if (emailOwner) {
+      return { success: false, error: "User with this email already exists" };
     }
 
     const updateData = {
-      name,
-      email,
-      role,
+      name: data.name,
+      email: data.email,
+      role: data.role,
       updated_at: new Date(),
     };
-
-    // Only update password if provided
-    if (password && password.trim() !== "") {
-      updateData.password = await bcrypt.hash(password, 10);
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 12);
     }
 
-    await collection.updateOne({ _id: userId }, { $set: updateData });
+    const result = await collection.updateOne({ _id: id }, { $set: updateData });
+    if (result.matchedCount !== 1) {
+      return { success: false, error: "User not found" };
+    }
+    if (data.password) {
+      await mongoose.connection.db
+        .collection("sessions")
+        .deleteMany({ user_id: id });
+    }
 
-    const user = await collection.findOne({ _id: userId });
-
-    return { success: true, user };
+    const user = await collection.findOne(
+      { _id: id },
+      { projection: { password: 0 } },
+    );
+    return { success: true, user: sanitizeUser(user) };
   } catch (error) {
     console.error("updateUser Error:", error);
     return { success: false, error: error.message };
@@ -140,20 +136,30 @@ export async function updateUser(userId, userData) {
 
 export async function deleteUser(userId) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("users");
-
-    // Check if user exists
-    const existingUser = await collection.findOne({ _id: userId });
-
-    if (!existingUser) {
-      return { success: false, error: "User not found" };
+    const currentUser = await requirePermission(PERMISSIONS.USERS_DELETE);
+    const id = objectId(userId, "user id");
+    if (currentUser.id === id.toString()) {
+      return { success: false, error: "You cannot delete your own account" };
     }
 
-    await collection.deleteOne({ _id: userId });
+    const collection = mongoose.connection.db.collection("users");
+    const existingUser = await collection.findOne({ _id: id });
+    if (!existingUser) return { success: false, error: "User not found" };
+    if (
+      existingUser.role === ROLES.SUPER_ADMIN &&
+      (await collection.countDocuments({
+        role: ROLES.SUPER_ADMIN,
+        is_active: { $ne: false },
+      })) <= 1
+    ) {
+      return { success: false, error: "The last active super admin cannot be deleted" };
+    }
 
-    return { success: true };
+    const result = await collection.deleteOne({ _id: id });
+    await mongoose.connection.db.collection("sessions").deleteMany({ user_id: id });
+    return result.deletedCount === 1
+      ? { success: true }
+      : { success: false, error: "User not found" };
   } catch (error) {
     console.error("deleteUser Error:", error);
     return { success: false, error: error.message };
@@ -162,24 +168,43 @@ export async function deleteUser(userId) {
 
 export async function toggleUserStatus(userId) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("users");
-
-    // Check if user exists
-    const existingUser = await collection.findOne({ _id: userId });
-
-    if (!existingUser) {
-      return { success: false, error: "User not found" };
+    const currentUser = await requirePermission(PERMISSIONS.USERS_UPDATE);
+    const id = objectId(userId, "user id");
+    if (currentUser.id === id.toString()) {
+      return { success: false, error: "You cannot disable your own account" };
     }
 
-    await collection.updateOne(
-      { _id: userId },
-      { $set: { is_active: !existingUser.is_active, updated_at: new Date() } },
-    );
+    const collection = mongoose.connection.db.collection("users");
+    const existingUser = await collection.findOne({ _id: id });
+    if (!existingUser) return { success: false, error: "User not found" };
+    if (
+      existingUser.role === ROLES.SUPER_ADMIN &&
+      existingUser.is_active !== false &&
+      (await collection.countDocuments({
+        role: ROLES.SUPER_ADMIN,
+        is_active: { $ne: false },
+      })) <= 1
+    ) {
+      return { success: false, error: "The last active super admin cannot be disabled" };
+    }
 
-    const user = await collection.findOne({ _id: userId });
-    return { success: true, user };
+    const nextStatus = existingUser.is_active === false;
+    const result = await collection.updateOne(
+      { _id: id },
+      { $set: { is_active: nextStatus, updated_at: new Date() } },
+    );
+    if (result.matchedCount !== 1) {
+      return { success: false, error: "User not found" };
+    }
+    if (!nextStatus) {
+      await mongoose.connection.db.collection("sessions").deleteMany({ user_id: id });
+    }
+
+    const user = await collection.findOne(
+      { _id: id },
+      { projection: { password: 0 } },
+    );
+    return { success: true, user: sanitizeUser(user) };
   } catch (error) {
     console.error("toggleUserStatus Error:", error);
     return { success: false, error: error.message };

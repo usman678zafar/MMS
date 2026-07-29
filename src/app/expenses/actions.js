@@ -1,29 +1,24 @@
 "use server";
-import { connectDB } from "@/lib/mongoose";
+
 import mongoose from "mongoose";
-import Expense from "@/models/Expense";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/rbac";
 import {
-  getPaginationParams,
-  formatPaginatedResponse,
-  PAGINATION_DEFAULTS,
-} from "@/lib/pagination";
+  escapeRegex,
+  expenseSchema,
+  objectId,
+  parsePagination,
+} from "@/lib/validation";
+import { formatPaginatedResponse, PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { serializeDocument, serializeDocuments } from "@/lib/serialization";
 
 export async function addExpense(expenseData) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("expenses");
-
-    const data = {
-      ...expenseData,
-      amount: expenseData.amount ? parseFloat(expenseData.amount) : 0,
-      date: expenseData.date ? new Date(expenseData.date) : null,
-      created_at: new Date(),
-    };
-
-    const result = await collection.insertOne(data);
-    return { success: true, data: serializeDocument(data) };
+    await requirePermission(PERMISSIONS.EXPENSES_CREATE);
+    const parsed = expenseSchema.parse(expenseData);
+    const data = { ...parsed, date: new Date(parsed.date), created_at: new Date() };
+    const result = await mongoose.connection.db.collection("expenses").insertOne(data);
+    return { success: true, data: serializeDocument({ ...data, _id: result.insertedId }) };
   } catch (error) {
     console.error("addExpense Error:", error);
     return { success: false, error: error.message };
@@ -32,22 +27,15 @@ export async function addExpense(expenseData) {
 
 export async function updateExpense(id, expenseData) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("expenses");
-
-    const data = {
-      ...expenseData,
-      amount: expenseData.amount ? parseFloat(expenseData.amount) : undefined,
-      date: expenseData.date ? new Date(expenseData.date) : undefined,
-      updated_at: new Date(),
-    };
-
-    const result = await collection.updateOne(
-      { _id: typeof id === "string" ? new mongoose.Types.ObjectId(id) : id },
-      { $set: data },
-    );
-    return { success: true, data: serializeDocument(data) };
+    await requirePermission(PERMISSIONS.EXPENSES_UPDATE);
+    const parsed = expenseSchema.parse(expenseData);
+    const data = { ...parsed, date: new Date(parsed.date), updated_at: new Date() };
+    const result = await mongoose.connection.db
+      .collection("expenses")
+      .updateOne({ _id: objectId(id, "expense id") }, { $set: data });
+    return result.matchedCount === 1
+      ? { success: true, data: serializeDocument(data) }
+      : { success: false, error: "Expense not found" };
   } catch (error) {
     console.error("updateExpense Error:", error);
     return { success: false, error: error.message };
@@ -56,14 +44,13 @@ export async function updateExpense(id, expenseData) {
 
 export async function deleteExpense(id) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("expenses");
-
-    await collection.deleteOne({
-      _id: typeof id === "string" ? new mongoose.Types.ObjectId(id) : id,
-    });
-    return { success: true };
+    await requirePermission(PERMISSIONS.EXPENSES_DELETE);
+    const result = await mongoose.connection.db
+      .collection("expenses")
+      .deleteOne({ _id: objectId(id, "expense id") });
+    return result.deletedCount === 1
+      ? { success: true }
+      : { success: false, error: "Expense not found" };
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -76,42 +63,33 @@ export async function getExpenses(
   category = "",
 ) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("expenses");
-
-    // Build query
+    await requirePermission(PERMISSIONS.EXPENSES_VIEW);
+    const pagination = parsePagination(page, pageSize);
     const query = {};
-
-    if (search) {
+    const safeSearch = escapeRegex(search);
+    if (safeSearch) {
       query.$or = [
-        { description: { $regex: search, $options: "i" } },
-        { category: { $regex: search, $options: "i" } },
-        { notes: { $regex: search, $options: "i" } },
+        { description: { $regex: safeSearch, $options: "i" } },
+        { category: { $regex: safeSearch, $options: "i" } },
       ];
     }
+    if (category) query.category = String(category).slice(0, 50);
 
-    if (category) {
-      query.category = category;
-    }
-
-    // Get total count
-    const totalItems = await collection.countDocuments(query);
-
-    // Get paginated data
-    const { skip, limit } = getPaginationParams(page, pageSize);
-    const data = await collection
-      .find(query)
-      .sort({ date: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-
+    const collection = mongoose.connection.db.collection("expenses");
+    const [totalItems, data] = await Promise.all([
+      collection.countDocuments(query),
+      collection
+        .find(query)
+        .sort({ date: -1 })
+        .skip((pagination.page - 1) * pagination.pageSize)
+        .limit(pagination.pageSize)
+        .toArray(),
+    ]);
     return formatPaginatedResponse(
       serializeDocuments(data),
       totalItems,
-      page,
-      pageSize,
+      pagination.page,
+      pagination.pageSize,
     );
   } catch (error) {
     console.error("getExpenses Error:", error);

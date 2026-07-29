@@ -39,10 +39,6 @@ const ROLES = [
   "Other",
 ];
 
-// Debug: Log ROLES to verify Qari is included
-if (typeof window !== "undefined") {
-  console.log("Available ROLES:", ROLES);
-}
 const defaultForm = {
   name: "",
   role: "Imam",

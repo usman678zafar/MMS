@@ -44,7 +44,6 @@ export default function DashboardPage() {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    setHasMounted(true);
     async function fetchAllData() {
       try {
         const [statsRes, financialRes, activityRes] = await Promise.all([
@@ -77,7 +76,11 @@ export default function DashboardPage() {
         setLoading(false);
       }
     }
-    fetchAllData();
+    const timer = setTimeout(() => {
+      setHasMounted(true);
+      fetchAllData();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const cards = [

@@ -1,36 +1,36 @@
 "use server";
-import { connectDB } from "@/lib/mongoose";
+
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
-import Staff from "@/models/Staff";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/rbac";
 import {
-  getPaginationParams,
-  formatPaginatedResponse,
-  PAGINATION_DEFAULTS,
-} from "@/lib/pagination";
+  escapeRegex,
+  objectId,
+  parsePagination,
+  staffSchema,
+} from "@/lib/validation";
+import { formatPaginatedResponse, PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { serializeDocument, serializeDocuments } from "@/lib/serialization";
+
+const refreshStaffViews = () => {
+  revalidatePath("/staff");
+  revalidatePath("/students");
+};
 
 export async function addStaffMember(staffData) {
   try {
-    await connectDB();
-    const db = mongoose.connection.db;
-    const collection = db.collection("staff");
-
+    await requirePermission(PERMISSIONS.STAFF_CREATE);
+    const parsed = staffSchema.parse(staffData);
     const data = {
-      ...staffData,
-      monthly_salary: staffData.monthly_salary
-        ? parseFloat(staffData.monthly_salary)
-        : 0,
-      joining_date: staffData.joining_date
-        ? new Date(staffData.joining_date)
-        : null,
+      ...parsed,
+      joining_date: new Date(parsed.joining_date),
+      is_active: true,
       created_at: new Date(),
     };
-
-    const result = await collection.insertOne(data);
-    revalidatePath("/staff");
-    revalidatePath("/students");
-    return { success: true, data: serializeDocument(data) };
+    const result = await mongoose.connection.db.collection("staff").insertOne(data);
+    refreshStaffViews();
+    return { success: true, data: serializeDocument({ ...data, _id: result.insertedId }) };
   } catch (error) {
     console.error("addStaffMember Error:", error);
     return { success: false, error: error.message };
@@ -39,27 +39,20 @@ export async function addStaffMember(staffData) {
 
 export async function updateStaffMember(id, staffData) {
   try {
-    await connectDB();
-    const db = mongoose.connection.getClient().db();
-    const collection = db.collection("staff");
-
+    await requirePermission(PERMISSIONS.STAFF_UPDATE);
+    const parsed = staffSchema.parse(staffData);
     const data = {
-      ...staffData,
-      monthly_salary: staffData.monthly_salary
-        ? parseFloat(staffData.monthly_salary)
-        : undefined,
-      joining_date: staffData.joining_date
-        ? new Date(staffData.joining_date)
-        : undefined,
+      ...parsed,
+      joining_date: new Date(parsed.joining_date),
       updated_at: new Date(),
     };
-
-    const result = await collection.updateOne(
-      { _id: typeof id === "string" ? new mongoose.Types.ObjectId(id) : id },
-      { $set: data },
-    );
-    revalidatePath("/staff");
-    revalidatePath("/students");
+    const result = await mongoose.connection.db
+      .collection("staff")
+      .updateOne({ _id: objectId(id, "staff id") }, { $set: data });
+    if (result.matchedCount !== 1) {
+      return { success: false, error: "Staff member not found" };
+    }
+    refreshStaffViews();
     return { success: true, data: serializeDocument(data) };
   } catch (error) {
     console.error("updateStaffMember Error:", error);
@@ -69,15 +62,14 @@ export async function updateStaffMember(id, staffData) {
 
 export async function deleteStaffMember(id) {
   try {
-    await connectDB();
-    const db = mongoose.connection.getClient().db();
-    const collection = db.collection("staff");
-
-    await collection.deleteOne({
-      _id: typeof id === "string" ? new mongoose.Types.ObjectId(id) : id,
-    });
-    revalidatePath("/staff");
-    revalidatePath("/students");
+    await requirePermission(PERMISSIONS.STAFF_DELETE);
+    const result = await mongoose.connection.db
+      .collection("staff")
+      .deleteOne({ _id: objectId(id, "staff id") });
+    if (result.deletedCount !== 1) {
+      return { success: false, error: "Staff member not found" };
+    }
+    refreshStaffViews();
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
@@ -91,42 +83,36 @@ export async function getStaff(
   status = "",
 ) {
   try {
-    await connectDB();
-    const db = mongoose.connection.getClient().db();
-    const collection = db.collection("staff");
-
-    // Build query
+    await requirePermission(PERMISSIONS.STAFF_VIEW);
+    const pagination = parsePagination(page, pageSize);
     const query = {};
-
-    if (search) {
+    const safeSearch = escapeRegex(search);
+    if (safeSearch) {
       query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { role: { $regex: search, $options: "i" } },
-        { phone: { $regex: search, $options: "i" } },
+        { name: { $regex: safeSearch, $options: "i" } },
+        { role: { $regex: safeSearch, $options: "i" } },
+        { phone: { $regex: safeSearch, $options: "i" } },
       ];
     }
-
-    if (status) {
+    if (status === "active" || status === "inactive") {
       query.is_active = status === "active";
     }
 
-    // Get total count
-    const totalItems = await collection.countDocuments(query);
-
-    // Get paginated data
-    const { skip, limit } = getPaginationParams(page, pageSize);
-    const data = await collection
-      .find(query)
-      .sort({ created_at: 1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
-
+    const collection = mongoose.connection.db.collection("staff");
+    const [totalItems, data] = await Promise.all([
+      collection.countDocuments(query),
+      collection
+        .find(query)
+        .sort({ created_at: 1 })
+        .skip((pagination.page - 1) * pagination.pageSize)
+        .limit(pagination.pageSize)
+        .toArray(),
+    ]);
     return formatPaginatedResponse(
       serializeDocuments(data),
       totalItems,
-      page,
-      pageSize,
+      pagination.page,
+      pagination.pageSize,
     );
   } catch (error) {
     console.error("getStaff Error:", error);
@@ -136,22 +122,19 @@ export async function getStaff(
 
 export async function getAllTeachers() {
   try {
-    await connectDB();
-    const db = mongoose.connection.getClient().db();
-    const collection = db.collection("staff");
-
-    // Find staff with role matching Teacher or Qari, and who are not explicitly deactivated
-    const teachers = await collection
-      .find({
-        role: { $regex: /teacher|qari/i },
-        is_active: { $ne: false },
-      })
-      .project({ name: 1, _id: 1 })
+    await requirePermission(PERMISSIONS.STAFF_VIEW);
+    const teachers = await mongoose.connection.db
+      .collection("staff")
+      .find({ role: { $regex: /teacher|qari/i }, is_active: { $ne: false } })
+      .project({ name: 1 })
+      .sort({ name: 1 })
       .toArray();
-
     return {
       success: true,
-      data: teachers.map((t) => ({ id: t._id.toString(), name: t.name })),
+      data: teachers.map((teacher) => ({
+        id: teacher._id.toString(),
+        name: teacher.name,
+      })),
     };
   } catch (error) {
     console.error("getAllTeachers Error:", error);
