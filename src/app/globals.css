@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Jameel Noori Nastaleeq";
+  src: url("/fonts/jameel-noori-nastaleeq-urdu.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range:
+    U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF,
+    U+200C-200F;
+}
+
 @theme {
   --color-primary-50: #ecfdf5;
   --color-primary-100: #d1fae5;
@@ -43,6 +54,12 @@ body {
   background: var(--background);
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+:lang(ur) {
+  font-family: "Jameel Noori Nastaleeq", var(--font-geist-sans), sans-serif;
+  font-feature-settings: "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
 }
 
 @layer components {

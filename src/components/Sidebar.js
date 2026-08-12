@@ -1,201 +1,197 @@
 "use client";
-import React from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  HandHeart,
-  Receipt,
-  Users,
-  Package,
-  LogOut,
-  UserRound,
   GraduationCap,
+  HandHeart,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  Receipt,
   Settings,
+  Users,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { PERMISSIONS } from "@/lib/rbac";
 
-const getNavigationItems = (hasPermission) => {
-  const baseNavigation = [
-    {
-      name: "Dashboard",
-      href: "/",
-      icon: LayoutDashboard,
-      permission: PERMISSIONS.DASHBOARD_VIEW,
-    },
-  ];
+const navigationItems = [
+  {
+    name: "Dashboard",
+    translationKey: "dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+    permission: PERMISSIONS.DASHBOARD_VIEW,
+  },
+  {
+    name: "Students",
+    translationKey: "students",
+    href: "/students",
+    icon: GraduationCap,
+    permission: PERMISSIONS.STUDENTS_VIEW,
+  },
+  {
+    name: "Donations & Donors",
+    translationKey: "donations",
+    href: "/donations",
+    icon: HandHeart,
+    permission: PERMISSIONS.DONATIONS_VIEW,
+  },
+  {
+    name: "Expenses",
+    translationKey: "expenses",
+    href: "/expenses",
+    icon: Receipt,
+    permission: PERMISSIONS.EXPENSES_VIEW,
+  },
+  {
+    name: "Staff",
+    translationKey: "staff",
+    href: "/staff",
+    icon: Users,
+    permission: PERMISSIONS.STAFF_VIEW,
+  },
+  {
+    name: "Inventory",
+    translationKey: "inventory",
+    href: "/inventory",
+    icon: Package,
+    permission: PERMISSIONS.INVENTORY_VIEW,
+  },
+  {
+    name: "Users",
+    translationKey: "users",
+    href: "/users",
+    icon: Settings,
+    permission: PERMISSIONS.USERS_VIEW,
+    admin: true,
+  },
+];
 
-  const additionalNavigation = [
-    {
-      name: "Students",
-      href: "/students",
-      icon: GraduationCap,
-      permission: PERMISSIONS.STUDENTS_VIEW,
-    },
-    {
-      name: "Donations & Donors",
-      href: "/donations",
-      icon: HandHeart,
-      permission: PERMISSIONS.DONATIONS_VIEW,
-    },
-    {
-      name: "Expenses",
-      href: "/expenses",
-      icon: Receipt,
-      permission: PERMISSIONS.EXPENSES_VIEW,
-    },
-    {
-      name: "Staff",
-      href: "/staff",
-      icon: Users,
-      permission: PERMISSIONS.STAFF_VIEW,
-    },
-    {
-      name: "Inventory",
-      href: "/inventory",
-      icon: Package,
-      permission: PERMISSIONS.INVENTORY_VIEW,
-    },
-  ];
-
-  const adminNavigation = [
-    {
-      name: "Users",
-      href: "/users",
-      icon: Settings,
-      permission: PERMISSIONS.USERS_VIEW,
-    },
-  ];
-
-  let navigation = baseNavigation;
-
-  additionalNavigation.forEach((item) => {
-    if (hasPermission(item.permission)) {
-      navigation.push(item);
-    }
-  });
-
-  if (hasPermission(PERMISSIONS.USERS_VIEW)) {
-    navigation.push(adminNavigation[0]);
-  }
-
-  return navigation;
-};
-
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { signOut, profile, hasPermission } = useAuth();
+  const { t } = useLanguage();
   const pathname = usePathname();
-  const navigation = getNavigationItems(hasPermission);
-  const [isCollapsed, setIsCollapsed] = React.useState(true);
+  const navigation = navigationItems.filter((item) =>
+    hasPermission(item.permission),
+  );
+
+  const handleSignOut = async () => {
+    onClose();
+    await signOut();
+  };
 
   return (
-    <div
-      className={`flex bg-white flex-col transition-all duration-300 ease-in-out border-r border-slate-200 h-[100dvh] sticky top-0 z-50 overflow-hidden ${
-        isCollapsed ? "w-20" : "w-64"
-      }`}
-      onMouseEnter={() => setIsCollapsed(false)}
-      onMouseLeave={() => setIsCollapsed(true)}
-    >
-      <div className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto no-scrollbar overflow-x-hidden">
-        <div
-          className={`flex items-center flex-shrink-0 mb-8 transition-all duration-300 ${isCollapsed ? "px-4 justify-center" : "px-6"}`}
-        >
-          <div className="flex items-center min-w-max">
-            <div className="h-10 w-10 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0 transform transition-transform duration-300 hover:scale-105">
-              <span className="text-white font-bold text-xl uppercase">M</span>
+    <>
+      {isOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 lg:w-64 lg:translate-x-0 lg:shadow-none ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-100 px-6">
+          <Link href="/" onClick={onClose} className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-700 text-xl font-bold text-white shadow-sm">
+              M
             </div>
-            <div
-              className={`ml-3 transition-all duration-300 truncate ${isCollapsed ? "opacity-0 w-0 -translate-x-4" : "opacity-100 w-auto translate-x-0"}`}
-            >
-              <h1 className="text-lg font-bold text-slate-900 leading-none">
-                MMS
-              </h1>
-              <p className="text-[10px] text-slate-500 font-semibold mt-1 uppercase tracking-wider">
-                Masjid Mgmt
+            <div>
+              <p className="font-bold leading-none text-slate-950">MMS</p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                Madrasa Management
               </p>
             </div>
-          </div>
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
-        <nav className="flex-1 px-3 space-y-2">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                title={isCollapsed ? item.name : ""}
-                className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all group relative ${
-                  isActive
-                    ? "bg-primary-50 text-primary-700 "
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                } ${isCollapsed ? "justify-center" : ""}`}
-              >
-                <item.icon
-                  className={`h-5 w-5 flex-shrink-0 transition-all duration-300 ${
-                    isActive
-                      ? "text-primary-600 scale-110"
-                      : "text-slate-400 group-hover:text-slate-600 group-hover:scale-110"
-                  } ${isCollapsed ? "" : "mr-3"}`}
-                />
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            Workspace
+          </p>
+          <nav aria-label="Main navigation" className="space-y-1.5">
+            {navigation.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href);
 
-                <span
-                  className={`transition-all duration-300 whitespace-nowrap overflow-hidden ${
-                    isCollapsed
-                      ? "opacity-0 w-0 -translate-x-4"
-                      : "opacity-100 w-auto translate-x-0"
-                  }`}
+              return (
+                <div
+                  key={item.name}
+                  className={item.admin ? "border-t border-slate-100 pt-3 mt-3" : ""}
                 >
-                  {item.name}
-                </span>
+                  <Link
+                    href={item.href}
+                    onClick={onClose}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors ${
+                      isActive
+                        ? "bg-primary-50 text-primary-800"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                    }`}
+                  >
+                    <item.icon
+                      className={`h-5 w-5 shrink-0 ${
+                        isActive
+                          ? "text-primary-700"
+                          : "text-slate-400 group-hover:text-slate-600"
+                      }`}
+                    />
+                    <span>{t("sidebar", item.translationKey)}</span>
+                    {isActive && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-600" />
+                    )}
+                  </Link>
+                </div>
+              );
+            })}
+          </nav>
+        </div>
 
-                {isCollapsed && isActive && (
-                  <div className="absolute left-0 w-1 h-6 bg-primary-600 rounded-r-full" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      <div className="flex-shrink-0 border-t border-slate-100 p-4 bg-slate-50/30">
-        <div className="flex-shrink-0 w-full group">
-          <div
-            className={`flex items-center transition-all duration-300 ${isCollapsed ? "justify-center" : "justify-between"}`}
-          >
-            <div className="flex items-center min-w-0">
-              <div className="h-9 w-9 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0 ">
-                <span className="text-white text-xs font-bold uppercase">
-                  {profile?.full_name?.charAt(0) || "A"}
-                </span>
+        <div className="shrink-0 border-t border-slate-100 p-4">
+          <div className="rounded-2xl bg-slate-50 p-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-700 text-xs font-bold uppercase text-white">
+                {profile?.full_name?.charAt(0) || "A"}
               </div>
-              <div
-                className={`ml-3 transition-all duration-300 truncate ${isCollapsed ? "opacity-0 w-0 -translate-x-4" : "opacity-100 w-auto translate-x-0"}`}
-              >
-                <p className="text-sm font-bold text-slate-800 truncate">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-800">
                   {profile?.full_name || "Admin User"}
                 </p>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">
-                  Manage Account
+                <p className="truncate text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                  {profile?.role?.replaceAll("_", " ") || "Admin"}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                title="Sign Out"
+                aria-label="Sign Out"
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
-
-            <button
-              onClick={() => signOut()}
-              className={`p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-300 cursor-pointer ${
-                isCollapsed
-                  ? "opacity-0 w-0 scale-0 pointer-events-none"
-                  : "opacity-100 w-auto scale-100"
-              }`}
-              title="Sign Out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
           </div>
         </div>
-      </div>
-    </div>
+      </aside>
+    </>
   );
 }

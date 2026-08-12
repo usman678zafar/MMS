@@ -1,250 +1,79 @@
 "use client";
-import React, { useState } from "react";
-import Link from "next/link";
+
+import { Globe, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  HandHeart,
-  Receipt,
-  Users,
-  Package,
-  LogOut,
-  Settings,
-  GraduationCap,
-  Menu,
-  X,
-  Globe,
-} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { PERMISSIONS } from "@/lib/rbac";
 
-const getNavigationItems = (hasPermission) => {
-  const baseNavigation = [
-    {
-      name: "Dashboard",
-      href: "/",
-      icon: LayoutDashboard,
-      permission: PERMISSIONS.DASHBOARD_VIEW,
-    },
-  ];
-
-  const additionalNavigation = [
-    {
-      name: "Students",
-      href: "/students",
-      icon: GraduationCap,
-      permission: PERMISSIONS.STUDENTS_VIEW,
-    },
-    {
-      name: "Donations",
-      href: "/donations",
-      icon: HandHeart,
-      permission: PERMISSIONS.DONATIONS_VIEW,
-    },
-    {
-      name: "Expenses",
-      href: "/expenses",
-      icon: Receipt,
-      permission: PERMISSIONS.EXPENSES_VIEW,
-    },
-    {
-      name: "Staff",
-      href: "/staff",
-      icon: Users,
-      permission: PERMISSIONS.STAFF_VIEW,
-    },
-    {
-      name: "Inventory",
-      href: "/inventory",
-      icon: Package,
-      permission: PERMISSIONS.INVENTORY_VIEW,
-    },
-  ];
-
-  const adminNavigation = [
-    {
-      name: "Users",
-      href: "/users",
-      icon: Settings,
-      permission: PERMISSIONS.USERS_VIEW,
-    },
-  ];
-
-  let navigation = [...baseNavigation];
-
-  additionalNavigation.forEach((item) => {
-    if (hasPermission(item.permission)) {
-      navigation.push(item);
-    }
-  });
-
-  if (hasPermission(PERMISSIONS.USERS_VIEW)) {
-    navigation.push(adminNavigation[0]);
-  }
-
-  return navigation;
+const pageTitles = {
+  "/": "Dashboard",
+  "/students": "Students",
+  "/donations": "Donations & Donors",
+  "/expenses": "Expenses",
+  "/staff": "Staff",
+  "/inventory": "Inventory",
+  "/users": "Users",
 };
 
-export default function Header() {
-  const { signOut, profile, hasPermission } = useAuth();
-  const { language, toggleLanguage, t } = useLanguage();
+export default function Header({ onMenuClick }) {
+  const { profile } = useAuth();
+  const { language, toggleLanguage } = useLanguage();
   const pathname = usePathname();
-  const navigation = getNavigationItems(hasPermission);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pageTitle =
+    Object.entries(pageTitles).find(([path]) =>
+      path === "/" ? pathname === path : pathname.startsWith(path),
+    )?.[1] || "Madrasa Management";
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-50 ">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            {/* Logo */}
-            <Link href="/" className="flex items-center flex-shrink-0">
-              <div className="h-9 w-9 bg-primary-600 rounded-xl flex items-center justify-center transform transition-transform duration-300 hover:scale-105">
-                <span className="text-white font-bold text-lg uppercase">
-                  M
-                </span>
-              </div>
-              <div className="ml-3 hidden sm:block">
-                <h1 className="text-lg font-bold text-slate-900 leading-none">
-                  MMS
-                </h1>
-                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">
-                  Masjid Mgmt
-                </p>
-              </div>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:ml-8 md:flex md:space-x-1">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all ${
-                      isActive
-                        ? "text-primary-700 bg-primary-50"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4 mr-2" />
-                    {t("sidebar", item.name.toLowerCase())}
-                  </Link>
-                );
-              })}
-            </nav>
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="flex h-16 items-center justify-between gap-4 px-4 sm:px-8">
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label="Open navigation"
+            className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-slate-900 sm:text-base">
+              {pageTitle}
+            </p>
+            <p className="hidden text-xs text-slate-400 sm:block">
+              Madrasa Management System
+            </p>
           </div>
+        </div>
 
-          <div className="flex items-center">
-            {/* Profile & Sign Out - Desktop */}
-            <div className="hidden md:flex md:items-center md:ml-4 space-x-4">
-              <div className="flex items-center space-x-3 pr-4 border-r border-slate-200">
-                <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center ">
-                  <span className="text-white text-xs font-bold uppercase">
-                    {profile?.full_name?.charAt(0) || "A"}
-                  </span>
-                </div>
-                <div className="hidden lg:block text-left">
-                  <p className="text-xs font-bold text-slate-800 line-clamp-1">
-                    {profile?.full_name || "Admin User"}
-                  </p>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-tighter">
-                    {profile?.role || "Admin"}
-                  </p>
-                </div>
-              </div>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-primary-50 hover:text-primary-700"
+            title="Toggle language"
+          >
+            <Globe className="h-4 w-4" />
+            <span lang={language === "en" ? "ur" : "en"}>
+              {language === "en" ? "اردو" : "EN"}
+            </span>
+          </button>
 
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center gap-1 p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-300 font-bold text-xs"
-                title="Toggle Language"
-              >
-                <Globe className="h-4 w-4" />
-                {language === "en" ? "اردو" : "EN"}
-              </button>
-
-              <button
-                onClick={() => signOut()}
-                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-300"
-                title={t("header", "signOut")}
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
+          <div className="hidden items-center gap-3 border-l border-slate-200 pl-4 sm:flex">
+            <div className="text-right">
+              <p className="max-w-36 truncate text-xs font-bold text-slate-800">
+                {profile?.full_name || "Admin User"}
+              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                {profile?.role?.replaceAll("_", " ") || "Admin"}
+              </p>
             </div>
-
-            {/* Mobile menu button */}
-            <div className="flex items-center md:hidden">
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="block h-6 w-6" />
-                ) : (
-                  <Menu className="block h-6 w-6" />
-                )}
-              </button>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-700 text-xs font-bold uppercase text-white">
+              {profile?.full_name?.charAt(0) || "A"}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Mobile Navigation */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-slate-100">
-          <div className="pt-2 pb-3 space-y-1 px-2">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${
-                    isActive
-                      ? "bg-primary-50 text-primary-700"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  }`}
-                >
-                  <item.icon className="h-5 w-5 mr-3" />
-                  {t("sidebar", item.name.toLowerCase())}
-                </Link>
-              );
-            })}
-          </div>
-          <div className="pt-4 pb-3 border-t border-slate-100 px-4">
-            <div className="flex items-center">
-              <div className="h-10 w-10 rounded-full bg-primary-600 flex items-center justify-center">
-                <span className="text-white text-sm font-bold uppercase">
-                  {profile?.full_name?.charAt(0) || "A"}
-                </span>
-              </div>
-              <div className="ml-3">
-                <div className="text-base font-medium text-slate-800">
-                  {profile?.full_name || "Admin User"}
-                </div>
-                <div className="text-sm font-medium text-slate-500">
-                  {profile?.email}
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 space-y-1">
-              <button
-                onClick={() => {
-                  signOut();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex w-full items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-600"
-              >
-                <LogOut className="h-5 w-5 mr-3" />
-                {t("header", "signOut")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

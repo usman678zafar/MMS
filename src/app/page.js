@@ -19,8 +19,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   Legend,
 } from "recharts";
 import { PERMISSIONS } from "@/lib/rbac";
@@ -32,6 +32,9 @@ import {
   getRecentActivity,
 } from "./actions";
 
+const formatCurrency = (value) =>
+  `Rs ${Math.round(Number(value) || 0).toLocaleString()}`;
+
 export default function DashboardPage() {
   const { user, loading: authLoading, hasPermission } = useAuth();
   const canLoadDashboard =
@@ -41,6 +44,8 @@ export default function DashboardPage() {
     totalExpenses: 0,
     activeStaff: 0,
     inventoryCount: 0,
+    studentCount: 0,
+    pendingFees: 0,
   });
   const [financialData, setFinancialData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
@@ -94,6 +99,15 @@ export default function DashboardPage() {
       clearTimeout(timer);
     };
   }, [canLoadDashboard]);
+
+  const financeSummary = financialData.reduce(
+    (summary, month) => ({
+      donations: summary.donations + Number(month.donations || 0),
+      expenses: summary.expenses + Number(month.expenses || 0),
+    }),
+    { donations: 0, expenses: 0 },
+  );
+  const netBalance = financeSummary.donations - financeSummary.expenses;
 
   const cards = [
     {
@@ -193,37 +207,64 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white p-6 rounded-2xl border border-slate-100 ">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-slate-900 text-lg">
-                  Finances Overview
-                </h3>
-                <select className="bg-slate-50 border-none rounded-lg text-sm px-3 py-1 text-slate-600 outline-none">
-                  <option>Last 6 Months</option>
-                  <option>Last Year</option>
-                </select>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-lg">
+                    Finances Overview
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Actual figures for the displayed period
+                  </p>
+                </div>
+                <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                  Last 6 months
+                </span>
               </div>
-              <div className="h-72">
+
+              <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                    Donations
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                    {formatCurrency(financeSummary.donations)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-rose-700">
+                    Expenses
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                    {formatCurrency(financeSummary.expenses)}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-xl border p-3 ${
+                    netBalance >= 0
+                      ? "border-blue-100 bg-blue-50/60"
+                      : "border-amber-100 bg-amber-50/60"
+                  }`}
+                >
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-wide ${
+                      netBalance >= 0 ? "text-blue-700" : "text-amber-700"
+                    }`}
+                  >
+                    Net Balance
+                  </p>
+                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                    {formatCurrency(netBalance)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-64">
                 {hasMounted && (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
+                    <BarChart
                       data={financialData}
-                      margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                      margin={{ top: 8, right: 10, left: 0, bottom: 5 }}
+                      barGap={6}
                     >
-                      <defs>
-                        <linearGradient
-                          id="colorDonations"
-                          x1="0" y1="0" x2="0" y2="1"
-                        >
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient
-                          id="colorExpenses"
-                          x1="0" y1="0" x2="0" y2="1"
-                        >
-                          <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
                       <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
@@ -264,27 +305,19 @@ export default function DashboardPage() {
                           value.charAt(0).toUpperCase() + value.slice(1)
                         }
                       />
-                      <Area
-                        type="monotone"
+                      <Bar
                         dataKey="donations"
-                        stroke="#10b981"
-                        fillOpacity={1}
-                        fill="url(#colorDonations)"
-                        strokeWidth={2.5}
-                        dot={{ r: 3, fill: "#10b981" }}
-                        activeDot={{ r: 5 }}
+                        fill="#10b981"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={28}
                       />
-                      <Area
-                        type="monotone"
+                      <Bar
                         dataKey="expenses"
-                        stroke="#f43f5e"
-                        fillOpacity={1}
-                        fill="url(#colorExpenses)"
-                        strokeWidth={2.5}
-                        dot={{ r: 3, fill: "#f43f5e" }}
-                        activeDot={{ r: 5 }}
+                        fill="#f43f5e"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={28}
                       />
-                    </AreaChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 )}
               </div>
