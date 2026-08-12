@@ -100,6 +100,10 @@ export const attendanceSchema = z.object({
   notes: optionalText(500),
 });
 
+export const studentNotesSchema = z.object({
+  notes: optionalText(5000),
+});
+
 export const donorSchema = z.object({
   name: requiredText(100),
   email: z.union([z.literal(""), z.string().trim().toLowerCase().email().max(254)]).default(""),

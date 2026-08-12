@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import NavigationLayout from "@/components/NavigationLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Modal from "@/components/Modal";
@@ -22,6 +23,7 @@ import {
   Edit2,
   Loader2,
   CheckCircle2,
+  Eye,
 } from "lucide-react";
 import {
   addStudent,
@@ -1020,9 +1022,12 @@ export default function StudentsPage() {
                                   {student.name?.charAt(0)?.toUpperCase()}
                                 </div>
                                 <div>
-                                  <p className="font-bold text-slate-900 text-sm">
+                                  <Link
+                                    href={`/students/${student.id}`}
+                                    className="text-sm font-bold text-slate-900 transition-colors hover:text-primary-700"
+                                  >
                                     {student.name}
-                                  </p>
+                                  </Link>
                                   <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
                                     {student.gender || "Male"} ·{" "}
                                     {student.admission_date
@@ -1125,6 +1130,13 @@ export default function StudentsPage() {
                             </td>
                             <td className="px-6 py-4 text-right">
                               <div className="flex items-center justify-end gap-1">
+                                <Link
+                                  href={`/students/${student.id}`}
+                                  className="rounded-xl p-2 text-slate-400 transition-all hover:bg-primary-50 hover:text-primary-700"
+                                  title="Open Student Profile"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Link>
                                 <button
                                   onClick={() => handleOpenHistory(student)}
                                   className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"

@@ -5,6 +5,7 @@ import {
   escapeRegex,
   objectId,
   parsePagination,
+  studentNotesSchema,
   userCreateSchema,
 } from "@/lib/validation";
 
@@ -49,6 +50,13 @@ describe("input validation", () => {
 
   it("rejects invalid MongoDB IDs", () => {
     expect(() => objectId("not-an-id")).toThrow("Invalid id");
+  });
+
+  it("bounds internal student notes", () => {
+    expect(studentNotesSchema.parse({ notes: "Guardian follow-up" }).notes).toBe(
+      "Guardian follow-up",
+    );
+    expect(() => studentNotesSchema.parse({ notes: "x".repeat(5001) })).toThrow();
   });
 });
 

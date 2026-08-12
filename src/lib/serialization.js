@@ -41,6 +41,8 @@ const isObjectId = (obj) => {
 export const serializeDocument = (doc) => {
   if (!doc) return doc;
 
+  if (typeof doc !== "object") return doc;
+
   // Handle arrays of documents
   if (Array.isArray(doc)) {
     return doc.map(serializeDocument);
@@ -63,6 +65,8 @@ export const serializeDocument = (doc) => {
     } else if (serialized[key] instanceof Date) {
       // Convert Date to ISO string
       serialized[key] = serialized[key].toISOString();
+    } else if (Array.isArray(serialized[key])) {
+      serialized[key] = serialized[key].map(serializeDocument);
     } else if (
       serialized[key] &&
       typeof serialized[key] === "object" &&

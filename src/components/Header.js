@@ -19,10 +19,11 @@ export default function Header({ onMenuClick }) {
   const { profile } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const pathname = usePathname();
-  const pageTitle =
-    Object.entries(pageTitles).find(([path]) =>
-      path === "/" ? pathname === path : pathname.startsWith(path),
-    )?.[1] || "Madrasa Management";
+  const pageTitle = pathname.match(/^\/students\/[^/]+$/)
+    ? "Student Profile"
+    : Object.entries(pageTitles).find(([path]) =>
+        path === "/" ? pathname === path : pathname.startsWith(path),
+      )?.[1] || "Madrasa Management";
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
