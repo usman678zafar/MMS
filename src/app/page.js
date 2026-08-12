@@ -24,6 +24,7 @@ import {
   Legend,
 } from "recharts";
 import { PERMISSIONS } from "@/lib/rbac";
+import { useAuth } from "@/context/AuthContext";
 
 import {
   getDashboardStats,
@@ -32,6 +33,9 @@ import {
 } from "./actions";
 
 export default function DashboardPage() {
+  const { user, loading: authLoading, hasPermission } = useAuth();
+  const canLoadDashboard =
+    !authLoading && Boolean(user) && hasPermission(PERMISSIONS.DASHBOARD_VIEW);
   const [stats, setStats] = useState({
     totalDonations: 0,
     totalExpenses: 0,
@@ -40,10 +44,13 @@ export default function DashboardPage() {
   });
   const [financialData, setFinancialData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    if (!canLoadDashboard) return;
+
+    let cancelled = false;
+
     async function fetchAllData() {
       try {
         const [statsRes, financialRes, activityRes] = await Promise.all([
@@ -52,7 +59,7 @@ export default function DashboardPage() {
           getRecentActivity(),
         ]);
 
-        if (statsRes.success) {
+        if (!cancelled && statsRes.success) {
           setStats({
             totalDonations: statsRes.totalDonations,
             totalExpenses: statsRes.totalExpenses,
@@ -63,25 +70,30 @@ export default function DashboardPage() {
           });
         }
 
-        if (financialRes.success) {
+        if (!cancelled && financialRes.success) {
           setFinancialData(financialRes.data);
         }
 
-        if (activityRes.success) {
+        if (!cancelled && activityRes.success) {
           setRecentActivity(activityRes.activities);
         }
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
+        if (!cancelled) {
+          console.error("Error fetching dashboard data:", error);
+        }
       }
     }
+
     const timer = setTimeout(() => {
       setHasMounted(true);
       fetchAllData();
     }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [canLoadDashboard]);
 
   const cards = [
     {
