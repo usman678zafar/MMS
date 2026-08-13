@@ -8,31 +8,34 @@ import { useAuth } from "@/context/AuthContext";
 
 function PostLoginLoading() {
   return (
-    <main className="flex min-h-svh items-center justify-center bg-slate-50 px-6">
-      <div className="w-full max-w-sm text-center" role="status" aria-live="polite">
-        <Image
-          src="/logo-mark-black.svg"
-          alt="Madrasa Management"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
-          priority
-        />
-        <h1 className="mt-5 text-xl font-bold text-slate-950">
+    <main className="flex min-h-svh items-center justify-center bg-[#f7faf8] px-5 py-10">
+      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white px-6 py-9 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:px-10 sm:py-11" role="status" aria-live="polite">
+        <div className="relative mx-auto h-32 w-32">
+          <span className="absolute inset-0 rounded-full border border-primary-100 bg-primary-50" />
+          <span className="loading-logo-ring absolute inset-0 rounded-full border-2 border-transparent border-t-primary-700 border-r-primary-200" aria-hidden="true" />
+          <div className="absolute inset-3 flex items-center justify-center rounded-full bg-white shadow-sm">
+            <Image
+              src="/logo-mark.svg"
+              alt="Madrasa Management"
+              width={82}
+              height={82}
+              className="h-[5.125rem] w-[5.125rem]"
+              priority
+            />
+          </div>
+        </div>
+        <h1 className="mt-6 text-xl font-bold text-slate-950 sm:text-2xl">
           Madrasa Management System
         </h1>
         <p className="mt-2 text-sm text-slate-500">
-          Preparing your dashboard...
+          Setting up your secure workspace
         </p>
-        <div
-          className="mt-7 h-2 overflow-hidden rounded-full bg-slate-200"
-          role="progressbar"
-          aria-label="Loading dashboard"
-          aria-valuemin="0"
-          aria-valuemax="100"
-        >
-          <div className="login-progress-bar h-full rounded-full bg-primary-700" />
+        <div className="loading-pulse-dots mt-7 flex items-center justify-center gap-2" aria-label="Loading dashboard">
+          <span /><span /><span />
         </div>
+        <p className="mt-4 text-xs font-medium text-slate-400">
+          Loading your dashboard securely
+        </p>
       </div>
     </main>
   );

@@ -705,19 +705,46 @@ html[dir="rtl"] .recharts-surface {
   }
 }
 
-@keyframes login-progress {
-  from { width: 0%; }
-  to { width: 100%; }
+@keyframes loading-logo-ring {
+  to { transform: rotate(360deg); }
 }
 
-.login-progress-bar {
-  width: 0;
-  animation: login-progress 5s linear forwards;
+@keyframes loading-pulse-dot {
+  0%, 70%, 100% {
+    opacity: 0.3;
+    transform: scale(0.78);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.loading-logo-ring {
+  animation: loading-logo-ring 1.35s linear infinite;
+}
+
+.loading-pulse-dots span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #047857;
+  animation: loading-pulse-dot 1.2s ease-in-out infinite;
+}
+
+.loading-pulse-dots span:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.loading-pulse-dots span:nth-child(3) {
+  animation-delay: 320ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-progress-bar {
-    width: 100%;
+  .loading-logo-ring,
+  .loading-pulse-dots span {
+    transform: none;
+    opacity: 1;
     animation: none;
   }
 }
