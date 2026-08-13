@@ -453,20 +453,18 @@ svg {
 .surface-card {
   min-width: 0;
   max-width: 100%;
-  border-color: #dbe5e1 !important;
+  border: 0 !important;
   background: #ffffff;
-  box-shadow:
-    0 1px 2px rgb(15 23 42 / 0.04),
-    0 8px 24px rgb(15 23 42 / 0.045);
+  box-shadow: 0 6px 20px rgb(15 23 42 / 0.045);
 }
 
 .metric-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid #dbe5e1;
+  border: 0;
   border-radius: 1rem;
   background: #ffffff;
-  box-shadow: 0 4px 14px rgb(15 23 42 / 0.045);
+  box-shadow: 0 5px 18px rgb(15 23 42 / 0.04);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -474,16 +472,12 @@ svg {
 }
 
 .metric-card::before {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: #64748b;
-  content: "";
+  display: none;
 }
 
 .metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgb(15 23 42 / 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgb(15 23 42 / 0.065);
 }
 
 .metric-grid > .metric-card:nth-child(6n + 1) {

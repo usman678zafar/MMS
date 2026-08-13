@@ -1207,7 +1207,7 @@ export default function StudentsPage() {
                     </div>
                   ) : (
                     students.map((student) => (
-                      <article key={student.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                      <article key={student.id} className="rounded-xl bg-white p-3 shadow-sm">
                         <div className="flex min-w-0 items-start gap-3">
                           <StudentAvatar student={student} />
                           <div className="min-w-0 flex-1">
@@ -1329,7 +1329,7 @@ export default function StudentsPage() {
                   </div>
                 </div>
               )}
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex flex-col items-center justify-between gap-4 rounded-2xl bg-white p-4 shadow-sm md:flex-row">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                   <div>
                     <h3 className="font-bold text-slate-900 text-lg leading-tight">

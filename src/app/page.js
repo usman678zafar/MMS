@@ -231,7 +231,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                <div className="rounded-xl bg-emerald-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">
                     {t("dashboard", "donations")}
                   </p>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                     {formatCurrency(financeSummary.donations)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3">
+                <div className="rounded-xl bg-rose-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-rose-700">
                     {t("dashboard", "expenses")}
                   </p>
@@ -248,10 +248,10 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div
-                  className={`rounded-xl border p-3 ${
+                  className={`rounded-xl p-3 ${
                     netBalance >= 0
-                      ? "border-blue-100 bg-blue-50/60"
-                      : "border-amber-100 bg-amber-50/60"
+                      ? "bg-blue-50/60"
+                      : "bg-amber-50/60"
                   }`}
                 >
                   <p
