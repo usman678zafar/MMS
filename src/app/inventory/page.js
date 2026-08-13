@@ -234,8 +234,8 @@ export default function InventoryPage() {
 
           {/* Inventory Table */}
           <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+            <div className="data-table-scroll rounded-none border-0 shadow-none">
+              <table className="data-table w-full text-left">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">

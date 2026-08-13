@@ -79,3 +79,83 @@ body {
     @apply w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all;
   }
 }
+
+/* Shared data-table treatment used across all management screens. */
+.data-table-scroll {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
+}
+
+.data-table thead tr {
+  background: #047857;
+  border: 0;
+}
+
+.data-table thead th {
+  height: 3.5rem;
+  border: 0;
+  border-right: 1px solid rgb(255 255 255 / 0.1);
+  color: #ffffff !important;
+  font-size: 0.67rem;
+  font-weight: 800 !important;
+  letter-spacing: 0.09em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.data-table thead th:last-child {
+  border-right: 0;
+}
+
+.data-table tbody tr {
+  background: #ffffff;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.data-table tbody tr:hover {
+  background: #ecfdf5 !important;
+  box-shadow: inset 3px 0 0 #10b981;
+}
+
+.data-table tbody td {
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table tbody tr:has(td[colspan]) {
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.data-table input[type="checkbox"] {
+  accent-color: #059669;
+}
+
+@media (max-width: 640px) {
+  .data-table thead th,
+  .data-table tbody td {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+}
