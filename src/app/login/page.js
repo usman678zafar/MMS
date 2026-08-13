@@ -9,11 +9,10 @@ import { useAuth } from "@/context/AuthContext";
 function PostLoginLoading() {
   return (
     <main className="flex min-h-svh items-center justify-center bg-[#f7faf8] px-5 py-10">
-      <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white px-6 py-9 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:px-10 sm:py-11" role="status" aria-live="polite">
+      <div className="w-full max-w-md px-6 py-9 text-center sm:px-10 sm:py-11" role="status" aria-live="polite">
         <div className="relative mx-auto h-32 w-32">
-          <span className="absolute inset-0 rounded-full border border-primary-100 bg-primary-50" />
           <span className="loading-logo-ring absolute inset-0 rounded-full border-2 border-transparent border-t-primary-700 border-r-primary-200" aria-hidden="true" />
-          <div className="absolute inset-3 flex items-center justify-center rounded-full bg-white shadow-sm">
+          <div className="absolute inset-3 flex items-center justify-center">
             <Image
               src="/logo-mark.svg"
               alt="Madrasa Management"
@@ -27,15 +26,9 @@ function PostLoginLoading() {
         <h1 className="mt-6 text-xl font-bold text-slate-950 sm:text-2xl">
           Madrasa Management System
         </h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Setting up your secure workspace
-        </p>
-        <div className="loading-pulse-dots mt-7 flex items-center justify-center gap-2" aria-label="Loading dashboard">
+        <div className="loading-pulse-dots mt-6 flex items-center justify-center gap-2" aria-label="Loading dashboard">
           <span /><span /><span />
         </div>
-        <p className="mt-4 text-xs font-medium text-slate-400">
-          Loading your dashboard securely
-        </p>
       </div>
     </main>
   );
