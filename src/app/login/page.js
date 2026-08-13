@@ -98,7 +98,7 @@ export default function Login() {
 
   return (
     <main className="min-h-svh bg-[#f7faf8] lg:grid lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,0.88fr)]">
-      <section className="relative hidden min-h-svh overflow-hidden lg:flex lg:flex-col lg:justify-between">
+      <section className="relative hidden min-h-svh overflow-hidden border-r border-slate-200 lg:block">
         <Image
           src="/images/islamic-courtyard-login.png"
           alt="Sunlit arches surrounding a peaceful mosque courtyard"
@@ -107,27 +107,19 @@ export default function Login() {
           sizes="56vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/95 via-emerald-950/20 to-slate-950/35" />
-        <div className="absolute inset-0 bg-emerald-950/10" />
-
-        <div className="relative z-10 flex items-center gap-3 p-10 text-white xl:p-14">
-          <Image src="/logo-mark.svg" alt="MMS" width={44} height={44} className="h-11 w-11" priority />
-          <div>
-            <p className="font-bold tracking-wide">Madrasa Management</p>
-            <p className="text-xs text-white/70">
-              Community administration portal
-            </p>
-          </div>
-        </div>
-
-        <div className="relative z-10 max-w-2xl p-10 text-white xl:p-14">
-          <div className="mb-5 h-1 w-12 rounded-full bg-amber-400" />
-          <h1 className="max-w-xl text-4xl font-bold leading-tight tracking-tight xl:text-5xl">
-            Nurturing knowledge. Strengthening community.
-          </h1>
-          <p className="mt-5 max-w-lg text-sm leading-7 text-white/75 xl:text-base">
-            One secure place to manage students, staff, donations, expenses,
-            and the daily work that keeps your institution moving forward.
+        <div className="absolute inset-0 bg-slate-950/25" />
+        <div className="absolute inset-7 rounded-[2rem] border border-white/30 xl:inset-10" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-12 text-center text-white">
+          <Image
+            src="/logo-mark-white.svg"
+            alt="Madrasa Management"
+            width={128}
+            height={128}
+            className="h-28 w-28 drop-shadow-[0_3px_8px_rgba(0,0,0,0.45)] xl:h-32 xl:w-32"
+            priority
+          />
+          <p className="mt-5 text-sm font-extrabold uppercase tracking-[0.18em] drop-shadow-[0_2px_6px_rgba(0,0,0,0.65)] xl:text-base">
+            Madrasa Management System
           </p>
         </div>
       </section>
