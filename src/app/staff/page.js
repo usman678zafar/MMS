@@ -181,7 +181,7 @@ export default function StaffPage() {
           {loading ? (
             <StatsSkeleton />
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
                   label: "Total Staff",
@@ -193,7 +193,7 @@ export default function StaffPage() {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white rounded-2xl border border-slate-100 p-4 text-center"
+                  className="metric-card p-4 text-center"
                 >
                   <p className={`text-2xl font-bold ${stat.color}`}>
                     {stat.value}
@@ -234,7 +234,7 @@ export default function StaffPage() {
           )}
 
           {/* Staff Table */}
-          <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          <div className="surface-card rounded-2xl overflow-hidden">
             <div className="data-table-scroll rounded-none border-0 shadow-none">
               <table className="data-table w-full text-left">
                 <thead>

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongoose";
-import User from "@/models/User";
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
+import { and, eq, gt, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { loginAttempts, users } from "@/db/schema";
 import { createSession } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation";
 
@@ -13,21 +13,17 @@ export async function POST(request) {
   try {
     const { email, password } = loginSchema.parse(await request.json());
 
-    await connectDB();
-    const attempts = mongoose.connection.db.collection("loginattempts");
-    await attempts.createIndex(
-      { created_at: 1 },
-      { expireAfterSeconds: ATTEMPT_WINDOW_MS / 1000 },
-    );
-
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() || "unknown";
     const identifier = `${ip}:${email}`;
-    const since = new Date(Date.now() - ATTEMPT_WINDOW_MS);
-    const attemptCount = await attempts.countDocuments({
-      identifier,
-      created_at: { $gte: since },
-    });
+    const now = new Date();
+    const since = new Date(now.getTime() - ATTEMPT_WINDOW_MS);
+    const [attempt] = await db
+      .select()
+      .from(loginAttempts)
+      .where(and(eq(loginAttempts.key, identifier), gt(loginAttempts.windowStartedAt, since)))
+      .limit(1);
+    const attemptCount = attempt?.count || 0;
 
     if (attemptCount >= MAX_ATTEMPTS) {
       return NextResponse.json(
@@ -36,28 +32,42 @@ export async function POST(request) {
       );
     }
 
-    const user = await User.findOne({ email });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`lower(${users.email}) = lower(${email})`)
+      .limit(1);
 
     const isValidPassword =
       user &&
-      user.is_active !== false &&
+      user.isActive !== false &&
       (await bcrypt.compare(password, user.password));
 
     if (!isValidPassword) {
-      await attempts.insertOne({ identifier, created_at: new Date() });
+      await db
+        .insert(loginAttempts)
+        .values({ key: identifier, count: 1, windowStartedAt: now, updatedAt: now })
+        .onConflictDoUpdate({
+          target: loginAttempts.key,
+          set: {
+            count: attempt && attempt.windowStartedAt > since ? sql`${loginAttempts.count} + 1` : 1,
+            windowStartedAt: attempt && attempt.windowStartedAt > since ? attempt.windowStartedAt : now,
+            updatedAt: now,
+          },
+        });
       return NextResponse.json(
         { success: false, error: "Invalid email or password" },
         { status: 401 },
       );
     }
 
-    await attempts.deleteMany({ identifier });
-    await createSession(user._id);
+    await db.delete(loginAttempts).where(eq(loginAttempts.key, identifier));
+    await createSession(user.id);
 
     return NextResponse.json({
       success: true,
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,

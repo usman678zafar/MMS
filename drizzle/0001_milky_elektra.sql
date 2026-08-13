@@ -1,0 +1,2 @@
+ALTER TABLE "students" ADD CONSTRAINT "students_current_progress_object_check" CHECK (jsonb_typeof("students"."current_progress") = 'object');--> statement-breakpoint
+ALTER TABLE "students" ADD CONSTRAINT "students_documents_array_check" CHECK (jsonb_typeof("students"."documents") = 'array');

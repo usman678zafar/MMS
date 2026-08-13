@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    serverActions: {
+      // Upload actions validate files at 5 MB; leave room for multipart metadata.
+      bodySizeLimit: "6mb",
+    },
+  },
   async headers() {
     return [
       {

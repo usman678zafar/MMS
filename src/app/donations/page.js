@@ -431,7 +431,7 @@ export default function DonationsPage() {
           {loading ? (
             <StatsSkeleton />
           ) : activeTab === "donations" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
                   label: "Total Donations",
@@ -451,7 +451,7 @@ export default function DonationsPage() {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white rounded-2xl border border-slate-100 p-4 text-center"
+                  className="metric-card p-4 text-center"
                 >
                   <p className={`text-2xl font-bold ${stat.color}`}>
                     {stat.value}
@@ -463,7 +463,7 @@ export default function DonationsPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
                   label: "Total Donors",
@@ -483,7 +483,7 @@ export default function DonationsPage() {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="bg-white rounded-2xl border border-slate-100 p-4 text-center"
+                  className="metric-card p-4 text-center"
                 >
                   <p className={`text-2xl font-bold ${stat.color}`}>
                     {stat.value}
@@ -548,7 +548,7 @@ export default function DonationsPage() {
 
           {activeTab === "donations" ? (
             /* Donations Table */
-            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+            <div className="surface-card rounded-2xl overflow-hidden">
               <div className="data-table-scroll rounded-none border-0 shadow-none">
                 <table className="data-table w-full text-left">
                   <thead>
@@ -663,7 +663,7 @@ export default function DonationsPage() {
             </div>
           ) : (
             /* Donors Table */
-            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+            <div className="surface-card rounded-2xl overflow-hidden">
               <div className="data-table-scroll rounded-none border-0 shadow-none">
                 <table className="data-table w-full text-left">
                   <thead>
@@ -1084,7 +1084,7 @@ export default function DonationsPage() {
                   {donorHistory.map((h) => (
                     <div
                       key={h.id}
-                      className="p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary-200 transition-all group"
+                      className="surface-card group rounded-2xl p-4 transition-all hover:border-primary-200"
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div>

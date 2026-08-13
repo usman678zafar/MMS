@@ -56,6 +56,46 @@ const PROGRESS_TYPES = ["Qaida", "Nazra", "Hifz", "Girdan"];
 const PARA_NUMBERS = Array.from({ length: 30 }, (_, i) => i + 1);
 const SURAH_NUMBERS = Array.from({ length: 114 }, (_, i) => i + 1);
 
+const parseLegacyDate = (value) => {
+  const rawValue = value && typeof value === "object" ? value.$date : value;
+  if (!rawValue) return null;
+  const date = new Date(rawValue);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const hasCurrentMonthProgress = (student) => {
+  const date = parseLegacyDate(student.current_progress?.last_updated);
+  const now = new Date();
+  return Boolean(
+    date &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear(),
+  );
+};
+
+function StudentAvatar({ student, compact = false }) {
+  const photoUrl =
+    typeof student.profile_photo?.url === "string"
+      ? student.profile_photo.url
+      : "";
+
+  return (
+    <div
+      aria-hidden="true"
+      className={`${
+        compact ? "h-8 w-8 rounded-lg text-xs" : "h-10 w-10 rounded-xl text-base"
+      } flex flex-shrink-0 items-center justify-center overflow-hidden bg-blue-50 bg-cover bg-center font-bold text-blue-600 ring-1 ring-slate-100`}
+      style={
+        photoUrl
+          ? { backgroundImage: `url(${JSON.stringify(photoUrl)})` }
+          : undefined
+      }
+    >
+      {!photoUrl && student.name?.charAt(0)?.toUpperCase()}
+    </div>
+  );
+}
+
 // Mapping of Surah numbers to their names
 const SURAH_NAMES = {
   1: "Al-Fatihah",
@@ -866,8 +906,8 @@ export default function StudentsPage() {
               {loading ? (
                 <StatsSkeleton />
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
+                <div className="metric-grid grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="metric-card p-4 text-center">
                     <p className="text-2xl font-bold text-slate-900">
                       {students.length}
                     </p>
@@ -875,7 +915,7 @@ export default function StudentsPage() {
                       Total Enrolled
                     </p>
                   </div>
-                  <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
+                  <div className="metric-card p-4 text-center">
                     <p className="text-2xl font-bold text-emerald-600">
                       {students.filter((s) => s.is_active !== false).length}
                     </p>
@@ -883,7 +923,7 @@ export default function StudentsPage() {
                       Active
                     </p>
                   </div>
-                  <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
+                  <div className="metric-card p-4 text-center">
                     <p className="text-2xl font-bold text-rose-500">
                       {students.filter((s) => s.is_active === false).length}
                     </p>
@@ -891,17 +931,9 @@ export default function StudentsPage() {
                       Inactive
                     </p>
                   </div>
-                  <div className="bg-white rounded-2xl border border-slate-100 p-4 text-center">
-                    <p className={`text-2xl font-bold ${students.filter(s => {
-                      if (!s.current_progress?.last_updated) return true;
-                      const d = new Date(s.current_progress.last_updated);
-                      return d.getMonth() !== new Date().getMonth() || d.getFullYear() !== new Date().getFullYear();
-                    }).length > 0 ? "text-amber-500" : "text-emerald-500"}`}>
-                      {students.filter(s => {
-                        if (!s.current_progress?.last_updated) return true;
-                        const d = new Date(s.current_progress.last_updated);
-                        return d.getMonth() !== new Date().getMonth() || d.getFullYear() !== new Date().getFullYear();
-                      }).length}
+                  <div className="metric-card p-4 text-center">
+                    <p className={`text-2xl font-bold ${students.filter((student) => !hasCurrentMonthProgress(student)).length > 0 ? "text-amber-500" : "text-emerald-500"}`}>
+                      {students.filter((student) => !hasCurrentMonthProgress(student)).length}
                     </p>
                     <p className="text-xs text-slate-500 mt-1 font-medium">
                       Pending Progress
@@ -963,7 +995,7 @@ export default function StudentsPage() {
               )}
 
               {/* Students Table */}
-              <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+              <div className="surface-card rounded-2xl overflow-hidden">
                 <div className="data-table-scroll rounded-none border-0 shadow-none">
                   <table className="data-table w-full text-left">
                     <thead>
@@ -1018,9 +1050,7 @@ export default function StudentsPage() {
                           >
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-base flex-shrink-0">
-                                  {student.name?.charAt(0)?.toUpperCase()}
-                                </div>
+                                <StudentAvatar student={student} />
                                 <div>
                                   <Link
                                     href={`/students/${student.id}`}
@@ -1086,14 +1116,12 @@ export default function StudentsPage() {
                                       : `${PARA_NAMES[student.current_progress?.para || 1]} (${student.current_progress?.para || 1})${student.current_progress?.ayat ? ` · Ayat ${student.current_progress.ayat}` : ""}`}
                                   </span>
                                   <span className={`text-[9px] font-bold uppercase tracking-tighter flex items-center gap-1 ${
-                                    (!student.current_progress?.last_updated || 
-                                     new Date(student.current_progress.last_updated).getMonth() !== new Date().getMonth() ||
-                                     new Date(student.current_progress.last_updated).getFullYear() !== new Date().getFullYear())
+                                    !hasCurrentMonthProgress(student)
                                     ? "text-rose-400"
                                     : "text-emerald-500"
                                   }`}>
-                                    {student.current_progress?.last_updated 
-                                      ? `Last Update: ${format(new Date(student.current_progress.last_updated), "MMM dd")}`
+                                    {parseLegacyDate(student.current_progress?.last_updated)
+                                      ? `Last Update: ${format(parseLegacyDate(student.current_progress.last_updated), "MMM dd")}`
                                       : "No Update This Month"}
                                     <BookOpen className="h-2 w-2 opacity-50 transition-opacity" />
                                   </span>
@@ -1319,7 +1347,7 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+              <div className="surface-card rounded-2xl overflow-hidden">
                 <div className="data-table-scroll rounded-none border-0 shadow-none">
                   <table className="data-table w-full text-left">
                     <thead>
@@ -1388,9 +1416,7 @@ export default function StudentsPage() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
-                                {student.name?.charAt(0)}
-                              </div>
+                              <StudentAvatar student={student} compact />
                               <p className="font-bold text-slate-900 text-sm">
                                 {student.name}
                               </p>
@@ -1521,7 +1547,7 @@ export default function StudentsPage() {
                   </div>
                 </div>
               )}
-              <div className="bg-white p-4 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="surface-card flex flex-col items-center justify-between gap-4 rounded-2xl p-4 md:flex-row">
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                   <div>
                     <h3 className="font-bold text-slate-900">
@@ -1568,7 +1594,7 @@ export default function StudentsPage() {
                 </button>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+              <div className="surface-card rounded-2xl overflow-hidden">
                 <div className="data-table-scroll rounded-none border-0 shadow-none">
                 <table className="data-table w-full text-left">
                   <thead>

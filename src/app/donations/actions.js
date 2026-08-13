@@ -1,19 +1,20 @@
 "use server";
 
 import crypto from "node:crypto";
-import mongoose from "mongoose";
+import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+import { db } from "@/db";
+import { donations, donors } from "@/db/schema";
+import { getErrorMessage, serializeRow, serializeRows } from "@/db/utils";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/lib/r2";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/rbac";
 import {
   donationSchema,
-  escapeRegex,
   objectId,
   parsePagination,
 } from "@/lib/validation";
 import { formatPaginatedResponse, PAGINATION_DEFAULTS } from "@/lib/pagination";
-import { serializeDocument, serializeDocuments } from "@/lib/serialization";
 
 const MAX_RECEIPT_SIZE = 5 * 1024 * 1024;
 const RECEIPT_TYPES = {
@@ -91,8 +92,11 @@ export async function uploadReceipt(formData) {
 const prepareDonation = (input) => {
   const parsed = donationSchema.parse(input);
   return {
-    ...parsed,
-    donor_id: parsed.donor_id ? objectId(parsed.donor_id, "donor id") : null,
+    amount: parsed.amount,
+    type: parsed.type,
+    notes: parsed.notes,
+    receiptUrl: parsed.receipt_url,
+    donorId: parsed.donor_id ? objectId(parsed.donor_id, "donor id") : null,
     date: new Date(parsed.date),
   };
 };
@@ -100,42 +104,36 @@ const prepareDonation = (input) => {
 export async function addDonation(donationData) {
   try {
     await requirePermission(PERMISSIONS.DONATIONS_CREATE);
-    const data = { ...prepareDonation(donationData), created_at: new Date() };
-    const result = await mongoose.connection.db.collection("donations").insertOne(data);
-    return { success: true, data: serializeDocument({ ...data, _id: result.insertedId }) };
+    const [row] = await db.insert(donations).values(prepareDonation(donationData)).returning();
+    return { success: true, data: serializeRow(row) };
   } catch (error) {
     console.error("addDonation Error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
 export async function updateDonation(id, donationData) {
   try {
     await requirePermission(PERMISSIONS.DONATIONS_UPDATE);
-    const data = { ...prepareDonation(donationData), updated_at: new Date() };
-    const result = await mongoose.connection.db
-      .collection("donations")
-      .updateOne({ _id: objectId(id, "donation id") }, { $set: data });
-    return result.matchedCount === 1
-      ? { success: true, data: serializeDocument(data) }
+    const [row] = await db.update(donations).set({ ...prepareDonation(donationData), updatedAt: new Date() }).where(eq(donations.id, objectId(id, "donation id"))).returning();
+    return row
+      ? { success: true, data: serializeRow(row) }
       : { success: false, error: "Donation not found" };
   } catch (error) {
     console.error("updateDonation Error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
 export async function deleteDonation(id) {
   try {
     await requirePermission(PERMISSIONS.DONATIONS_DELETE);
-    const result = await mongoose.connection.db
-      .collection("donations")
-      .deleteOne({ _id: objectId(id, "donation id") });
-    return result.deletedCount === 1
+    const [row] = await db.delete(donations).where(eq(donations.id, objectId(id, "donation id"))).returning({ id: donations.id });
+    return row
       ? { success: true }
       : { success: false, error: "Donation not found" };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -148,80 +146,46 @@ export async function getDonations(
   try {
     await requirePermission(PERMISSIONS.DONATIONS_VIEW);
     const pagination = parsePagination(page, pageSize);
-    const query = {};
-    const safeSearch = escapeRegex(search);
-    if (safeSearch) {
-      query.$or = [
-        { "donors.name": { $regex: safeSearch, $options: "i" } },
-        { type: { $regex: safeSearch, $options: "i" } },
-        { notes: { $regex: safeSearch, $options: "i" } },
-      ];
-    }
-    if (type) query.type = String(type).slice(0, 50);
-
-    const collection = mongoose.connection.db.collection("donations");
-    const pipeline = [
-      {
-        $lookup: {
-          from: "donors",
-          localField: "donor_id",
-          foreignField: "_id",
-          as: "donors",
-        },
-      },
-      { $unwind: { path: "$donors", preserveNullAndEmptyArrays: true } },
-      { $match: query },
-    ];
+    const term = String(search).trim().slice(0, 100);
+    const filters = [];
+    if (term) filters.push(or(ilike(donors.name, `%${term}%`), ilike(donations.type, `%${term}%`), ilike(donations.notes, `%${term}%`)));
+    if (type) filters.push(eq(donations.type, String(type).slice(0, 20)));
+    const where = filters.length ? and(...filters) : undefined;
     const [countResult, data] = await Promise.all([
-      collection.aggregate([...pipeline, { $count: "total" }]).toArray(),
-      collection
-        .aggregate([
-          ...pipeline,
-          { $sort: { date: -1 } },
-          { $skip: (pagination.page - 1) * pagination.pageSize },
-          { $limit: pagination.pageSize },
-        ])
-        .toArray(),
+      db.select({ value: count() }).from(donations).leftJoin(donors, eq(donors.id, donations.donorId)).where(where),
+      db.select({ donation: donations, donors }).from(donations).leftJoin(donors, eq(donors.id, donations.donorId)).where(where).orderBy(desc(donations.date)).offset((pagination.page - 1) * pagination.pageSize).limit(pagination.pageSize),
     ]);
+    const rows = data.map(({ donation, donors: donor }) => ({ ...donation, donors: donor }));
     return formatPaginatedResponse(
-      serializeDocuments(data),
-      countResult[0]?.total || 0,
+      serializeRows(rows),
+      countResult[0]?.value || 0,
       pagination.page,
       pagination.pageSize,
     );
   } catch (error) {
     console.error("getDonations Error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
 export async function getDonors() {
   try {
     await requirePermission(PERMISSIONS.DONORS_VIEW);
-    const data = await mongoose.connection.db
-      .collection("donors")
-      .find({ is_active: { $ne: false } })
-      .project({ name: 1 })
-      .sort({ name: 1 })
-      .toArray();
-    return { success: true, data: serializeDocuments(data) };
+    const data = await db.select({ id: donors.id, name: donors.name }).from(donors).where(eq(donors.isActive, true)).orderBy(asc(donors.name));
+    return { success: true, data: serializeRows(data) };
   } catch (error) {
     console.error("getDonors Error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
 export async function getDonorDonations(donorId) {
   try {
     await requirePermission(PERMISSIONS.DONATIONS_VIEW);
-    const data = await mongoose.connection.db
-      .collection("donations")
-      .find({ donor_id: objectId(donorId, "donor id") })
-      .sort({ date: -1 })
-      .toArray();
-    return { success: true, data: serializeDocuments(data) };
+    const data = await db.select().from(donations).where(eq(donations.donorId, objectId(donorId, "donor id"))).orderBy(desc(donations.date));
+    return { success: true, data: serializeRows(data) };
   } catch (error) {
     console.error("getDonorDonations Error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

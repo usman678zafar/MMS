@@ -159,3 +159,119 @@ body {
     padding-right: 1rem !important;
   }
 }
+
+/* Plain-color card hierarchy for dashboards and management pages. */
+.surface-card {
+  border-color: #dbe5e1 !important;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.04),
+    0 8px 24px rgb(15 23 42 / 0.045);
+}
+
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbe5e1;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgb(15 23 42 / 0.045);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.metric-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #64748b;
+  content: "";
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.08);
+}
+
+.metric-grid > .metric-card:nth-child(6n + 1) {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 1)::before {
+  background: #16a34a;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 2) {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 2)::before {
+  background: #2563eb;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 3) {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 3)::before {
+  background: #d97706;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 4) {
+  border-color: #fecdd3;
+  background: #fff1f2;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 4)::before {
+  background: #e11d48;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 5) {
+  border-color: #ddd6fe;
+  background: #f5f3ff;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 5)::before {
+  background: #7c3aed;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 6) {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+}
+
+.metric-grid > .metric-card:nth-child(6n + 6)::before {
+  background: #0284c7;
+}
+
+.metric-card.metric-card-emerald {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.metric-card.metric-card-emerald::before {
+  background: #16a34a;
+}
+
+.metric-card.metric-card-indigo {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.metric-card.metric-card-indigo::before {
+  background: #4f46e5;
+}
+
+.metric-card.metric-card-amber {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.metric-card.metric-card-amber::before {
+  background: #d97706;
+}

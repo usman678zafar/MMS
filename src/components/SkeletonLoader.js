@@ -62,11 +62,11 @@ export const CardSkeleton = ({ count = 6 }) => (
 
 // Stats bar skeleton loader
 export const StatsSkeleton = ({ count = 3 }) => (
-  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+  <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
     {Array.from({ length: count }).map((_, i) => (
       <div
         key={`stat-${i}`}
-        className="bg-white rounded-2xl border border-slate-100 p-4 text-center"
+        className="metric-card p-4 text-center"
       >
         <Skeleton className="h-8 w-16 mx-auto mb-2" />
         <Skeleton className="h-3 w-20 mx-auto" />

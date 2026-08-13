@@ -2,14 +2,13 @@ import "server-only";
 
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
-import mongoose from "mongoose";
-import { connectDB } from "@/lib/mongoose";
+import { and, eq, gt } from "drizzle-orm";
+import { db } from "@/db";
+import { sessions, users } from "@/db/schema";
 import { hasPermission } from "@/lib/rbac";
 
 const SESSION_COOKIE = "mms_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
-
-let indexesPromise;
 
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
@@ -27,53 +26,20 @@ const shouldUseSecureCookies = () => {
 };
 
 const sanitizeUser = (user) => ({
-  id: user._id.toString(),
+  id: user.id,
   email: user.email,
   name: user.name,
   role: user.role,
-  is_active: user.is_active !== false,
+  is_active: user.isActive !== false,
 });
 
-async function getCollections() {
-  await connectDB();
-  const db = mongoose.connection.db;
-
-  if (!indexesPromise) {
-    indexesPromise = Promise.all([
-      db
-        .collection("sessions")
-        .createIndex({ token_hash: 1 }, { unique: true }),
-      db
-        .collection("sessions")
-        .createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 }),
-      db.collection("sessions").createIndex({ user_id: 1 }),
-    ]).catch((error) => {
-      indexesPromise = null;
-      throw error;
-    });
-  }
-
-  await indexesPromise;
-  return {
-    sessions: db.collection("sessions"),
-    users: db.collection("users"),
-  };
-}
-
 export async function createSession(userId) {
-  const { sessions } = await getCollections();
   const token = crypto.randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
-  const objectId =
-    typeof userId === "string"
-      ? new mongoose.Types.ObjectId(userId)
-      : userId;
-
-  await sessions.insertOne({
-    token_hash: hashToken(token),
-    user_id: objectId,
-    created_at: new Date(),
-    expires_at: expiresAt,
+  await db.insert(sessions).values({
+    tokenHash: hashToken(token),
+    userId,
+    expiresAt,
   });
 
   const cookieStore = await cookies();
@@ -91,8 +57,7 @@ export async function deleteCurrentSession() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
 
   if (token) {
-    const { sessions } = await getCollections();
-    await sessions.deleteOne({ token_hash: hashToken(token) });
+    await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(token)));
   }
 
   cookieStore.set(SESSION_COOKIE, "", {
@@ -109,18 +74,24 @@ export async function getCurrentUser() {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  const { sessions, users } = await getCollections();
-  const session = await sessions.findOne({
-    token_hash: hashToken(token),
-    expires_at: { $gt: new Date() },
-  });
-
-  if (!session) return null;
-
-  const user = await users.findOne({
-    _id: session.user_id,
-    is_active: { $ne: false },
-  });
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      role: users.role,
+      isActive: users.isActive,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .where(
+      and(
+        eq(sessions.tokenHash, hashToken(token)),
+        gt(sessions.expiresAt, new Date()),
+        eq(users.isActive, true),
+      ),
+    )
+    .limit(1);
 
   return user ? sanitizeUser(user) : null;
 }

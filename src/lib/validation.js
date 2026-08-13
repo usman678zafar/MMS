@@ -1,5 +1,4 @@
 import { z } from "zod";
-import mongoose from "mongoose";
 import { ROLES } from "@/lib/rbac";
 
 const text = (max = 500) => z.string().trim().max(max);
@@ -12,13 +11,11 @@ const dateString = z.string().trim().min(1).refine(
 );
 
 export const objectId = (value, field = "id") => {
-  if (
-    typeof value !== "string" ||
-    !mongoose.Types.ObjectId.isValid(value)
-  ) {
+  const parsed = z.string().uuid().safeParse(value);
+  if (!parsed.success) {
     throw new Error(`Invalid ${field}`);
   }
-  return new mongoose.Types.ObjectId(value);
+  return parsed.data;
 };
 
 export const escapeRegex = (value = "") =>

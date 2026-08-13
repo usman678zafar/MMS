@@ -146,31 +146,36 @@ export default function StudentProfilePage() {
     notes: "",
   });
 
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async ({ showLoader = true } = {}) => {
     if (!canView || !id) return;
-    setLoading(true);
-    setError("");
-    const result = await getStudentProfile(id);
-    if (result.success) {
-      setData(result.data);
-      setNotes(result.data.student.profile_notes || "");
-      setFeeForm((current) => ({
-        ...current,
-        amount: String(result.data.student.monthly_fee || ""),
-      }));
-      const currentProgress = result.data.student.current_progress || {};
-      setProgressForm((current) => ({
-        ...current,
-        type: currentProgress.type || result.data.student.religious_class || "Qaida",
-        para: currentProgress.para || 1,
-        surahNumber: currentProgress.surah_number || "",
-        surah: currentProgress.surah || "",
-        ayat: currentProgress.ayat || "",
-      }));
-    } else {
-      setError(result.error || "Unable to load this student record");
+    if (showLoader) setLoading(true);
+    try {
+      const result = await getStudentProfile(id);
+      if (result.success) {
+        setData(result.data);
+        setNotes(result.data.student.profile_notes || "");
+        setFeeForm((current) => ({
+          ...current,
+          amount: String(result.data.student.monthly_fee || ""),
+        }));
+        const currentProgress = result.data.student.current_progress || {};
+        setProgressForm((current) => ({
+          ...current,
+          type: currentProgress.type || result.data.student.religious_class || "Qaida",
+          para: currentProgress.para || 1,
+          surahNumber: currentProgress.surah_number || "",
+          surah: currentProgress.surah || "",
+          ayat: currentProgress.ayat || "",
+        }));
+      } else {
+        setError(result.error || "Unable to load this student record");
+      }
+    } catch (error) {
+      console.error("Student profile load failed:", error);
+      setError("The student profile could not be refreshed. Please try again.");
+    } finally {
+      if (showLoader) setLoading(false);
     }
-    setLoading(false);
   }, [canView, id]);
 
   useEffect(() => {
@@ -183,21 +188,42 @@ export default function StudentProfilePage() {
     window.setTimeout(() => setNotice(""), 3000);
   };
 
-  const runMutation = async (operation, successMessage) => {
+  const runMutation = async (
+    operation,
+    successMessage,
+    { onSuccess, refresh = true } = {},
+  ) => {
     setSaving(true);
-    const result = await operation();
-    if (result.success) {
-      setModal(null);
-      showNotice(successMessage);
-      await loadProfile();
-    } else {
+    setError("");
+    try {
+      const result = await operation();
+      if (result.success) {
+        setModal(null);
+        onSuccess?.(result);
+        showNotice(successMessage);
+        if (refresh) await loadProfile({ showLoader: false });
+        return true;
+      }
       setError(result.error || "The update could not be completed");
+      return false;
+    } catch (error) {
+      console.error("Student profile update failed:", error);
+      setError(
+        error?.message === "Failed to fetch"
+          ? "The request could not reach the server. Check your connection and try again."
+          : error?.message || "The update could not be completed",
+      );
+      return false;
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const activity = useMemo(() => {
     if (!data) return [];
+    const documents = Array.isArray(data.student.documents)
+      ? data.student.documents
+      : [];
     return [
       ...data.progress.map((entry) => ({
         id: `progress-${entry.id}`,
@@ -227,7 +253,7 @@ export default function StudentProfilePage() {
         date: entry.date,
         color: "bg-amber-500",
       })),
-      ...(data.student.documents || []).map((entry) => ({
+      ...documents.map((entry) => ({
         id: `document-${entry.id}`,
         type: "Document",
         title: "Document uploaded",
@@ -248,27 +274,73 @@ export default function StudentProfilePage() {
   };
 
   const uploadDocument = async (event) => {
-    const file = event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Documents must be 5 MB or smaller");
+      input.value = "";
+      return;
+    }
     const formData = new FormData();
     formData.append("file", file);
     await runMutation(
       () => uploadStudentDocument(id, formData),
       "Document uploaded",
+      {
+        refresh: false,
+        onSuccess: (result) => {
+          setData((current) => {
+            if (!current) return current;
+            const documents = Array.isArray(current.student.documents)
+              ? current.student.documents
+              : [];
+            return {
+              ...current,
+              student: {
+                ...current.student,
+                documents: [...documents, result.data],
+              },
+            };
+          });
+        },
+      },
     );
-    event.target.value = "";
+    input.value = "";
   };
 
   const uploadPhoto = async (event) => {
-    const file = event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      setError("Profile photos must be 3 MB or smaller");
+      input.value = "";
+      return;
+    }
     const formData = new FormData();
     formData.append("file", file);
     await runMutation(
       () => uploadStudentPhoto(id, formData),
       "Profile photo updated",
+      {
+        refresh: false,
+        onSuccess: (result) => {
+          setData((current) =>
+            current
+              ? {
+                  ...current,
+                  student: {
+                    ...current.student,
+                    profile_photo: result.data,
+                  },
+                }
+              : current,
+          );
+        },
+      },
     );
-    event.target.value = "";
+    input.value = "";
   };
 
   return (
@@ -314,8 +386,8 @@ export default function StudentProfilePage() {
               Back to students
             </Link>
 
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="bg-gradient-to-r from-primary-950 via-primary-800 to-primary-700 px-5 py-7 text-white sm:px-8">
+            <section className="surface-card overflow-hidden rounded-2xl">
+              <div className="bg-[#065f46] px-5 py-7 text-white sm:px-8">
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
                     <div
@@ -403,7 +475,7 @@ export default function StudentProfilePage() {
             {activeTab === "overview" && (
               <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
                 <div className="space-y-6">
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                  <section className="surface-card rounded-2xl p-5 sm:p-6">
                     <h2 className="text-base font-bold text-slate-900">Personal & guardian information</h2>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <InfoItem label="Father / Guardian" value={data.student.father_name} icon={UserRound} />
@@ -412,7 +484,7 @@ export default function StudentProfilePage() {
                       <InfoItem label="Address" value={data.student.address} icon={MapPin} />
                     </div>
                   </section>
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                  <section className="surface-card rounded-2xl p-5 sm:p-6">
                     <h2 className="text-base font-bold text-slate-900">Enrollment & instruction</h2>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <InfoItem label="Religious class" value={data.student.religious_class} icon={BookOpen} />
@@ -423,7 +495,7 @@ export default function StudentProfilePage() {
                   </section>
                 </div>
                 <aside className="space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="metric-card metric-card-emerald p-5">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Attendance rate</p>
                     <div className="mt-3 flex items-end justify-between">
                       <p className="text-3xl font-extrabold text-slate-900">{data.summary.attendanceRate}%</p>
@@ -433,7 +505,7 @@ export default function StudentProfilePage() {
                       <div className="h-full rounded-full bg-emerald-500" style={{ width: `${data.summary.attendanceRate}%` }} />
                     </div>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="metric-card metric-card-indigo p-5">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Current progress</p>
                     <p className="mt-3 text-xl font-extrabold text-primary-800">{data.student.current_progress?.type || "Not recorded"}</p>
                     <p className="mt-1 text-sm text-slate-500">
@@ -441,7 +513,7 @@ export default function StudentProfilePage() {
                     </p>
                     <p className="mt-4 text-xs text-slate-400">Updated {formatDate(data.student.current_progress?.last_updated)}</p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="metric-card metric-card-amber p-5">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Current fee status</p>
                     <div className="mt-3 flex items-center justify-between">
                       <p className={`text-xl font-extrabold ${data.student.fee_status === "Paid" ? "text-emerald-600" : "text-rose-600"}`}>{data.student.fee_status}</p>
@@ -453,7 +525,7 @@ export default function StudentProfilePage() {
             )}
 
             {activeTab === "academic" && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+              <section className="surface-card rounded-2xl p-5 sm:p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div><h2 className="text-base font-bold text-slate-900">Academic milestones</h2><p className="mt-1 text-xs text-slate-400">Qur&apos;an learning and revision progress</p></div>
                   {canEdit && <button onClick={() => setModal("progress")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Add milestone</button>}
@@ -478,16 +550,16 @@ export default function StudentProfilePage() {
 
             {activeTab === "attendance" && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                <div className="metric-grid grid grid-cols-2 gap-3 lg:grid-cols-5">
                   {[
                     ["Attendance rate", `${data.summary.attendanceRate}%`, "text-primary-700"],
                     ["Present", data.summary.attendance.present, "text-emerald-600"],
                     ["Absent", data.summary.attendance.absent, "text-rose-600"],
                     ["Late", data.summary.attendance.late, "text-amber-600"],
                     ["Leave", data.summary.attendance.leave, "text-blue-600"],
-                  ].map(([label, value, tone]) => <div key={label} className="rounded-2xl border border-slate-200 bg-white p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-2 text-2xl font-extrabold ${tone}`}>{value}</p></div>)}
+                  ].map(([label, value, tone]) => <div key={label} className="metric-card p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-2 text-2xl font-extrabold ${tone}`}>{value}</p></div>)}
                 </div>
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                <section className="surface-card rounded-2xl p-5 sm:p-6">
                   <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-900">Attendance log</h2>{canEdit && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Record</button>}</div>
                   <div className="data-table-scroll mt-5">
                     {data.attendance.length === 0 ? <EmptyState icon={CalendarCheck} title="No attendance records" description="Attendance history will appear here." /> : <table className="data-table min-w-[560px] text-left"><thead><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Notes</th></tr></thead><tbody>{data.attendance.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-semibold text-slate-700">{formatDate(entry.date, "EEEE, MMM d, yyyy")}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${attendanceTone[entry.status] || "bg-slate-50 text-slate-600"}`}>{entry.status}</span></td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td></tr>)}</tbody></table>}
@@ -498,12 +570,12 @@ export default function StudentProfilePage() {
 
             {activeTab === "fees" && (
               <div className="space-y-6">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Total received</p><p className="mt-2 text-2xl font-extrabold text-emerald-600">{currency(data.summary.paidTotal)}</p></div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Payments recorded</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{data.summary.paidMonths}</p></div>
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Current amount due</p><p className={`mt-2 text-2xl font-extrabold ${data.summary.currentDue > 0 ? "text-rose-600" : "text-emerald-600"}`}>{currency(data.summary.currentDue)}</p></div>
+                <div className="metric-grid grid gap-3 sm:grid-cols-3">
+                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Total received</p><p className="mt-2 text-2xl font-extrabold text-emerald-600">{currency(data.summary.paidTotal)}</p></div>
+                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Payments recorded</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{data.summary.paidMonths}</p></div>
+                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Current amount due</p><p className={`mt-2 text-2xl font-extrabold ${data.summary.currentDue > 0 ? "text-rose-600" : "text-emerald-600"}`}>{currency(data.summary.currentDue)}</p></div>
                 </div>
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                <section className="surface-card rounded-2xl p-5 sm:p-6">
                   <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-900">Payment history</h2>{canEdit && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Receive fee</button>}</div>
                   <div className="data-table-scroll mt-5">
                     {data.fees.length === 0 ? <EmptyState icon={Receipt} title="No payments recorded" description="Fee payments and receipt details will appear here." /> : <table className="data-table min-w-[620px] text-left"><thead><tr><th className="px-4 py-3">Period</th><th className="px-4 py-3">Paid on</th><th className="px-4 py-3">Notes</th><th className="px-4 py-3 text-right">Amount</th></tr></thead><tbody>{data.fees.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-bold text-slate-800">{entry.month} {entry.year}</td><td className="px-4 py-4 text-sm text-slate-500">{formatDate(entry.date)}</td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td><td className="px-4 py-4 text-right text-sm font-extrabold text-emerald-600">{currency(entry.amount)}</td></tr>)}</tbody></table>}
@@ -514,13 +586,13 @@ export default function StudentProfilePage() {
 
             {activeTab === "documents" && (
               <div className="grid gap-6 xl:grid-cols-2">
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                <section className="surface-card rounded-2xl p-5 sm:p-6">
                   <div className="flex items-center justify-between gap-3"><div><h2 className="text-base font-bold text-slate-900">Documents</h2><p className="mt-1 text-xs text-slate-400">PDF, JPEG, PNG or WebP · Max 5 MB</p></div>{canEdit && <label className="btn btn-primary cursor-pointer gap-2 text-xs"><Upload className="h-4 w-4" /> Upload<input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={uploadDocument} disabled={saving} className="sr-only" /></label>}</div>
                   <div className="mt-5 space-y-3">
-                    {(data.student.documents || []).length === 0 ? <EmptyState icon={FileText} title="No documents uploaded" description="Add identification, admission, or supporting documents." /> : data.student.documents.map((document) => <div key={document.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><div className="rounded-lg bg-blue-50 p-2 text-blue-600"><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{document.name}</p><p className="text-[10px] text-slate-400">{Math.max(1, Math.round(document.size / 1024))} KB · {formatDate(document.uploaded_at)}</p></div><a href={document.url} target="_blank" rel="noreferrer" title="Open document" className="rounded-lg p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-600"><Download className="h-4 w-4" /></a>{canEdit && <button onClick={() => { if (window.confirm("Delete this document permanently?")) runMutation(() => deleteStudentDocument(id, document.id), "Document deleted"); }} title="Delete document" className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button>}</div>)}
+                    {!Array.isArray(data.student.documents) || data.student.documents.length === 0 ? <EmptyState icon={FileText} title="No documents uploaded" description="Add identification, admission, or supporting documents." /> : data.student.documents.map((document) => <div key={document.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><div className="rounded-lg bg-blue-50 p-2 text-blue-600"><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{document.name}</p><p className="text-[10px] text-slate-400">{Math.max(1, Math.round(document.size / 1024))} KB · {formatDate(document.uploaded_at)}</p></div><a href={document.url} target="_blank" rel="noreferrer" title="Open document" className="rounded-lg p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-600"><Download className="h-4 w-4" /></a>{canEdit && <button onClick={() => { if (window.confirm("Delete this document permanently?")) runMutation(() => deleteStudentDocument(id, document.id), "Document deleted"); }} title="Delete document" className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button>}</div>)}
                   </div>
                 </section>
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+                <section className="surface-card rounded-2xl p-5 sm:p-6">
                   <div className="flex items-center gap-2"><NotebookPen className="h-5 w-5 text-primary-600" /><h2 className="text-base font-bold text-slate-900">Staff notes</h2></div>
                   <p className="mt-2 text-xs leading-5 text-slate-400">Internal notes about the student, guardian communication, learning needs, or follow-up items.</p>
                   <textarea value={notes} onChange={(event) => setNotes(event.target.value)} disabled={!canEdit} maxLength={5000} rows={10} placeholder="Add internal notes..." className="mt-5 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 disabled:cursor-not-allowed" />
@@ -530,7 +602,7 @@ export default function StudentProfilePage() {
             )}
 
             {activeTab === "history" && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+              <section className="surface-card rounded-2xl p-5 sm:p-6">
                 <h2 className="text-base font-bold text-slate-900">Complete student activity</h2>
                 <p className="mt-1 text-xs text-slate-400">Academic, attendance, fee, and document events in one timeline</p>
                 <div className="mt-6">{activity.length === 0 ? <EmptyState icon={History} title="No activity recorded" description="Student events will appear here as records are added." /> : <div className="relative ml-2 space-y-6 border-l-2 border-slate-100 pl-7">{activity.map((entry) => <article key={entry.id} className="relative"><span className={`absolute -left-[34px] top-1 h-3 w-3 rounded-full border-2 border-white ring-2 ring-slate-100 ${entry.color}`} /><div className="flex flex-col justify-between gap-1 sm:flex-row"><div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{entry.type}</p><p className="mt-1 text-sm font-bold text-slate-800">{entry.title}</p><p className="mt-1 text-xs text-slate-500">{entry.detail || "No additional details"}</p></div><time className="shrink-0 text-xs font-semibold text-slate-400">{formatDate(entry.date)}</time></div></article>)}</div>}</div>

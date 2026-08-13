@@ -173,11 +173,11 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="metric-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {cards.map((card) => (
               <div
                 key={card.name}
-                className="bg-white p-5 rounded-2xl border border-slate-100 transition-all duration-300 group hover:-translate-y-1"
+                className="metric-card group p-5"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className={`${card.color} p-2.5 rounded-xl text-white `}>
@@ -205,7 +205,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 ">
+            <div className="surface-card rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="font-bold text-slate-900 text-lg">
@@ -323,7 +323,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 ">
+            <div className="surface-card rounded-2xl p-6">
               <h3 className="font-bold text-slate-900 text-lg mb-6">
                 Recent Activity
               </h3>
