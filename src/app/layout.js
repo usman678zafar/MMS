@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "MMS - Madrasa Management System",
   description: "Modern Madrasa & Masjid Management System",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export const viewport = {

@@ -34,9 +34,9 @@ export default function NavigationLayout({ children }) {
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className="min-w-0 max-w-full lg:ml-[13.5rem] min-[1700px]:ml-64">
+      <div className="min-w-0 max-w-full lg:ml-[13.5rem] min-[1700px]:ml-60">
         <Header onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="w-full px-3 py-4 sm:px-5 sm:py-5 min-[1700px]:px-8 min-[1700px]:py-8">
+        <main className="w-full px-3 py-4 sm:px-5 sm:py-5 min-[1700px]:px-7 min-[1700px]:py-7">
           <div className="mx-auto min-w-0 w-full max-w-7xl">{children}</div>
         </main>
       </div>

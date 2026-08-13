@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   TrendingUp,
   TrendingDown,
@@ -356,9 +357,12 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              <button className="w-full mt-6 py-2 text-primary-600 text-sm font-semibold hover:bg-primary-50 rounded-xl transition-colors">
+              <Link
+                href="/donations?tab=donations"
+                className="mt-6 block w-full rounded-xl py-2 text-center text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50"
+              >
                 View All Activity
-              </button>
+              </Link>
             </div>
           </div>
         </div>

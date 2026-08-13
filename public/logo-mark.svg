@@ -1,7 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">MMS logo mark</title>
+  <desc id="desc">A mosque arch above an open book</desc>
   <rect width="64" height="64" rx="16" fill="#047857"/>
   <path d="M18 38V26c0-7.6 6.3-11.4 14-17 7.7 5.6 14 9.4 14 17v12h-6V26.6c0-4.3-3.4-7.2-8-10.8-4.6 3.6-8 6.5-8 10.8V38h-6Z" fill="#fff"/>
   <path d="M28 38V27.8c0-2.5 1.8-4.7 4-5.8 2.2 1.1 4 3.3 4 5.8V38h-8Z" fill="#a7f3d0"/>
   <circle cx="32" cy="7" r="2" fill="#fbbf24"/>
   <path d="M9 39.5c8.4-2.3 15.7-.6 23 4.6v10.4C24.7 49.8 17.1 48.2 9 50V39.5Zm46 0c-8.4-2.3-15.7-.6-23 4.6v10.4c7.3-4.7 14.9-6.3 23-4.5V39.5Z" fill="#fff"/>
+  <path d="M32 44.1v10.4" stroke="#a7f3d0" stroke-width="2" stroke-linecap="round"/>
 </svg>

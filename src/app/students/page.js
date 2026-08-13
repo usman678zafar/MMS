@@ -6,6 +6,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Modal from "@/components/Modal";
 import ConfirmModal from "@/components/ConfirmModal";
 import Pagination from "@/components/Pagination";
+import SearchField from "@/components/SearchField";
 import {
   TableSkeleton,
   StatsSkeleton,
@@ -13,7 +14,6 @@ import {
 } from "@/components/SkeletonLoader";
 import {
   Plus,
-  Search,
   GraduationCap,
   Phone,
   Calendar,
@@ -438,6 +438,7 @@ export default function StudentsPage() {
   const [deleteId, setDeleteId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [filterClass, setFilterClass] = useState("All");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -814,8 +815,8 @@ export default function StudentsPage() {
     else fetchStudents(); // Fallback on error
   };
 
-  const handleSearch = (value) => {
-    setSearch(value);
+  const handleSearch = () => {
+    setSearch(searchInput.trim());
     setCurrentPage(1);
   };
 
@@ -947,16 +948,7 @@ export default function StudentsPage() {
                 <FilterSkeleton />
               ) : (
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder={t("students", "searchPlaceholder")}
-                      value={search}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
-                    />
-                  </div>
+                  <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder={t("students", "searchPlaceholder")} />
                   <select
                     value={filterStatus}
                     onChange={(e) => handleStatusFilter(e.target.value)}
@@ -996,7 +988,7 @@ export default function StudentsPage() {
 
               {/* Students Table */}
               <div className="surface-card rounded-2xl overflow-hidden">
-                <div className="data-table-scroll rounded-none border-0 shadow-none">
+                <div className="data-table-scroll hidden rounded-none border-0 shadow-none sm:block">
                   <table className="data-table student-management-table w-full text-left">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -1019,8 +1011,7 @@ export default function StudentsPage() {
                           {t("students", "colStatus")}
                         </th>
                         <th className="student-actions-cell px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right w-32">
-                          <span className="student-default-actions-label">{t("students", "colActions")}</span>
-                          <span className="student-laptop-actions-label">Status / Actions</span>
+                          {t("students", "colActions")}
                         </th>
                       </tr>
                     </thead>
@@ -1165,32 +1156,6 @@ export default function StudentsPage() {
                             </td>
                             <td className="student-actions-cell px-6 py-4 text-right">
                               <div className="student-action-controls flex items-center justify-end gap-1">
-                                <button
-                                  onClick={() =>
-                                    handleToggleStatus(
-                                      student.id,
-                                      student.is_active !== false,
-                                    )
-                                  }
-                                  disabled={updatingStatusIds.has(student.id)}
-                                  className={`student-actions-status h-6 w-16 items-center justify-center rounded-full border text-[9px] font-bold uppercase tracking-wide transition-all ${
-                                    updatingStatusIds.has(student.id)
-                                      ? "cursor-wait opacity-50"
-                                      : ""
-                                  } ${
-                                    student.is_active !== false
-                                      ? "border-emerald-100 bg-emerald-50 text-emerald-600"
-                                      : "border-slate-100 bg-slate-50 text-slate-400"
-                                  }`}
-                                >
-                                  {updatingStatusIds.has(student.id) ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : student.is_active !== false ? (
-                                    "Active"
-                                  ) : (
-                                    "Inactive"
-                                  )}
-                                </button>
                                 <Link
                                   href={`/students/${student.id}`}
                                   className="rounded-xl p-2 text-slate-400 transition-all hover:bg-primary-50 hover:text-primary-700"
@@ -1227,6 +1192,86 @@ export default function StudentsPage() {
                     </tbody>
                   </table>
                 </div>
+                <div className="student-mobile-list space-y-3 p-3 sm:hidden">
+                  {loading ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 4 }, (_, index) => (
+                        <div key={index} className="h-40 animate-pulse rounded-xl bg-slate-100" />
+                      ))}
+                    </div>
+                  ) : students.length === 0 ? (
+                    <div className="px-4 py-10 text-center">
+                      <GraduationCap className="mx-auto mb-3 h-10 w-10 text-slate-200" />
+                      <p className="font-semibold text-slate-500">No students found</p>
+                      <p className="mt-1 text-xs text-slate-400">Enroll your first student to get started</p>
+                    </div>
+                  ) : (
+                    students.map((student) => (
+                      <article key={student.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <StudentAvatar student={student} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <Link href={`/students/${student.id}`} className="block truncate text-sm font-bold text-slate-900">
+                                  {student.name}
+                                </Link>
+                                <p className="truncate text-[11px] text-slate-500">
+                                  Father: {student.father_name || "N/A"}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleToggleStatus(student.id, student.is_active !== false)}
+                                disabled={updatingStatusIds.has(student.id)}
+                                className={`flex h-6 shrink-0 items-center justify-center rounded-full border px-2 text-[9px] font-bold uppercase ${
+                                  student.is_active !== false
+                                    ? "border-emerald-100 bg-emerald-50 text-emerald-600"
+                                    : "border-slate-200 bg-slate-50 text-slate-500"
+                                }`}
+                              >
+                                {updatingStatusIds.has(student.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : student.is_active !== false ? "Active" : "Inactive"}
+                              </button>
+                            </div>
+                            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                              {student.gender || "Male"} · {student.admission_date ? format(new Date(student.admission_date), "MMM yyyy") : "N/A"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2.5">
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Education</p>
+                            <p className="truncate text-xs font-bold text-slate-700">{student.religious_class || student.class || "N/A"}</p>
+                            <p className="truncate text-[10px] text-slate-500">{student.contemporary_class || "No Schooling"}</p>
+                          </div>
+                          <div className="min-w-0 border-l border-slate-200 pl-2.5">
+                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Teacher / Qari</p>
+                            <p className="truncate text-xs font-bold text-slate-700">{student.teacher_name || "Unassigned"}</p>
+                          </div>
+                        </div>
+
+                        <button onClick={() => handleOpenProgress(student)} className="mt-2 flex w-full items-center justify-between rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-left">
+                          <span>
+                            <span className="block text-[9px] font-bold uppercase tracking-wide text-blue-500">Current progress</span>
+                            <span className="block text-xs font-bold text-blue-700">{student.current_progress?.type || "Qaida"}</span>
+                          </span>
+                          <span className={`text-right text-[9px] font-bold uppercase ${hasCurrentMonthProgress(student) ? "text-emerald-600" : "text-rose-500"}`}>
+                            {parseLegacyDate(student.current_progress?.last_updated)
+                              ? `Updated ${format(parseLegacyDate(student.current_progress.last_updated), "MMM dd")}`
+                              : "Update pending"}
+                          </span>
+                        </button>
+
+                        <div className="mt-2 grid grid-cols-4 gap-1 border-t border-slate-100 pt-2">
+                          <Link href={`/students/${student.id}`} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary-50 hover:text-primary-700" title="Open Student Profile"><Eye className="h-4 w-4" /></Link>
+                          <button onClick={() => handleOpenHistory(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600" title="View Progress History"><Calendar className="h-4 w-4" /></button>
+                          <button onClick={() => handleOpenEdit(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600" title="Edit Student"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(student.id)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" title="Delete Student"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
                 {pagination && (
                   <Pagination
                     currentPage={pagination.page}
@@ -1247,16 +1292,7 @@ export default function StudentsPage() {
                 <FilterSkeleton />
               ) : (
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder={t("students", "searchPlaceholder")}
-                      value={search}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
-                    />
-                  </div>
+                  <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder={t("students", "searchPlaceholder")} />
                   <select
                     value={filterStatus}
                     onChange={(e) => handleStatusFilter(e.target.value)}
@@ -1534,16 +1570,7 @@ export default function StudentsPage() {
                 <FilterSkeleton />
               ) : (
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder={t("students", "searchPlaceholder")}
-                      value={search}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
-                    />
-                  </div>
+                  <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder={t("students", "searchPlaceholder")} />
                   <select
                     value={filterStatus}
                     onChange={(e) => handleStatusFilter(e.target.value)}

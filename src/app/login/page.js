@@ -66,9 +66,7 @@ export default function Login() {
         <div className="absolute inset-0 bg-emerald-950/10" />
 
         <div className="relative z-10 flex items-center gap-3 p-10 text-white xl:p-14">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/25 bg-white/15 text-lg font-bold backdrop-blur-md">
-            M
-          </div>
+          <Image src="/logo-mark.svg" alt="MMS" width={44} height={44} className="h-11 w-11" priority />
           <div>
             <p className="font-bold tracking-wide">Madrasa Management</p>
             <p className="text-xs text-white/70">
@@ -92,9 +90,7 @@ export default function Login() {
       <section className="flex min-h-svh items-center justify-center px-5 py-10 sm:px-10 lg:bg-white lg:px-12 xl:px-20">
         <div className="w-full max-w-md">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-700 text-lg font-bold text-white shadow-sm">
-              M
-            </div>
+            <Image src="/logo-mark.svg" alt="MMS" width={44} height={44} className="h-11 w-11" priority />
             <div>
               <p className="font-bold text-slate-900">Madrasa Management</p>
               <p className="text-xs text-slate-500">

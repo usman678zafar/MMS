@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Modal from "@/components/Modal";
 import ConfirmModal from "@/components/ConfirmModal";
 import Pagination from "@/components/Pagination";
+import SearchField from "@/components/SearchField";
 import {
   TableSkeleton,
   StatsSkeleton,
@@ -12,7 +13,6 @@ import {
 } from "@/components/SkeletonLoader";
 import {
   Plus,
-  Search,
   UserCircle,
   Phone,
   Banknote,
@@ -54,6 +54,7 @@ export default function StaffPage() {
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
@@ -129,8 +130,8 @@ export default function StaffPage() {
     setDeleteId(null);
   };
 
-  const handleSearch = (value) => {
-    setSearch(value);
+  const handleSearch = () => {
+    setSearch(searchInput.trim());
     setCurrentPage(1);
   };
 
@@ -211,16 +212,7 @@ export default function StaffPage() {
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, role, or phone..."
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
-                />
-              </div>
+              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder="Search by name, role, or phone..." />
               <select
                 value={filterStatus}
                 onChange={(e) => handleStatusFilter(e.target.value)}

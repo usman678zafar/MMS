@@ -1,6 +1,7 @@
 "use client";
 
-import { Globe, Menu } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarDays, Globe, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -15,10 +16,40 @@ const pageTitles = {
   "/users": "Users",
 };
 
+function getIslamicDate(locale) {
+  const options = { day: "numeric", month: "long", year: "numeric" };
+
+  try {
+    return new Intl.DateTimeFormat(
+      `${locale}-u-ca-islamic-umalqura`,
+      options,
+    ).format(new Date());
+  } catch {
+    return new Intl.DateTimeFormat(`${locale}-u-ca-islamic`, options).format(
+      new Date(),
+    );
+  }
+}
+
 export default function Header({ onMenuClick }) {
   const { profile } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const pathname = usePathname();
+  const [islamicDate, setIslamicDate] = useState({ english: "", arabic: "" });
+
+  useEffect(() => {
+    const updateDate = () => {
+      setIslamicDate({
+        english: getIslamicDate("en-GB"),
+        arabic: getIslamicDate("ar-SA"),
+      });
+    };
+
+    updateDate();
+    const interval = window.setInterval(updateDate, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   const pageTitle = pathname.match(/^\/students\/[^/]+$/)
     ? "Student Profile"
     : Object.entries(pageTitles).find(([path]) =>
@@ -27,8 +58,8 @@ export default function Header({ onMenuClick }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-5 min-[1700px]:h-16 min-[1700px]:gap-4 min-[1700px]:px-8">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 sm:px-5 md:flex-nowrap min-[1700px]:min-h-[3.75rem] min-[1700px]:gap-x-4 min-[1700px]:px-7">
+        <div className="order-1 flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={onMenuClick}
@@ -47,7 +78,20 @@ export default function Header({ onMenuClick }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="order-3 flex w-full items-center justify-center gap-2 border-t border-slate-100 pt-2 md:order-2 md:w-auto md:border-0 md:pt-0">
+          <CalendarDays className="hidden h-4 w-4 shrink-0 text-primary-700 sm:block" />
+          <div className="flex min-w-0 items-center gap-2 text-center md:block md:text-left">
+            <p className="whitespace-nowrap text-[10px] font-bold leading-tight text-slate-700 min-[1700px]:text-[11px]">
+              {islamicDate.english}
+            </p>
+            <span className="h-3 w-px bg-slate-200 md:hidden" aria-hidden="true" />
+            <p lang="ar" dir="rtl" className="whitespace-nowrap text-xs leading-tight text-primary-700 min-[1700px]:text-sm">
+              {islamicDate.arabic}
+            </p>
+          </div>
+        </div>
+
+        <div className="order-2 flex items-center gap-2 sm:gap-4 md:order-3">
           <button
             type="button"
             onClick={toggleLanguage}
@@ -60,7 +104,7 @@ export default function Header({ onMenuClick }) {
             </span>
           </button>
 
-          <div className="hidden items-center gap-3 border-l border-slate-200 pl-4 sm:flex">
+          <div className="hidden items-center gap-3 border-l border-slate-200 pl-4 lg:flex">
             <div className="text-right">
               <p className="max-w-36 truncate text-xs font-bold text-slate-800">
                 {profile?.full_name || "Admin User"}

@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Modal from "@/components/Modal";
 import ConfirmModal from "@/components/ConfirmModal";
 import Pagination from "@/components/Pagination";
+import SearchField from "@/components/SearchField";
 import {
   TableSkeleton,
   StatsSkeleton,
@@ -20,7 +21,6 @@ import {
   UserRound,
   HandHeart,
   Plus,
-  Search,
   Filter,
   Edit2,
   Trash2,
@@ -124,6 +124,7 @@ export default function DonationsPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [donorsForSelect, setDonorsForSelect] = useState([]);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -319,8 +320,8 @@ export default function DonationsPage() {
     setHistoryLoading(false);
   };
 
-  const handleSearch = (value) => {
-    setSearch(value);
+  const handleSearch = () => {
+    setSearch(searchInput.trim());
     setCurrentPage(1);
   };
 
@@ -396,6 +397,7 @@ export default function DonationsPage() {
                 handleTabChange("donations");
                 setCurrentPage(1);
                 setSearch("");
+                setSearchInput("");
               }}
               className={`px-6 py-3 text-sm font-semibold transition-all border-b-2 ${
                 activeTab === "donations"
@@ -413,6 +415,7 @@ export default function DonationsPage() {
                 handleTabChange("donors");
                 setCurrentPage(1);
                 setSearch("");
+                setSearchInput("");
               }}
               className={`px-6 py-3 text-sm font-semibold transition-all border-b-2 ${
                 activeTab === "donors"
@@ -501,20 +504,12 @@ export default function DonationsPage() {
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder={
-                    activeTab === "donations"
-                      ? "Search donor or type..."
-                      : "Search donors..."
-                  }
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
-                />
-              </div>
+              <SearchField
+                value={searchInput}
+                onChange={setSearchInput}
+                onSearch={handleSearch}
+                placeholder={activeTab === "donations" ? "Search donor or type..." : "Search donors..."}
+              />
               {activeTab === "donations" ? (
                 <select
                   value={filterType}

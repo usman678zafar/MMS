@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Modal from "@/components/Modal";
 import ConfirmModal from "@/components/ConfirmModal";
 import Pagination from "@/components/Pagination";
+import SearchField from "@/components/SearchField";
 import {
   TableSkeleton,
   StatsSkeleton,
@@ -12,7 +13,6 @@ import {
 } from "@/components/SkeletonLoader";
 import {
   Plus,
-  Search,
   ReceiptText,
   MoreVertical,
   Edit2,
@@ -52,6 +52,7 @@ export default function ExpensesPage() {
   });
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
@@ -127,8 +128,8 @@ export default function ExpensesPage() {
     setDeleteId(null);
   };
 
-  const handleSearch = (value) => {
-    setSearch(value);
+  const handleSearch = () => {
+    setSearch(searchInput.trim());
     setCurrentPage(1);
   };
 
@@ -226,16 +227,7 @@ export default function ExpensesPage() {
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search description or category..."
-                  value={search}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
-                />
-              </div>
+              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder="Search description or category..." />
               <select
                 value={filterCategory}
                 onChange={(e) => handleCategoryFilter(e.target.value)}
