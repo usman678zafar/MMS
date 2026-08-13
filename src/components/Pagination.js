@@ -88,13 +88,13 @@ export default function Pagination({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white border-t border-slate-100">
-      <div className="text-sm text-slate-600">
+    <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 bg-white px-3 py-4 sm:flex-row sm:gap-4 sm:px-6">
+      <div className="text-center text-xs text-slate-600 sm:text-left sm:text-sm">
         Showing {pagination.startIndex + 1} to {pagination.endIndex} of{" "}
         {totalItems} results
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex max-w-full items-center gap-1 overflow-x-auto pb-1 sm:gap-2 sm:pb-0">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!pagination.hasPrevPage}
@@ -107,7 +107,7 @@ export default function Pagination({
           <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <div className="flex items-center gap-1">{renderPageNumbers()}</div>
+        <div className="flex shrink-0 items-center gap-1">{renderPageNumbers()}</div>
 
         <button
           onClick={() => onPageChange(currentPage + 1)}

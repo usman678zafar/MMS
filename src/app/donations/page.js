@@ -351,9 +351,9 @@ export default function DonationsPage() {
   return (
     <NavigationLayout>
       <ProtectedRoute requiredPermission={PERMISSIONS.DONATIONS_VIEW}>
-        <div className="space-y-6">
+        <div className="management-page space-y-5 min-[1700px]:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
                 Donations & Donors
@@ -362,7 +362,7 @@ export default function DonationsPage() {
                 Manage contributions and donor profiles.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 sm:w-auto">
               <button
                 onClick={() => {
                   if (activeTab === "donations") {
@@ -381,7 +381,7 @@ export default function DonationsPage() {
                     setShowDonorModal(true);
                   }
                 }}
-                className="btn btn-primary"
+                className="btn btn-primary page-primary-action"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {activeTab === "donations" ? "Add Donation" : "Add Donor"}
@@ -390,7 +390,7 @@ export default function DonationsPage() {
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex border-b border-slate-200">
+          <div className="management-tabs flex border-b border-slate-200">
             <button
               onClick={() => {
                 handleTabChange("donations");

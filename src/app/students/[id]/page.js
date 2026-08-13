@@ -362,7 +362,7 @@ export default function StudentProfilePage() {
             </Link>
           </div>
         ) : data ? (
-          <div className="space-y-6">
+          <div className="management-page space-y-5 min-[1700px]:space-y-6">
             {notice && (
               <div className="fixed right-5 top-20 z-50 flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white shadow-lg">
                 <CheckCircle2 className="h-4 w-4" />
@@ -391,7 +391,7 @@ export default function StudentProfilePage() {
                 <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">
                     <div
-                      className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 bg-cover bg-center text-2xl font-bold backdrop-blur"
+                      className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/15 bg-cover bg-center text-2xl font-bold backdrop-blur"
                       style={
                         data.student.profile_photo?.url
                           ? { backgroundImage: `url(${JSON.stringify(data.student.profile_photo.url)})` }
@@ -437,7 +437,7 @@ export default function StudentProfilePage() {
                     </div>
                   </div>
                   {canEdit && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:flex sm:w-auto sm:flex-wrap">
                       <button onClick={() => setModal("progress")} className="rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-primary-800 hover:bg-primary-50">
                         Update progress
                       </button>
@@ -526,7 +526,7 @@ export default function StudentProfilePage() {
 
             {activeTab === "academic" && (
               <section className="surface-card rounded-2xl p-5 sm:p-6">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div><h2 className="text-base font-bold text-slate-900">Academic milestones</h2><p className="mt-1 text-xs text-slate-400">Qur&apos;an learning and revision progress</p></div>
                   {canEdit && <button onClick={() => setModal("progress")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Add milestone</button>}
                 </div>
@@ -560,7 +560,7 @@ export default function StudentProfilePage() {
                   ].map(([label, value, tone]) => <div key={label} className="metric-card p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-2 text-2xl font-extrabold ${tone}`}>{value}</p></div>)}
                 </div>
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-900">Attendance log</h2>{canEdit && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Record</button>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">Attendance log</h2>{canEdit && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Record</button>}</div>
                   <div className="data-table-scroll mt-5">
                     {data.attendance.length === 0 ? <EmptyState icon={CalendarCheck} title="No attendance records" description="Attendance history will appear here." /> : <table className="data-table min-w-[560px] text-left"><thead><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Notes</th></tr></thead><tbody>{data.attendance.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-semibold text-slate-700">{formatDate(entry.date, "EEEE, MMM d, yyyy")}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${attendanceTone[entry.status] || "bg-slate-50 text-slate-600"}`}>{entry.status}</span></td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td></tr>)}</tbody></table>}
                   </div>
@@ -576,7 +576,7 @@ export default function StudentProfilePage() {
                   <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Current amount due</p><p className={`mt-2 text-2xl font-extrabold ${data.summary.currentDue > 0 ? "text-rose-600" : "text-emerald-600"}`}>{currency(data.summary.currentDue)}</p></div>
                 </div>
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex items-center justify-between"><h2 className="text-base font-bold text-slate-900">Payment history</h2>{canEdit && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Receive fee</button>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">Payment history</h2>{canEdit && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Receive fee</button>}</div>
                   <div className="data-table-scroll mt-5">
                     {data.fees.length === 0 ? <EmptyState icon={Receipt} title="No payments recorded" description="Fee payments and receipt details will appear here." /> : <table className="data-table min-w-[620px] text-left"><thead><tr><th className="px-4 py-3">Period</th><th className="px-4 py-3">Paid on</th><th className="px-4 py-3">Notes</th><th className="px-4 py-3 text-right">Amount</th></tr></thead><tbody>{data.fees.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-bold text-slate-800">{entry.month} {entry.year}</td><td className="px-4 py-4 text-sm text-slate-500">{formatDate(entry.date)}</td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td><td className="px-4 py-4 text-right text-sm font-extrabold text-emerald-600">{currency(entry.amount)}</td></tr>)}</tbody></table>}
                   </div>
@@ -587,7 +587,7 @@ export default function StudentProfilePage() {
             {activeTab === "documents" && (
               <div className="grid gap-6 xl:grid-cols-2">
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex items-center justify-between gap-3"><div><h2 className="text-base font-bold text-slate-900">Documents</h2><p className="mt-1 text-xs text-slate-400">PDF, JPEG, PNG or WebP · Max 5 MB</p></div>{canEdit && <label className="btn btn-primary cursor-pointer gap-2 text-xs"><Upload className="h-4 w-4" /> Upload<input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={uploadDocument} disabled={saving} className="sr-only" /></label>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-base font-bold text-slate-900">Documents</h2><p className="mt-1 text-xs text-slate-400">PDF, JPEG, PNG or WebP · Max 5 MB</p></div>{canEdit && <label className="btn btn-primary cursor-pointer gap-2 text-xs"><Upload className="h-4 w-4" /> Upload<input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={uploadDocument} disabled={saving} className="sr-only" /></label>}</div>
                   <div className="mt-5 space-y-3">
                     {!Array.isArray(data.student.documents) || data.student.documents.length === 0 ? <EmptyState icon={FileText} title="No documents uploaded" description="Add identification, admission, or supporting documents." /> : data.student.documents.map((document) => <div key={document.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><div className="rounded-lg bg-blue-50 p-2 text-blue-600"><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{document.name}</p><p className="text-[10px] text-slate-400">{Math.max(1, Math.round(document.size / 1024))} KB · {formatDate(document.uploaded_at)}</p></div><a href={document.url} target="_blank" rel="noreferrer" title="Open document" className="rounded-lg p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-600"><Download className="h-4 w-4" /></a>{canEdit && <button onClick={() => { if (window.confirm("Delete this document permanently?")) runMutation(() => deleteStudentDocument(id, document.id), "Document deleted"); }} title="Delete document" className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button>}</div>)}
                   </div>
@@ -611,9 +611,9 @@ export default function StudentProfilePage() {
 
             <Modal open={modal === "progress"} onClose={() => setModal(null)} title="Record academic progress">
               <form onSubmit={(event) => { event.preventDefault(); runMutation(() => updateStudentProgress(id, progressForm), "Academic progress recorded"); }} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold text-slate-600">Track<select value={progressForm.type} onChange={(e) => setProgressForm({ ...progressForm, type: e.target.value })} className="input-field mt-1 text-sm">{["Qaida", "Nazra", "Hifz", "Girdan"].map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Para<select value={progressForm.para} onChange={(e) => setProgressForm({ ...progressForm, para: e.target.value })} className="input-field mt-1 text-sm">{Array.from({ length: 30 }, (_, index) => index + 1).map((value) => <option key={value}>{value}</option>)}</select></label></div>
-                <div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold text-slate-600">Surah / lesson<input value={progressForm.surah} onChange={(e) => setProgressForm({ ...progressForm, surah: e.target.value })} className="input-field mt-1 text-sm" /></label><label className="text-xs font-semibold text-slate-600">Ayat<input type="number" min="1" value={progressForm.ayat} onChange={(e) => setProgressForm({ ...progressForm, ayat: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
-                <div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold text-slate-600">Month<select value={progressForm.month} onChange={(e) => setProgressForm({ ...progressForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Year<input type="number" min="2000" max="2200" value={progressForm.year} onChange={(e) => setProgressForm({ ...progressForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Track<select value={progressForm.type} onChange={(e) => setProgressForm({ ...progressForm, type: e.target.value })} className="input-field mt-1 text-sm">{["Qaida", "Nazra", "Hifz", "Girdan"].map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Para<select value={progressForm.para} onChange={(e) => setProgressForm({ ...progressForm, para: e.target.value })} className="input-field mt-1 text-sm">{Array.from({ length: 30 }, (_, index) => index + 1).map((value) => <option key={value}>{value}</option>)}</select></label></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Surah / lesson<input value={progressForm.surah} onChange={(e) => setProgressForm({ ...progressForm, surah: e.target.value })} className="input-field mt-1 text-sm" /></label><label className="text-xs font-semibold text-slate-600">Ayat<input type="number" min="1" value={progressForm.ayat} onChange={(e) => setProgressForm({ ...progressForm, ayat: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Month<select value={progressForm.month} onChange={(e) => setProgressForm({ ...progressForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Year<input type="number" min="2000" max="2200" value={progressForm.year} onChange={(e) => setProgressForm({ ...progressForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
                 <label className="block text-xs font-semibold text-slate-600">Notes<textarea value={progressForm.notes} onChange={(e) => setProgressForm({ ...progressForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
                 <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? "Recording..." : "Record milestone"}</button>
               </form>
@@ -631,7 +631,7 @@ export default function StudentProfilePage() {
             <Modal open={modal === "fee"} onClose={() => setModal(null)} title="Receive student fee">
               <form onSubmit={(event) => { event.preventDefault(); runMutation(() => recordFeePayment(id, feeForm), "Fee payment recorded"); }} className="space-y-4">
                 <label className="block text-xs font-semibold text-slate-600">Amount (Rs)<input type="number" min="0" required value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} className="input-field mt-1 text-sm" /></label>
-                <div className="grid grid-cols-2 gap-3"><label className="text-xs font-semibold text-slate-600">Month<select value={feeForm.month} onChange={(e) => setFeeForm({ ...feeForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Year<input type="number" min="2000" max="2200" value={feeForm.year} onChange={(e) => setFeeForm({ ...feeForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Month<select value={feeForm.month} onChange={(e) => setFeeForm({ ...feeForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Year<input type="number" min="2000" max="2200" value={feeForm.year} onChange={(e) => setFeeForm({ ...feeForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
                 <label className="block text-xs font-semibold text-slate-600">Notes<textarea value={feeForm.notes} onChange={(e) => setFeeForm({ ...feeForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
                 <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? "Recording..." : "Record payment"}</button>
               </form>

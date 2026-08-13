@@ -43,6 +43,9 @@
 }
 
 html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
   overflow-y: scroll;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -50,10 +53,19 @@ html {
 }
 
 body {
+  width: 100%;
+  max-width: 100%;
   color: var(--foreground);
   background: var(--background);
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
 }
 
 :lang(ur) {
@@ -64,7 +76,7 @@ body {
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center;
+    @apply min-h-11 px-4 py-2 rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center;
   }
 
   .btn-primary {
@@ -82,7 +94,13 @@ body {
 
 /* Shared data-table treatment used across all management screens. */
 .data-table-scroll {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
   border: 1px solid #e2e8f0;
   border-radius: 1rem;
   background: #ffffff;
@@ -91,6 +109,7 @@ body {
 
 .data-table {
   width: 100%;
+  min-width: max(44rem, 100%);
   border-collapse: separate;
   border-spacing: 0;
   background: #ffffff;
@@ -152,16 +171,282 @@ body {
   accent-color: #059669;
 }
 
-@media (max-width: 640px) {
+/* Keep the most important student controls visible while the middle columns scroll. */
+.student-management-table .student-identity-cell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 13.5rem;
+  background: #ffffff;
+  box-shadow: 1px 0 0 #e2e8f0;
+}
+
+.student-management-table .student-actions-cell {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  min-width: 9rem;
+  background: #ffffff;
+  box-shadow: -1px 0 0 #e2e8f0;
+}
+
+.student-management-table thead .student-identity-cell,
+.student-management-table thead .student-actions-cell {
+  z-index: 4;
+  background: #047857;
+}
+
+.student-management-table tbody tr:nth-child(even) .student-identity-cell,
+.student-management-table tbody tr:nth-child(even) .student-actions-cell {
+  background: #f8fafc;
+}
+
+.student-management-table tbody tr:hover .student-identity-cell,
+.student-management-table tbody tr:hover .student-actions-cell {
+  background: #ecfdf5;
+}
+
+.student-laptop-meta,
+.student-laptop-actions-label,
+.student-actions-status {
+  display: none;
+}
+
+/* Compact information density for typical 13–15 inch laptops. */
+@media (min-width: 1024px) and (max-width: 1699px) {
+  .btn {
+    min-height: 2.25rem;
+    border-radius: 0.65rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.8125rem;
+  }
+
+  .input-field {
+    border-radius: 0.65rem;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .management-page .page-header h2,
+  .dashboard-page > div:first-child h2 {
+    font-size: 1.35rem;
+    line-height: 1.75rem;
+  }
+
+  .management-page .page-header p,
+  .dashboard-page > div:first-child p {
+    font-size: 0.8125rem;
+    line-height: 1.2rem;
+  }
+
+  .management-page .metric-grid,
+  .dashboard-page .metric-grid {
+    gap: 0.75rem;
+  }
+
+  .management-page .metric-card.p-4,
+  .dashboard-page .metric-card.p-5 {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .management-page .metric-card .text-2xl {
+    font-size: 1.25rem;
+    line-height: 1.5rem;
+  }
+
+  .management-page .metric-card p.mt-1 {
+    margin-top: 0.125rem;
+  }
+
+  .management-tabs > button {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.8125rem;
+  }
+
+  .surface-card {
+    border-radius: 0.8rem !important;
+  }
+
+  .data-table-scroll {
+    border-radius: 0.8rem;
+  }
+
+  .data-table thead th {
+    height: 2.75rem;
+    font-size: 0.625rem;
+    letter-spacing: 0.065em;
+  }
+
   .data-table thead th,
   .data-table tbody td {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+    padding: 0.7rem 0.85rem !important;
   }
+
+  .data-table tbody td {
+    font-size: 0.8125rem;
+  }
+
+  .student-management-table {
+    min-width: 100%;
+    table-layout: fixed;
+  }
+
+  .student-management-table .student-father-column,
+  .student-management-table .student-teacher-column,
+  .student-management-table .student-status-column,
+  .student-default-actions-label {
+    display: none;
+  }
+
+  .student-management-table .student-laptop-meta,
+  .student-management-table .student-laptop-actions-label {
+    display: block;
+  }
+
+  .student-management-table .student-actions-status {
+    display: flex;
+    flex: 0 0 auto;
+  }
+
+  .student-management-table .student-identity-cell {
+    width: 27%;
+    min-width: 0;
+  }
+
+  .student-management-table .student-education-column {
+    width: 22%;
+  }
+
+  .student-management-table .student-progress-column {
+    width: 25%;
+  }
+
+  .student-management-table .student-actions-cell {
+    width: 26%;
+    min-width: 0;
+  }
+
+  .student-management-table .student-avatar {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    font-size: 0.75rem;
+  }
+
+  .student-management-table .student-action-controls {
+    gap: 0.125rem;
+  }
+
+  .student-management-table .student-action-controls > a,
+  .student-management-table .student-action-controls > button:not(.student-actions-status) {
+    border-radius: 0.5rem;
+    padding: 0.4rem;
+  }
+
+  .student-management-table .student-action-controls svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .student-management-table .group\/progress {
+    padding: 0.25rem;
+  }
+
+  .dashboard-page .surface-card.p-6 {
+    padding: 1rem;
+  }
+
+  .dashboard-page .grid.gap-8 {
+    gap: 1rem;
+  }
+
+  .management-page select,
+  .management-page input[type="text"],
+  .management-page input[type="search"],
+  .management-page input[type="date"] {
+    min-height: 2.35rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .page-primary-action {
+    width: 100%;
+  }
+
+  .page-header h2 {
+    font-size: 1.35rem;
+    line-height: 1.75rem;
+  }
+
+  .page-header p {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.35rem;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .surface-card.p-6 {
+    padding: 1rem;
+  }
+
+  .data-table-scroll {
+    border-radius: 0.75rem;
+  }
+
+  .data-table thead th,
+  .data-table tbody td {
+    padding-left: 0.875rem !important;
+    padding-right: 0.875rem !important;
+  }
+
+  .data-table thead th {
+    height: 3rem;
+  }
+
+  .student-management-table .student-identity-cell {
+    min-width: 11rem;
+  }
+
+  .student-management-table .student-actions-cell {
+    min-width: 8.5rem;
+  }
+
+  .metric-card {
+    min-width: 0;
+  }
+
+  .metric-card p {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 380px) {
+  .metric-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (hover: none) {
+  .metric-card:hover {
+    transform: none;
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Plain-color card hierarchy for dashboards and management pages. */
 .surface-card {
+  min-width: 0;
+  max-width: 100%;
   border-color: #dbe5e1 !important;
   background: #ffffff;
   box-shadow:

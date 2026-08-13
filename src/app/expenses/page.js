@@ -159,9 +159,9 @@ export default function ExpensesPage() {
   return (
     <NavigationLayout>
       <ProtectedRoute requiredPermission={PERMISSIONS.EXPENSES_VIEW}>
-        <div className="space-y-6">
+        <div className="management-page space-y-5 min-[1700px]:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Expenses</h2>
               <p className="text-slate-500">Track and categorize spending.</p>
@@ -177,7 +177,7 @@ export default function ExpensesPage() {
                 });
                 setShowModal(true);
               }}
-              className="btn btn-primary"
+              className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
               Record Expense

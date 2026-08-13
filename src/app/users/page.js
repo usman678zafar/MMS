@@ -180,9 +180,9 @@ export default function UsersPage() {
   return (
     <NavigationLayout>
       <ProtectedRoute requiredPermission={PERMISSIONS.USERS_VIEW}>
-        <div className="space-y-6">
+        <div className="management-page space-y-5 min-[1700px]:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
                 User Management
@@ -197,7 +197,7 @@ export default function UsersPage() {
                 setNewUser(defaultForm);
                 setShowModal(true);
               }}
-              className="btn btn-primary"
+              className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add User

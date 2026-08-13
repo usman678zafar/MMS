@@ -163,7 +163,7 @@ export default function DashboardPage() {
   return (
     <NavigationLayout>
       <ProtectedRoute requiredPermission={PERMISSIONS.DASHBOARD_VIEW}>
-        <div className="space-y-8">
+        <div className="dashboard-page space-y-6 min-[1700px]:space-y-8">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">
               Dashboard Overview
@@ -205,8 +205,8 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="surface-card rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="surface-card rounded-2xl p-4 sm:p-6">
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 text-lg">
                     Finances Overview
@@ -257,7 +257,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="h-64">
+              <div className="h-56 sm:h-64">
                 {hasMounted && (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -323,18 +323,18 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="surface-card rounded-2xl p-6">
+            <div className="surface-card rounded-2xl p-4 sm:p-6">
               <h3 className="font-bold text-slate-900 text-lg mb-6">
                 Recent Activity
               </h3>
               <div className="space-y-6">
                 {recentActivity.length > 0 ? (
                   recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center mr-4">
+                    <div key={index} className="flex items-start gap-3 sm:items-center">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
                         <DollarSign className="h-5 w-5 text-slate-500" />
                       </div>
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-slate-900">
                           New Donation Received
                         </p>
@@ -343,7 +343,7 @@ export default function DashboardPage() {
                           {activity.donor}
                         </p>
                       </div>
-                      <span className="text-xs text-slate-400 font-medium">
+                      <span className="shrink-0 text-[10px] font-medium text-slate-400 sm:text-xs">
                         {new Date(activity.date).toLocaleDateString()}
                       </span>
                     </div>

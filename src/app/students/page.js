@@ -82,8 +82,8 @@ function StudentAvatar({ student, compact = false }) {
   return (
     <div
       aria-hidden="true"
-      className={`${
-        compact ? "h-8 w-8 rounded-lg text-xs" : "h-10 w-10 rounded-xl text-base"
+      className={`student-avatar ${
+        compact ? "h-8 w-8 rounded-full text-xs" : "h-10 w-10 rounded-full text-base"
       } flex flex-shrink-0 items-center justify-center overflow-hidden bg-blue-50 bg-cover bg-center font-bold text-blue-600 ring-1 ring-slate-100`}
       style={
         photoUrl
@@ -834,9 +834,9 @@ export default function StudentsPage() {
   return (
     <NavigationLayout>
       <ProtectedRoute requiredPermission={PERMISSIONS.STUDENTS_VIEW}>
-        <div className="space-y-6">
+        <div className="management-page space-y-5 min-[1700px]:space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">{t("students", "title")}</h2>
               <p className="text-slate-500">
@@ -850,7 +850,7 @@ export default function StudentsPage() {
                 setNewStudent(defaultForm);
                 setShowModal(true);
               }}
-              className="btn btn-primary"
+              className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
               {t("students", "enrollBtn")}
@@ -858,7 +858,7 @@ export default function StudentsPage() {
           </div>
 
           {/* Tab Switcher */}
-          <div className="flex border-b border-slate-100 mb-2 overflow-x-auto no-scrollbar">
+          <div className="management-tabs mb-2 flex overflow-x-auto border-b border-slate-100 no-scrollbar">
             <button
               onClick={() => handleTabChange("management")}
               className={`px-6 py-3 text-sm font-semibold transition-all relative whitespace-nowrap ${
@@ -901,7 +901,7 @@ export default function StudentsPage() {
           </div>
 
           {activeTab === "management" && (
-            <div className="space-y-6">
+            <div className="space-y-4 min-[1700px]:space-y-6">
               {/* Stats Bar */}
               {loading ? (
                 <StatsSkeleton />
@@ -997,29 +997,30 @@ export default function StudentsPage() {
               {/* Students Table */}
               <div className="surface-card rounded-2xl overflow-hidden">
                 <div className="data-table-scroll rounded-none border-0 shadow-none">
-                  <table className="data-table w-full text-left">
+                  <table className="data-table student-management-table w-full text-left">
                     <thead>
                       <tr className="bg-slate-50/50 border-b border-slate-100">
-                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <th className="student-identity-cell px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                           {t("students", "colStudent")}
                         </th>
-                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <th className="student-father-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                           {t("students", "colFather")}
                         </th>
-                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-44">
+                        <th className="student-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-44">
                           {t("students", "colEducation")}
                         </th>
-                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                        <th className="student-teacher-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
                           {t("students", "colTeacher")}
                         </th>
-                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                        <th className="student-progress-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
                           {t("students", "colProgress")}
                         </th>
-                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">
+                        <th className="student-status-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">
                           {t("students", "colStatus")}
                         </th>
-                        <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right w-32">
-                          {t("students", "colActions")}
+                        <th className="student-actions-cell px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right w-32">
+                          <span className="student-default-actions-label">{t("students", "colActions")}</span>
+                          <span className="student-laptop-actions-label">Status / Actions</span>
                         </th>
                       </tr>
                     </thead>
@@ -1048,10 +1049,10 @@ export default function StudentsPage() {
                             key={student.id}
                             className="hover:bg-slate-50/50 transition-colors group"
                           >
-                            <td className="px-6 py-4">
+                            <td className="student-identity-cell px-6 py-4">
                               <div className="flex items-center gap-3">
                                 <StudentAvatar student={student} />
-                                <div>
+                                <div className="min-w-0">
                                   <Link
                                     href={`/students/${student.id}`}
                                     className="text-sm font-bold text-slate-900 transition-colors hover:text-primary-700"
@@ -1067,15 +1068,18 @@ export default function StudentsPage() {
                                         )
                                       : "N/A"}
                                   </p>
+                                  <p className="student-laptop-meta truncate text-[10px] font-medium text-slate-500">
+                                    Father: {student.father_name || "N/A"}
+                                  </p>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="student-father-column px-6 py-4">
                               <span className="text-sm font-semibold text-slate-700">
                                 {student.father_name || "N/A"}
                               </span>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="student-education-column px-6 py-4">
                               <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
@@ -1092,16 +1096,19 @@ export default function StudentsPage() {
                                       "No Schooling"}
                                   </span>
                                 </div>
+                                <div className="student-laptop-meta mt-0.5 truncate text-[10px] font-semibold text-slate-500">
+                                  Teacher: {student.teacher_name || "Unassigned"}
+                                </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-600 font-medium">
+                            <td className="student-teacher-column px-6 py-4 text-sm text-slate-600 font-medium">
                               {student.teacher_name || (
                                 <span className="text-slate-300 italic text-xs">
                                   Unassigned
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="student-progress-column px-6 py-4">
                               <button
                                 onClick={() => handleOpenProgress(student)}
                                 className="flex flex-col items-start hover:bg-slate-100 p-1.5 rounded-lg transition-all group/progress w-full"
@@ -1128,7 +1135,7 @@ export default function StudentsPage() {
                                 </span>
                               </button>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="student-status-column px-6 py-4">
                               <button
                                 onClick={() =>
                                   handleToggleStatus(
@@ -1156,8 +1163,34 @@ export default function StudentsPage() {
                                 )}
                               </button>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-1">
+                            <td className="student-actions-cell px-6 py-4 text-right">
+                              <div className="student-action-controls flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() =>
+                                    handleToggleStatus(
+                                      student.id,
+                                      student.is_active !== false,
+                                    )
+                                  }
+                                  disabled={updatingStatusIds.has(student.id)}
+                                  className={`student-actions-status h-6 w-16 items-center justify-center rounded-full border text-[9px] font-bold uppercase tracking-wide transition-all ${
+                                    updatingStatusIds.has(student.id)
+                                      ? "cursor-wait opacity-50"
+                                      : ""
+                                  } ${
+                                    student.is_active !== false
+                                      ? "border-emerald-100 bg-emerald-50 text-emerald-600"
+                                      : "border-slate-100 bg-slate-50 text-slate-400"
+                                  }`}
+                                >
+                                  {updatingStatusIds.has(student.id) ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : student.is_active !== false ? (
+                                    "Active"
+                                  ) : (
+                                    "Inactive"
+                                  )}
+                                </button>
                                 <Link
                                   href={`/students/${student.id}`}
                                   className="rounded-xl p-2 text-slate-400 transition-all hover:bg-primary-50 hover:text-primary-700"
@@ -1297,7 +1330,7 @@ export default function StudentsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center md:w-auto">
                   {selectedFeeStudents.size > 0 && (
                     <div className="flex items-center bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden text-xs">
                       <button
@@ -1327,7 +1360,7 @@ export default function StudentsPage() {
                       </button>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
                       Paid:{" "}
@@ -1564,7 +1597,7 @@ export default function StudentsPage() {
                     className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none w-full sm:w-auto"
                   />
                   {selectedAttendanceStudents.size > 0 && (
-                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg ml-0 sm:ml-4">
+                    <div className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-100 p-1 sm:ml-4">
                       {["Present", "Absent", "Late", "Leave"].map((status) => (
                         <button
                           key={status}
@@ -1918,7 +1951,7 @@ export default function StudentsPage() {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     Initial Educational Progress
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <div>
                       <label className="block text-[10px] text-slate-500 mb-1">
                         Type
@@ -2045,7 +2078,7 @@ export default function StudentsPage() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     Religious Education Type
@@ -2086,7 +2119,7 @@ export default function StudentsPage() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div
                   className={progressData.type === "Qaida" ? "opacity-50" : ""}
                 >

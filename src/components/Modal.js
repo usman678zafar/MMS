@@ -16,12 +16,12 @@ export default function Modal({ open, onClose, title, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
+      <div className="flex max-h-[calc(100dvh-1rem)] w-full flex-col rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] duration-200 animate-in slide-in-from-bottom-4 sm:max-h-[85vh] sm:max-w-lg sm:rounded-2xl sm:pb-0 sm:zoom-in-95">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <h3 className="text-base font-bold text-slate-900">{title}</h3>
@@ -33,7 +33,7 @@ export default function Modal({ open, onClose, title, children }) {
           </button>
         </div>
         {/* Scrollable content */}
-        <div className="overflow-y-auto flex-1 px-5 py-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">{children}</div>
       </div>
     </div>
   );

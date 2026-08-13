@@ -28,16 +28,16 @@ export default function NavigationLayout({ children }) {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip bg-slate-50">
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
 
-      <div className="min-w-0 lg:ml-64">
+      <div className="min-w-0 max-w-full lg:ml-[13.5rem] min-[1700px]:ml-64">
         <Header onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="w-full px-4 py-6 sm:px-8 sm:py-8">
-          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        <main className="w-full px-3 py-4 sm:px-5 sm:py-5 min-[1700px]:px-8 min-[1700px]:py-8">
+          <div className="mx-auto min-w-0 w-full max-w-7xl">{children}</div>
         </main>
       </div>
     </div>
