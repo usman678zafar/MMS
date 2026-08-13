@@ -73,8 +73,9 @@ const navigationItems = [
 
 export default function Sidebar({ isOpen, onClose }) {
   const { signOut, hasPermission } = useAuth();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const pathname = usePathname();
+  const isRtl = language === "ur";
   const navigation = navigationItems.filter((item) =>
     hasPermission(item.permission),
   );
@@ -96,12 +97,14 @@ export default function Sidebar({ isOpen, onClose }) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(18rem,calc(100vw-2rem))] flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 lg:h-screen lg:w-[13.5rem] lg:translate-x-0 lg:shadow-none min-[1700px]:w-60 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`app-sidebar fixed inset-y-0 z-50 flex h-dvh w-[min(18rem,calc(100vw-2rem))] flex-col border-slate-200 bg-white shadow-xl transition-transform duration-300 lg:h-screen lg:w-[13.5rem] lg:translate-x-0 lg:shadow-none min-[1700px]:w-60 ${
+          isRtl ? "right-0 border-l" : "left-0 border-r"
+        } ${
+          isOpen ? "translate-x-0" : isRtl ? "translate-x-full" : "-translate-x-full"
         }`}
       >
         <div className="relative flex h-28 shrink-0 items-center justify-center border-b border-slate-100 px-4 min-[1700px]:h-32 min-[1700px]:px-5">
-          <Link href="/" onClick={onClose} aria-label="Madrasa Management dashboard" className="flex flex-col items-center gap-1.5 text-center">
+          <Link href="/" onClick={onClose} aria-label="Madrasa Management dashboard" dir="ltr" className="flex flex-col items-center gap-1.5 text-center">
             <Image src="/logo-mark-black.svg" alt="Madrasa Management" width={68} height={68} className="h-16 w-16 shrink-0 min-[1700px]:h-[4.5rem] min-[1700px]:w-[4.5rem]" priority />
             <span className="whitespace-nowrap text-[11px] font-bold leading-none text-slate-900 min-[1700px]:text-xs">
               Madrasa Management System
@@ -111,7 +114,7 @@ export default function Sidebar({ isOpen, onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Close navigation"
-            className="absolute right-3 rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+            className={`absolute rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden ${isRtl ? "left-3" : "right-3"}`}
           >
             <X className="h-5 w-5" />
           </button>
@@ -133,7 +136,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     href={item.href}
                     onClick={onClose}
                     aria-current={isActive ? "page" : undefined}
-                    className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors min-[1700px]:py-3 ${
+                    className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 font-semibold transition-colors min-[1700px]:py-3 ${language === "ur" ? "min-h-12 text-base leading-[1.75]" : "text-sm"} ${
                       isActive
                         ? "bg-primary-50 text-primary-800"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
@@ -148,7 +151,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     />
                     <span>{t("sidebar", item.translationKey)}</span>
                     {isActive && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-600" />
+                      <span className={`${isRtl ? "mr-auto" : "ml-auto"} h-1.5 w-1.5 rounded-full bg-primary-600`} />
                     )}
                   </Link>
                 </div>
@@ -161,8 +164,8 @@ export default function Sidebar({ isOpen, onClose }) {
           <button
             type="button"
             onClick={handleSignOut}
-            title="Sign Out"
-            aria-label="Sign Out"
+            title={t("header", "signOut")}
+            aria-label={t("header", "signOut")}
             className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
           >
             <LogOut className="h-5 w-5" />

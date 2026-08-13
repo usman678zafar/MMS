@@ -28,6 +28,7 @@ import {
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
+import { useLanguage } from "@/context/LanguageContext";
 
 const ROLES = [
   "Imam",
@@ -48,6 +49,7 @@ const defaultForm = {
 };
 
 export default function StaffPage() {
+  const { t } = useLanguage();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -232,25 +234,25 @@ export default function StaffPage() {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Staff Member
+                      {t("tables", "staffMember")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Role
+                      {t("tables", "role")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Contact
+                      {t("tables", "contact")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Salary
+                      {t("tables", "salary")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Joined
+                      {t("tables", "joined")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Status
+                      {t("tables", "status")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                      Actions
+                      {t("tables", "actions")}
                     </th>
                   </tr>
                 </thead>

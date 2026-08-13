@@ -44,6 +44,7 @@ import {
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { format } from "date-fns";
+import { useLanguage } from "@/context/LanguageContext";
 
 const DONATION_TYPES = ["Sadqah", "Zakat", "Fitra", "Hadiya", "Other"];
 const defaultForm = {
@@ -56,6 +57,7 @@ const defaultForm = {
 };
 
 export default function DonationsPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("donations"); // 'donations' | 'donors'
 
   useEffect(() => {
@@ -549,22 +551,22 @@ export default function DonationsPage() {
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Date
+                        {t("tables", "date")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Donor
+                        {t("tables", "donor")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Type
+                        {t("tables", "type")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Amount
+                        {t("tables", "amount")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Notes
+                        {t("tables", "notes")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                        Actions
+                        {t("tables", "actions")}
                       </th>
                     </tr>
                   </thead>
@@ -664,19 +666,19 @@ export default function DonationsPage() {
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Donor
+                        {t("tables", "donor")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Contact
+                        {t("tables", "contact")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Email
+                        {t("tables", "email")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Status
+                        {t("tables", "status")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                        Actions
+                        {t("tables", "actions")}
                       </th>
                     </tr>
                   </thead>

@@ -1439,22 +1439,22 @@ export default function StudentsPage() {
                           />
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Student Name
+                          {t("tables", "studentName")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Father Name
+                          {t("tables", "fatherName")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Education tracks
+                          {t("tables", "educationTracks")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Monthly Fee
+                          {t("tables", "monthlyFee")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                          Last Payment
+                          {t("tables", "lastPayment")}
                         </th>
                         <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                          Status
+                          {t("tables", "status")}
                         </th>
                       </tr>
                     </thead>
@@ -1679,16 +1679,16 @@ export default function StudentsPage() {
                         />
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Student Name
+                        {t("tables", "studentName")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Father Name
+                        {t("tables", "fatherName")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Education track
+                        {t("tables", "educationTrack")}
                       </th>
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                        Status
+                        {t("tables", "status")}
                       </th>
                     </tr>
                   </thead>

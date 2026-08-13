@@ -29,10 +29,12 @@ import {
 } from "./actions";
 import { PERMISSIONS, ROLES } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
+import { useLanguage } from "@/context/LanguageContext";
 
 const defaultForm = { name: "", email: "", role: "viewer", password: "" };
 
 export default function UsersPage() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -262,19 +264,19 @@ export default function UsersPage() {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      User
+                      {t("tables", "user")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Role
+                      {t("tables", "role")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Status
+                      {t("tables", "status")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Created
+                      {t("tables", "created")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                      Actions
+                      {t("tables", "actions")}
                     </th>
                   </tr>
                 </thead>

@@ -566,3 +566,158 @@ svg {
 .metric-card.metric-card-amber::before {
   background: #d97706;
 }
+
+/* Complete right-to-left treatment for the Urdu interface. */
+html[dir="rtl"] .dashboard-page,
+html[dir="rtl"] .management-page {
+  text-align: right;
+}
+
+html[dir="rtl"] .metric-card::before {
+  inset: 0 0 0 auto;
+}
+
+html[dir="rtl"] .data-table {
+  direction: rtl;
+}
+
+html[dir="rtl"] .data-table thead th,
+html[dir="rtl"] .data-table tbody td {
+  text-align: start !important;
+}
+
+html[dir="rtl"] .data-table tbody tr:hover {
+  box-shadow: inset -3px 0 0 #10b981;
+}
+
+html[dir="rtl"] .student-management-table .student-identity-cell {
+  right: 0;
+  left: auto;
+}
+
+html[dir="rtl"] .student-management-table .student-actions-cell {
+  right: auto;
+  left: 0;
+  text-align: center !important;
+}
+
+html[dir="rtl"] .app-shell input:not([type="email"]):not([type="tel"]):not([type="number"]):not([type="date"]):not([type="time"]):not([type="url"]),
+html[dir="rtl"] .app-shell textarea,
+html[dir="rtl"] .app-shell select {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] .app-shell input[type="email"],
+html[dir="rtl"] .app-shell input[type="tel"],
+html[dir="rtl"] .app-shell input[type="number"],
+html[dir="rtl"] .app-shell input[type="date"],
+html[dir="rtl"] .app-shell input[type="time"],
+html[dir="rtl"] .app-shell input[type="url"],
+html[dir="rtl"] .app-shell [dir="ltr"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+html[dir="rtl"] .management-page .mr-1 {
+  margin-right: 0;
+  margin-left: 0.25rem;
+}
+
+html[dir="rtl"] .management-page .mr-2 {
+  margin-right: 0;
+  margin-left: 0.5rem;
+}
+
+html[dir="rtl"] .management-page .ml-auto {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+html[lang="ur"] .dashboard-page h2,
+html[lang="ur"] .dashboard-page h3,
+html[lang="ur"] .management-page h2,
+html[lang="ur"] .management-page h3 {
+  line-height: 1.65;
+}
+
+html[lang="ur"] .data-table thead th,
+html[lang="ur"] .metric-card h3,
+html[lang="ur"] .metric-card [class*="uppercase"] {
+  font-size: 0.78rem;
+  letter-spacing: 0 !important;
+  line-height: 1.7;
+  text-transform: none;
+}
+
+html[lang="ur"] .app-shell button,
+html[lang="ur"] .app-shell label {
+  line-height: 1.55;
+}
+
+/* Charts and machine-formatted values must retain their natural LTR geometry. */
+html[dir="rtl"] .recharts-wrapper,
+html[dir="rtl"] .recharts-surface {
+  direction: ltr;
+}
+
+/* Data enters gently after asynchronous requests complete. */
+@keyframes data-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.data-stage {
+  opacity: 0.45;
+  transform: translateY(3px);
+  transition:
+    opacity 360ms ease,
+    transform 360ms ease;
+}
+
+.data-stage[data-ready="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.data-table tbody tr {
+  animation: data-reveal 320ms ease both;
+}
+
+.data-table tbody tr:nth-child(2) { animation-delay: 35ms; }
+.data-table tbody tr:nth-child(3) { animation-delay: 70ms; }
+.data-table tbody tr:nth-child(4) { animation-delay: 105ms; }
+.data-table tbody tr:nth-child(5) { animation-delay: 140ms; }
+.data-table tbody tr:nth-child(n + 6) { animation-delay: 175ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .data-stage,
+  .data-table tbody tr {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
+
+@keyframes login-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.login-progress-bar {
+  width: 0;
+  animation: login-progress 5s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-progress-bar {
+    width: 100%;
+    animation: none;
+  }
+}

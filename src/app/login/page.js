@@ -1,22 +1,56 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+
+function PostLoginLoading() {
+  return (
+    <main className="flex min-h-svh items-center justify-center bg-slate-50 px-6">
+      <div className="w-full max-w-sm text-center" role="status" aria-live="polite">
+        <Image
+          src="/logo-mark-black.svg"
+          alt="Madrasa Management"
+          width={96}
+          height={96}
+          className="mx-auto h-24 w-24"
+          priority
+        />
+        <h1 className="mt-5 text-xl font-bold text-slate-950">
+          Madrasa Management System
+        </h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Preparing your dashboard...
+        </p>
+        <div
+          className="mt-7 h-2 overflow-hidden rounded-full bg-slate-200"
+          role="progressbar"
+          aria-label="Loading dashboard"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div className="login-progress-bar h-full rounded-full bg-primary-700" />
+        </div>
+      </div>
+    </main>
+  );
+}
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPostLoginLoading, setShowPostLoginLoading] = useState(false);
   const [error, setError] = useState(null);
+  const postLoginInProgress = useRef(false);
   const { user, refreshAuth } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (user) {
+    if (user && !postLoginInProgress.current) {
       router.replace("/");
     }
   }, [user, router]);
@@ -39,7 +73,14 @@ export default function Login() {
         throw new Error(data.error || "Invalid email or password");
       }
 
-      await refreshAuth();
+      postLoginInProgress.current = true;
+      setShowPostLoginLoading(true);
+
+      const minimumDisplayTime = new Promise((resolve) => {
+        window.setTimeout(resolve, 5000);
+      });
+
+      await Promise.all([refreshAuth(), minimumDisplayTime]);
       router.replace("/");
       router.refresh();
     } catch (submitError) {
@@ -49,6 +90,7 @@ export default function Login() {
     }
   };
 
+  if (showPostLoginLoading) return <PostLoginLoading />;
   if (user) return null;
 
   return (

@@ -27,6 +27,7 @@ import {
 } from "./actions";
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
+import { useLanguage } from "@/context/LanguageContext";
 
 const CATEGORIES = [
   "Utilities",
@@ -39,6 +40,7 @@ const CATEGORIES = [
 ];
 
 export default function ExpensesPage() {
+  const { t } = useLanguage();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -248,19 +250,19 @@ export default function ExpensesPage() {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Date
+                      {t("tables", "date")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Category
+                      {t("tables", "category")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Description
+                      {t("tables", "description")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                      Amount
+                      {t("tables", "amount")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                      Actions
+                      {t("tables", "actions")}
                     </th>
                   </tr>
                 </thead>

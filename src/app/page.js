@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import { PERMISSIONS } from "@/lib/rbac";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 import {
   getDashboardStats,
@@ -38,6 +39,7 @@ const formatCurrency = (value) =>
 
 export default function DashboardPage() {
   const { user, loading: authLoading, hasPermission } = useAuth();
+  const { t } = useLanguage();
   const canLoadDashboard =
     !authLoading && Boolean(user) && hasPermission(PERMISSIONS.DASHBOARD_VIEW);
   const [stats, setStats] = useState({
@@ -51,6 +53,7 @@ export default function DashboardPage() {
   const [financialData, setFinancialData] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
   const [hasMounted, setHasMounted] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
 
   useEffect(() => {
     if (!canLoadDashboard) return;
@@ -87,6 +90,8 @@ export default function DashboardPage() {
         if (!cancelled) {
           console.error("Error fetching dashboard data:", error);
         }
+      } finally {
+        if (!cancelled) setDataReady(true);
       }
     }
 
@@ -109,10 +114,14 @@ export default function DashboardPage() {
     { donations: 0, expenses: 0 },
   );
   const netBalance = financeSummary.donations - financeSummary.expenses;
+  const financialSeriesLabels = {
+    donations: t("dashboard", "donations"),
+    expenses: t("dashboard", "expenses"),
+  };
 
   const cards = [
     {
-      name: "Total Donations",
+      name: t("dashboard", "totalDonations"),
       value: `Rs ${stats.totalDonations.toLocaleString()}`,
       icon: TrendingUp,
       color: "bg-emerald-500",
@@ -120,7 +129,7 @@ export default function DashboardPage() {
       trendUp: true,
     },
     {
-      name: "Total Expenses",
+      name: t("dashboard", "totalExpenses"),
       value: `Rs ${stats.totalExpenses.toLocaleString()}`,
       icon: TrendingDown,
       color: "bg-rose-500",
@@ -128,35 +137,35 @@ export default function DashboardPage() {
       trendUp: false,
     },
     {
-      name: "Students Enrolled",
+      name: t("dashboard", "studentsEnrolled"),
       value: stats.studentCount,
       icon: GraduationCap,
       color: "bg-indigo-500",
-      trend: "Active",
+      trend: t("dashboard", "active"),
       trendUp: true,
     },
     {
-      name: "Fee Accountability",
+      name: t("dashboard", "feeAccountability"),
       value: stats.pendingFees,
       icon: AlertTriangle,
       color: stats.pendingFees > 0 ? "bg-orange-500" : "bg-emerald-500",
-      trend: stats.pendingFees > 0 ? "Unpaid" : "Clear",
+      trend: stats.pendingFees > 0 ? t("dashboard", "unpaid") : t("dashboard", "clear"),
       trendUp: stats.pendingFees === 0,
     },
     {
-      name: "Active Staff",
+      name: t("dashboard", "activeStaff"),
       value: stats.activeStaff,
       icon: Users,
       color: "bg-amber-500",
-      trend: "Stable",
+      trend: t("dashboard", "stable"),
       trendUp: true,
     },
     {
-      name: "Inventory Items",
+      name: t("dashboard", "inventoryItems"),
       value: stats.inventoryCount,
       icon: Wallet,
       color: "bg-blue-500",
-      trend: "In Stock",
+      trend: t("dashboard", "inStock"),
       trendUp: true,
     },
   ];
@@ -167,14 +176,14 @@ export default function DashboardPage() {
         <div className="dashboard-page space-y-6 min-[1700px]:space-y-8">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">
-              Dashboard Overview
+              {t("dashboard", "overview")}
             </h2>
             <p className="text-slate-500">
-              Welcome back. Here&apos;s what&apos;s happening today.
+              {t("dashboard", "welcomeBack")}
             </p>
           </div>
 
-          <div className="metric-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="data-stage metric-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" data-ready={dataReady} aria-busy={!dataReady}>
             {cards.map((card) => (
               <div
                 key={card.name}
@@ -185,7 +194,7 @@ export default function DashboardPage() {
                     <card.icon className="h-5 w-5" />
                   </div>
                   <div
-                    className={`flex items-center space-x-1 text-[10px] uppercase tracking-wider font-bold ${card.trendUp ? "text-emerald-600" : "text-rose-600"}`}
+                    className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${card.trendUp ? "text-emerald-600" : "text-rose-600"}`}
                   >
                     <span>{card.trend}</span>
                     {card.trendUp ? (
@@ -198,43 +207,43 @@ export default function DashboardPage() {
                 <h3 className="text-slate-500 text-xs font-semibold uppercase tracking-tight">
                   {card.name}
                 </h3>
-                <p className="text-xl font-extrabold text-slate-900 mt-1 tracking-tight">
+                <p dir="ltr" className="text-xl font-extrabold text-slate-900 mt-1 tracking-tight">
                   {card.value}
                 </p>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="data-stage grid grid-cols-1 gap-8 lg:grid-cols-2" data-ready={dataReady} aria-busy={!dataReady}>
             <div className="surface-card rounded-2xl p-4 sm:p-6">
               <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 text-lg">
-                    Finances Overview
+                    {t("dashboard", "financesOverview")}
                   </h3>
                   <p className="mt-1 text-xs text-slate-400">
-                    Actual figures for the displayed period
+                    {t("dashboard", "actualFigures")}
                   </p>
                 </div>
                 <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
-                  Last 6 months
+                  {t("dashboard", "lastSixMonths")}
                 </span>
               </div>
 
               <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-                    Donations
+                    {t("dashboard", "donations")}
                   </p>
-                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                  <p dir="ltr" className="mt-1 text-base font-extrabold text-slate-900">
                     {formatCurrency(financeSummary.donations)}
                   </p>
                 </div>
                 <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-rose-700">
-                    Expenses
+                    {t("dashboard", "expenses")}
                   </p>
-                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                  <p dir="ltr" className="mt-1 text-base font-extrabold text-slate-900">
                     {formatCurrency(financeSummary.expenses)}
                   </p>
                 </div>
@@ -250,15 +259,15 @@ export default function DashboardPage() {
                       netBalance >= 0 ? "text-blue-700" : "text-amber-700"
                     }`}
                   >
-                    Net Balance
+                    {t("dashboard", "netBalance")}
                   </p>
-                  <p className="mt-1 text-base font-extrabold text-slate-900">
+                  <p dir="ltr" className="mt-1 text-base font-extrabold text-slate-900">
                     {formatCurrency(netBalance)}
                   </p>
                 </div>
               </div>
 
-              <div className="h-56 sm:h-64">
+              <div dir="ltr" className="h-56 sm:h-64">
                 {hasMounted && (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -297,14 +306,12 @@ export default function DashboardPage() {
                         }}
                         formatter={(value, name) => [
                           `Rs ${Number(value).toLocaleString()}`,
-                          name.charAt(0).toUpperCase() + name.slice(1),
+                          financialSeriesLabels[name] || name,
                         ]}
                       />
                       <Legend
                         wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }}
-                        formatter={(value) =>
-                          value.charAt(0).toUpperCase() + value.slice(1)
-                        }
+                        formatter={(value) => financialSeriesLabels[value] || value}
                       />
                       <Bar
                         dataKey="donations"
@@ -326,7 +333,7 @@ export default function DashboardPage() {
 
             <div className="surface-card rounded-2xl p-4 sm:p-6">
               <h3 className="font-bold text-slate-900 text-lg mb-6">
-                Recent Activity
+                {t("dashboard", "recentActivity")}
               </h3>
               <div className="space-y-6">
                 {recentActivity.length > 0 ? (
@@ -337,14 +344,15 @@ export default function DashboardPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-slate-900">
-                          New Donation Received
+                          {t("dashboard", "newDonationReceived")}
                         </p>
                         <p className="text-xs text-slate-500">
-                          Rs {activity.amount.toLocaleString()} from{" "}
-                          {activity.donor}
+                          <span dir="ltr">Rs {activity.amount.toLocaleString()}</span>{" "}
+                          {t("dashboard", "from")}{" "}
+                          <bdi>{activity.donor}</bdi>
                         </p>
                       </div>
-                      <span className="shrink-0 text-[10px] font-medium text-slate-400 sm:text-xs">
+                      <span dir="ltr" className="shrink-0 text-[10px] font-medium text-slate-400 sm:text-xs">
                         {new Date(activity.date).toLocaleDateString()}
                       </span>
                     </div>
@@ -352,7 +360,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-sm text-slate-500">
-                      No recent activity found
+                      {t("dashboard", "noRecentActivity")}
                     </p>
                   </div>
                 )}
@@ -361,7 +369,7 @@ export default function DashboardPage() {
                 href="/donations?tab=donations"
                 className="mt-6 block w-full rounded-xl py-2 text-center text-sm font-semibold text-primary-600 transition-colors hover:bg-primary-50"
               >
-                View All Activity
+                {t("dashboard", "viewAllActivity")}
               </Link>
             </div>
           </div>

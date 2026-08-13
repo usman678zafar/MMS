@@ -2,6 +2,7 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { calculatePagination, PAGINATION_DEFAULTS } from "@/lib/pagination";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Pagination({
   currentPage,
@@ -10,6 +11,8 @@ export default function Pagination({
   pageSize,
   totalItems,
 }) {
+  const { language, t } = useLanguage();
+  const isRtl = language === "ur";
   const pagination = calculatePagination(currentPage, pageSize, totalItems);
 
   if (totalPages <= 1) return null;
@@ -89,9 +92,10 @@ export default function Pagination({
 
   return (
     <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-100 bg-white px-3 py-4 sm:flex-row sm:gap-4 sm:px-6">
-      <div className="text-center text-xs text-slate-600 sm:text-left sm:text-sm">
-        Showing {pagination.startIndex + 1} to {pagination.endIndex} of{" "}
-        {totalItems} results
+      <div className="text-center text-xs text-slate-600 sm:text-start sm:text-sm">
+        {t("common", "showing")} <bdi>{pagination.startIndex + 1}</bdi>{" "}
+        {t("common", "to")} <bdi>{pagination.endIndex}</bdi> {t("common", "of")}{" "}
+        <bdi>{totalItems}</bdi> {t("common", "results")}
       </div>
 
       <div className="flex max-w-full items-center gap-1 overflow-x-auto pb-1 sm:gap-2 sm:pb-0">
@@ -104,7 +108,7 @@ export default function Pagination({
               : "text-slate-300 cursor-not-allowed"
           }`}
         >
-          <ChevronLeft className="h-4 w-4" />
+          {isRtl ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
         <div className="flex shrink-0 items-center gap-1">{renderPageNumbers()}</div>
@@ -118,7 +122,7 @@ export default function Pagination({
               : "text-slate-300 cursor-not-allowed"
           }`}
         >
-          <ChevronRight className="h-4 w-4" />
+          {isRtl ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
       </div>
     </div>

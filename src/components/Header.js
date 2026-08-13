@@ -6,14 +6,14 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 
-const pageTitles = {
-  "/": "Dashboard",
-  "/students": "Students",
-  "/donations": "Donations & Donors",
-  "/expenses": "Expenses",
-  "/staff": "Staff",
-  "/inventory": "Inventory",
-  "/users": "Users",
+const pageTitleKeys = {
+  "/": "dashboard",
+  "/students": "students",
+  "/donations": "donations",
+  "/expenses": "expenses",
+  "/staff": "staff",
+  "/inventory": "inventory",
+  "/users": "users",
 };
 
 function getIslamicDate(locale) {
@@ -33,7 +33,7 @@ function getIslamicDate(locale) {
 
 export default function Header({ onMenuClick }) {
   const { profile } = useAuth();
-  const { language, toggleLanguage } = useLanguage();
+  const { language, toggleLanguage, t } = useLanguage();
   const pathname = usePathname();
   const [islamicDate, setIslamicDate] = useState({ english: "", arabic: "" });
 
@@ -50,11 +50,12 @@ export default function Header({ onMenuClick }) {
     return () => window.clearInterval(interval);
   }, []);
 
-  const pageTitle = pathname.match(/^\/students\/[^/]+$/)
-    ? "Student Profile"
-    : Object.entries(pageTitles).find(([path]) =>
+  const pageTitleKey = pathname.match(/^\/students\/[^/]+$/)
+    ? "studentProfile"
+    : Object.entries(pageTitleKeys).find(([path]) =>
         path === "/" ? pathname === path : pathname.startsWith(path),
-      )?.[1] || "Madrasa Management";
+      )?.[1] || "fallback";
+  const pageTitle = t("pages", pageTitleKey);
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -72,7 +73,7 @@ export default function Header({ onMenuClick }) {
             <p className="truncate text-sm font-bold text-slate-900 sm:text-base">
               {pageTitle}
             </p>
-            <p className="hidden text-xs text-slate-400 sm:block">
+            <p dir="ltr" className="hidden text-xs text-slate-400 sm:block">
               Madrasa Management System
             </p>
           </div>
@@ -81,7 +82,7 @@ export default function Header({ onMenuClick }) {
         <div className="order-3 flex w-full items-center justify-center gap-2 border-t border-slate-100 pt-2 md:order-2 md:w-auto md:border-0 md:pt-0">
           <CalendarDays className="hidden h-4 w-4 shrink-0 text-primary-700 sm:block" />
           <div className="flex min-w-0 items-center gap-2 text-center md:block md:text-left">
-            <p className="whitespace-nowrap text-[10px] font-bold leading-tight text-slate-700 min-[1700px]:text-[11px]">
+            <p dir="ltr" className="whitespace-nowrap text-[10px] font-bold leading-tight text-slate-700 min-[1700px]:text-[11px]">
               {islamicDate.english}
             </p>
             <span className="h-3 w-px bg-slate-200 md:hidden" aria-hidden="true" />
@@ -100,11 +101,11 @@ export default function Header({ onMenuClick }) {
           >
             <Globe className="h-4 w-4" />
             <span lang={language === "en" ? "ur" : "en"}>
-              {language === "en" ? "اردو" : "EN"}
+              {t("header", "toggleLang")}
             </span>
           </button>
 
-          <div className="hidden items-center gap-3 border-l border-slate-200 pl-4 lg:flex">
+          <div dir="ltr" className={`hidden items-center gap-3 lg:flex ${language === "ur" ? "border-r border-slate-200 pr-4" : "border-l border-slate-200 pl-4"}`}>
             <div className="text-right">
               <p className="max-w-36 truncate text-xs font-bold text-slate-800">
                 {profile?.full_name || "Admin User"}

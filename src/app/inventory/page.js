@@ -26,10 +26,12 @@ import {
 } from "./actions";
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
+import { useLanguage } from "@/context/LanguageContext";
 
 const CATEGORIES = ["General", "Cleaning", "Educational", "Office", "Kitchen"];
 
 export default function InventoryPage() {
+  const { t } = useLanguage();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -231,16 +233,16 @@ export default function InventoryPage() {
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Storage Item
+                      {t("tables", "storageItem")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Current Stock
+                      {t("tables", "currentStock")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                      Status
+                      {t("tables", "status")}
                     </th>
                     <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">
-                      Actions
+                      {t("tables", "actions")}
                     </th>
                   </tr>
                 </thead>

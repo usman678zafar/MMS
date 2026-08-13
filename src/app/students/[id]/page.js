@@ -31,6 +31,7 @@ import NavigationLayout from "@/components/NavigationLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Modal from "@/components/Modal";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { PERMISSIONS } from "@/lib/rbac";
 import {
   deleteStudentDocument,
@@ -113,6 +114,7 @@ function InfoItem({ label, value, icon: Icon }) {
 export default function StudentProfilePage() {
   const { id } = useParams();
   const { user, loading: authLoading, hasPermission } = useAuth();
+  const { t } = useLanguage();
   const canView =
     !authLoading && Boolean(user) && hasPermission(PERMISSIONS.STUDENTS_VIEW);
   const canEdit = hasPermission(PERMISSIONS.STUDENTS_UPDATE);
@@ -562,7 +564,7 @@ export default function StudentProfilePage() {
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">Attendance log</h2>{canEdit && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Record</button>}</div>
                   <div className="data-table-scroll mt-5">
-                    {data.attendance.length === 0 ? <EmptyState icon={CalendarCheck} title="No attendance records" description="Attendance history will appear here." /> : <table className="data-table min-w-[560px] text-left"><thead><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Notes</th></tr></thead><tbody>{data.attendance.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-semibold text-slate-700">{formatDate(entry.date, "EEEE, MMM d, yyyy")}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${attendanceTone[entry.status] || "bg-slate-50 text-slate-600"}`}>{entry.status}</span></td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td></tr>)}</tbody></table>}
+                    {data.attendance.length === 0 ? <EmptyState icon={CalendarCheck} title="No attendance records" description="Attendance history will appear here." /> : <table className="data-table min-w-[560px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "date")}</th><th className="px-4 py-3">{t("tables", "status")}</th><th className="px-4 py-3">{t("tables", "notes")}</th></tr></thead><tbody>{data.attendance.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-semibold text-slate-700">{formatDate(entry.date, "EEEE, MMM d, yyyy")}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${attendanceTone[entry.status] || "bg-slate-50 text-slate-600"}`}>{entry.status}</span></td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td></tr>)}</tbody></table>}
                   </div>
                 </section>
               </div>
@@ -578,7 +580,7 @@ export default function StudentProfilePage() {
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">Payment history</h2>{canEdit && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Receive fee</button>}</div>
                   <div className="data-table-scroll mt-5">
-                    {data.fees.length === 0 ? <EmptyState icon={Receipt} title="No payments recorded" description="Fee payments and receipt details will appear here." /> : <table className="data-table min-w-[620px] text-left"><thead><tr><th className="px-4 py-3">Period</th><th className="px-4 py-3">Paid on</th><th className="px-4 py-3">Notes</th><th className="px-4 py-3 text-right">Amount</th></tr></thead><tbody>{data.fees.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-bold text-slate-800">{entry.month} {entry.year}</td><td className="px-4 py-4 text-sm text-slate-500">{formatDate(entry.date)}</td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td><td className="px-4 py-4 text-right text-sm font-extrabold text-emerald-600">{currency(entry.amount)}</td></tr>)}</tbody></table>}
+                    {data.fees.length === 0 ? <EmptyState icon={Receipt} title="No payments recorded" description="Fee payments and receipt details will appear here." /> : <table className="data-table min-w-[620px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "period")}</th><th className="px-4 py-3">{t("tables", "paidOn")}</th><th className="px-4 py-3">{t("tables", "notes")}</th><th className="px-4 py-3 text-right">{t("tables", "amount")}</th></tr></thead><tbody>{data.fees.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-bold text-slate-800">{entry.month} {entry.year}</td><td className="px-4 py-4 text-sm text-slate-500">{formatDate(entry.date)}</td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td><td className="px-4 py-4 text-right text-sm font-extrabold text-emerald-600">{currency(entry.amount)}</td></tr>)}</tbody></table>}
                   </div>
                 </section>
               </div>
