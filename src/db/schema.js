@@ -27,6 +27,7 @@ export const users = pgTable(
     email: varchar("email", { length: 254 }).notNull(),
     name: varchar("name", { length: 100 }).notNull(),
     role: varchar("role", { length: 30 }).notNull().default("viewer"),
+    permissions: jsonb("permissions"),
     password: text("password").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     ...timestamps,

@@ -27,6 +27,7 @@ import {
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 const CATEGORIES = ["General", "Cleaning", "Educational", "Office", "Kitchen"];
 const CATEGORY_KEYS = {
@@ -37,6 +38,10 @@ const UNIT_KEYS = { pcs: "pcs", kg: "kg", liters: "liters", boxes: "boxes", roll
 
 export default function InventoryPage() {
   const { t } = useLanguage();
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission(PERMISSIONS.INVENTORY_CREATE);
+  const canUpdate = hasPermission(PERMISSIONS.INVENTORY_UPDATE);
+  const canDelete = hasPermission(PERMISSIONS.INVENTORY_DELETE);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -157,7 +162,7 @@ export default function InventoryPage() {
                 {t("inventory", "subtitle")}
               </p>
             </div>
-            <button
+            {canCreate && <button
               onClick={() => {
                 setEditingId(null);
                 setNewItem({
@@ -172,7 +177,7 @@ export default function InventoryPage() {
             >
               <Plus className="h-4 w-4 mr-2" />
               {t("inventory", "add")}
-            </button>
+            </button>}
           </div>
 
           {/* Stats Bar */}
@@ -308,20 +313,20 @@ export default function InventoryPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button
+                            {canUpdate && <button
                               onClick={() => handleOpenEdit(item)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                               title={t("inventory", "editAction")}
                             >
                               <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
+                            </button>}
+                            {canDelete && <button
                               onClick={() => setDeleteId(item.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                               title={t("inventory", "deleteAction")}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>

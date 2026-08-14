@@ -51,6 +51,7 @@ import { format } from "date-fns";
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 const PROGRESS_TYPES = ["Qaida", "Nazra", "Hifz", "Girdan"];
 const PARA_NUMBERS = Array.from({ length: 30 }, (_, i) => i + 1);
@@ -432,6 +433,16 @@ const defaultForm = {
 
 export default function StudentsPage() {
   const { t } = useLanguage();
+  const { hasPermission } = useAuth();
+  const canCreateStudents = hasPermission(PERMISSIONS.STUDENTS_CREATE);
+  const canUpdateStudents = hasPermission(PERMISSIONS.STUDENTS_UPDATE);
+  const canDeleteStudents = hasPermission(PERMISSIONS.STUDENTS_DELETE);
+  const canViewProgress = hasPermission(PERMISSIONS.PROGRESS_VIEW);
+  const canManageProgress = hasPermission(PERMISSIONS.PROGRESS_MANAGE);
+  const canViewFees = hasPermission(PERMISSIONS.FEES_VIEW);
+  const canManageFees = hasPermission(PERMISSIONS.FEES_MANAGE);
+  const canViewAttendance = hasPermission(PERMISSIONS.ATTENDANCE_VIEW);
+  const canManageAttendance = hasPermission(PERMISSIONS.ATTENDANCE_MANAGE);
   const [activeTab, setActiveTab] = useState("management"); // 'management' | 'attendance'
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({}); // { studentId: status }
@@ -486,15 +497,20 @@ export default function StudentsPage() {
   const [isBulkMarking, setIsBulkMarking] = useState(false);
 
   useEffect(() => {
+    const allowedTabs = [
+      "management",
+      ...(canViewFees ? ["fees"] : []),
+      ...(canViewAttendance ? ["attendance"] : []),
+    ];
     // 1. Initialize from URL hash/query or localStorage initially
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get("tab");
 
     const savedTab = localStorage.getItem("studentsActiveTab");
     const initialTab =
-      tabFromUrl && ["management", "fees", "attendance"].includes(tabFromUrl)
+      tabFromUrl && allowedTabs.includes(tabFromUrl)
         ? tabFromUrl
-        : savedTab && ["management", "fees", "attendance"].includes(savedTab)
+        : savedTab && allowedTabs.includes(savedTab)
           ? savedTab
           : "management";
     const timer = setTimeout(() => {
@@ -510,7 +526,10 @@ export default function StudentsPage() {
     // 2. Listen to browser back/forward buttons
     const handlePopState = (event) => {
       const currentUrlParams = new URLSearchParams(window.location.search);
-      const poppedTab = currentUrlParams.get("tab") || "management";
+      const requestedTab = currentUrlParams.get("tab") || "management";
+      const poppedTab = allowedTabs.includes(requestedTab)
+        ? requestedTab
+        : "management";
       setActiveTab(poppedTab);
       localStorage.setItem("studentsActiveTab", poppedTab);
     };
@@ -520,9 +539,11 @@ export default function StudentsPage() {
       clearTimeout(timer);
       window.removeEventListener("popstate", handlePopState);
     };
-  }, []);
+  }, [canViewAttendance, canViewFees]);
 
   const handleTabChange = (tab) => {
+    if (tab === "fees" && !canViewFees) return;
+    if (tab === "attendance" && !canViewAttendance) return;
     setActiveTab(tab);
     localStorage.setItem("studentsActiveTab", tab);
     // Push new state to history stack so "Back" works
@@ -559,7 +580,7 @@ export default function StudentsPage() {
     if (res.success) setMonthlyPayments(res.data);
     setLoadingFeeStatus(false);
     setSelectedFeeStudents(new Set());
-  }, [feeMonth, feeYear]);
+  }, [feeMonth, feeYear, setSelectedFeeStudents]);
 
 
   const fetchAttendanceForDate = useCallback(async () => {
@@ -572,7 +593,7 @@ export default function StudentsPage() {
     }
     setSelectedAttendanceStudents(new Set());
     setLoading(false);
-  }, [attendanceDate]);
+  }, [attendanceDate, setSelectedAttendanceStudents]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -850,18 +871,20 @@ export default function StudentsPage() {
                 {t("students", "subtitle")}
               </p>
             </div>
-            <button
-              onClick={() => {
-                fetchTeachers();
-                setEditingId(null);
-                setNewStudent(defaultForm);
-                setShowModal(true);
-              }}
-              className="btn btn-primary page-primary-action"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t("students", "enrollBtn")}
-            </button>
+            {canCreateStudents && (
+              <button
+                onClick={() => {
+                  fetchTeachers();
+                  setEditingId(null);
+                  setNewStudent(defaultForm);
+                  setShowModal(true);
+                }}
+                className="btn btn-primary page-primary-action"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t("students", "enrollBtn")}
+              </button>
+            )}
           </div>
 
           {/* Tab Switcher */}
@@ -879,7 +902,7 @@ export default function StudentsPage() {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
               )}
             </button>
-            <button
+            {canViewFees && <button
               onClick={() => handleTabChange("fees")}
               className={`px-6 py-3 text-sm font-semibold transition-all relative whitespace-nowrap ${
                 activeTab === "fees"
@@ -891,8 +914,8 @@ export default function StudentsPage() {
               {activeTab === "fees" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
               )}
-            </button>
-            <button
+            </button>}
+            {canViewAttendance && <button
               onClick={() => handleTabChange("attendance")}
               className={`px-6 py-3 text-sm font-semibold transition-all relative whitespace-nowrap ${
                 activeTab === "attendance"
@@ -904,7 +927,7 @@ export default function StudentsPage() {
               {activeTab === "attendance" && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
               )}
-            </button>
+            </button>}
           </div>
 
           {activeTab === "management" && (
@@ -914,14 +937,14 @@ export default function StudentsPage() {
                 <StatsSkeleton />
               ) : (
                 <div className="metric-grid grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="metric-card p-4 text-center">
+                  {canViewProgress && <div className="metric-card p-4 text-center">
                     <p className="text-2xl font-bold text-slate-900">
                       {students.length}
                     </p>
                     <p className="text-xs text-slate-500 mt-1 font-medium">
                       {t("students", "totalEnrolled")}
                     </p>
-                  </div>
+                  </div>}
                   <div className="metric-card p-4 text-center">
                     <p className="text-2xl font-bold text-emerald-600">
                       {students.filter((s) => s.is_active !== false).length}
@@ -1107,8 +1130,9 @@ export default function StudentsPage() {
                               )}
                             </td>
                             <td className="student-progress-column px-6 py-4">
-                              <button
-                                onClick={() => handleOpenProgress(student)}
+                              {canViewProgress ? <button
+                                onClick={() => canManageProgress && handleOpenProgress(student)}
+                                disabled={!canManageProgress}
                                 className="flex flex-col items-start hover:bg-slate-100 p-1.5 rounded-lg transition-all group/progress w-full"
                               >
                                 <span className="text-xs font-bold text-blue-600">
@@ -1133,10 +1157,10 @@ export default function StudentsPage() {
                                     <BookOpen className="h-2 w-2 opacity-50 transition-opacity" />
                                   </span>
                                 </span>
-                              </button>
+                              </button> : <span className="text-slate-300">—</span>}
                             </td>
                             <td className="student-status-column px-6 py-4">
-                              <button
+                              {canUpdateStudents ? <button
                                 onClick={() =>
                                   handleToggleStatus(
                                     student.id,
@@ -1161,7 +1185,11 @@ export default function StudentsPage() {
                                 ) : (
                                   t("common", "inactive")
                                 )}
-                              </button>
+                              </button> : (
+                                <span className={`inline-flex h-6 w-20 items-center justify-center rounded-full border text-[10px] font-bold uppercase ${student.is_active !== false ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-slate-100 bg-slate-50 text-slate-400"}`}>
+                                  {student.is_active !== false ? t("common", "active") : t("common", "inactive")}
+                                </span>
+                              )}
                             </td>
                             <td className="student-actions-cell px-6 py-4 text-right">
                               <div className="student-action-controls flex items-center justify-end gap-1">
@@ -1172,27 +1200,27 @@ export default function StudentsPage() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Link>
-                                <button
+                                {canViewProgress && <button
                                   onClick={() => handleOpenHistory(student)}
                                   className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                                   title={t("students", "viewProgressHistory")}
                                 >
                                   <Calendar className="h-4 w-4" />
-                                </button>
-                                <button
+                                </button>}
+                                {canUpdateStudents && <button
                                   onClick={() => handleOpenEdit(student)}
                                   className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                   title={t("students", "editStudent")}
                                 >
                                   <Edit2 className="h-4 w-4" />
-                                </button>
-                                <button
+                                </button>}
+                                {canDeleteStudents && <button
                                   onClick={() => setDeleteId(student.id)}
                                   className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                                   title={t("students", "deleteStudent")}
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                </button>
+                                </button>}
                               </div>
                             </td>
                           </tr>
@@ -1229,7 +1257,7 @@ export default function StudentsPage() {
                                   {t("students", "father")}: {student.father_name || t("common", "notAvailable")}
                                 </p>
                               </div>
-                              <button
+                              {canUpdateStudents ? <button
                                 onClick={() => handleToggleStatus(student.id, student.is_active !== false)}
                                 disabled={updatingStatusIds.has(student.id)}
                                 className={`flex h-6 shrink-0 items-center justify-center rounded-full border px-2 text-[9px] font-bold uppercase ${
@@ -1239,7 +1267,11 @@ export default function StudentsPage() {
                                 }`}
                               >
                                 {updatingStatusIds.has(student.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : student.is_active !== false ? t("common", "active") : t("common", "inactive")}
-                              </button>
+                              </button> : (
+                                <span className={`flex h-6 shrink-0 items-center justify-center rounded-full border px-2 text-[9px] font-bold uppercase ${student.is_active !== false ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-slate-200 bg-slate-50 text-slate-500"}`}>
+                                  {student.is_active !== false ? t("common", "active") : t("common", "inactive")}
+                                </span>
+                              )}
                             </div>
                             <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                               {student.gender === "Female" ? t("students", "female") : t("students", "male")} · {student.admission_date ? format(new Date(student.admission_date), "MMM yyyy") : t("common", "notAvailable")}
@@ -1259,7 +1291,7 @@ export default function StudentsPage() {
                           </div>
                         </div>
 
-                        <button onClick={() => handleOpenProgress(student)} className="mt-2 flex w-full items-center justify-between rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-left">
+                        {canViewProgress && <button onClick={() => canManageProgress && handleOpenProgress(student)} disabled={!canManageProgress} className="mt-2 flex w-full items-center justify-between rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-left disabled:cursor-default">
                           <span>
                             <span className="block text-[9px] font-bold uppercase tracking-wide text-blue-500">{t("students", "currentProgress")}</span>
                             <span className="block text-xs font-bold text-blue-700">{OPTION_KEYS[student.current_progress?.type || "Qaida"] ? t("options", OPTION_KEYS[student.current_progress?.type || "Qaida"]) : student.current_progress?.type}</span>
@@ -1269,13 +1301,13 @@ export default function StudentsPage() {
                               ? `${t("students", "updated")} ${format(parseLegacyDate(student.current_progress.last_updated), "MMM dd")}`
                               : t("students", "updatePending")}
                           </span>
-                        </button>
+                        </button>}
 
                         <div className="mt-2 grid grid-cols-4 gap-1 border-t border-slate-100 pt-2">
                           <Link href={`/students/${student.id}`} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary-50 hover:text-primary-700" title={t("students", "openProfile")}><Eye className="h-4 w-4" /></Link>
-                          <button onClick={() => handleOpenHistory(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600" title={t("students", "viewProgressHistory")}><Calendar className="h-4 w-4" /></button>
-                          <button onClick={() => handleOpenEdit(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600" title={t("students", "editStudent")}><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteId(student.id)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" title={t("students", "deleteStudent")}><Trash2 className="h-4 w-4" /></button>
+                          {canViewProgress && <button onClick={() => handleOpenHistory(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600" title={t("students", "viewProgressHistory")}><Calendar className="h-4 w-4" /></button>}
+                          {canUpdateStudents && <button onClick={() => handleOpenEdit(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600" title={t("students", "editStudent")}><Edit2 className="h-4 w-4" /></button>}
+                          {canDeleteStudents && <button onClick={() => setDeleteId(student.id)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" title={t("students", "deleteStudent")}><Trash2 className="h-4 w-4" /></button>}
                         </div>
                       </article>
                     ))
@@ -1376,7 +1408,7 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center md:w-auto">
-                  {selectedFeeStudents.size > 0 && (
+                  {canManageFees && selectedFeeStudents.size > 0 && (
                     <div className="flex items-center bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden text-xs">
                       <button
                         onClick={handleBulkMarkPaid}
@@ -1433,6 +1465,7 @@ export default function StudentsPage() {
                         <th className="px-6 py-4 w-12">
                           <input
                             type="checkbox"
+                            disabled={!canManageFees}
                             checked={
                               students.length > 0 &&
                               selectedFeeStudents.size === students.length
@@ -1482,6 +1515,7 @@ export default function StudentsPage() {
                           <td className="px-6 py-4">
                             <input
                               type="checkbox"
+                              disabled={!canManageFees}
                               checked={selectedFeeStudents.has(student.id)}
                               onChange={(e) => {
                                 const next = new Set(selectedFeeStudents);
@@ -1541,6 +1575,7 @@ export default function StudentsPage() {
                                 )
                               }
                               disabled={
+                                !canManageFees ||
                                 updatingFeeIds.has(student.id) ||
                                 loadingFeeStatus
                               }
@@ -1632,7 +1667,7 @@ export default function StudentsPage() {
                     onChange={(e) => setAttendanceDate(e.target.value)}
                     className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none w-full sm:w-auto"
                   />
-                  {selectedAttendanceStudents.size > 0 && (
+                  {canManageAttendance && selectedAttendanceStudents.size > 0 && (
                     <div className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-100 p-1 sm:ml-4">
                       {["Present", "Absent", "Late", "Leave"].map((status) => (
                         <button
@@ -1654,13 +1689,13 @@ export default function StudentsPage() {
                     </div>
                   )}
                 </div>
-                <button
+                {canManageAttendance && <button
                   onClick={handleSaveAttendance}
                   disabled={saving}
                   className="btn btn-primary w-full sm:w-auto"
                 >
                   {saving ? t("common", "saving") : t("students", "saveAttendance")}
-                </button>
+                </button>}
               </div>
 
               <div className="surface-card rounded-2xl overflow-hidden">
@@ -1671,6 +1706,7 @@ export default function StudentsPage() {
                       <th className="px-6 py-4 w-12">
                         <input
                           type="checkbox"
+                          disabled={!canManageAttendance}
                           checked={
                             students.length > 0 &&
                             selectedAttendanceStudents.size === students.length
@@ -1714,6 +1750,7 @@ export default function StudentsPage() {
                         <td className="px-6 py-4">
                           <input
                             type="checkbox"
+                            disabled={!canManageAttendance}
                             checked={selectedAttendanceStudents.has(student.id)}
                             onChange={(e) => {
                               const next = new Set(selectedAttendanceStudents);
@@ -1750,6 +1787,7 @@ export default function StudentsPage() {
                               (status) => (
                                 <button
                                   key={status}
+                                  disabled={!canManageAttendance}
                                   onClick={() =>
                                     handleAttendanceChange(student.id, status)
                                   }
@@ -1888,7 +1926,7 @@ export default function StudentsPage() {
                     }
                   />
                 </div>
-                <div>
+                {canManageFees && <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     {t("students", "monthlyFee")}
                   </label>
@@ -1904,7 +1942,7 @@ export default function StudentsPage() {
                       })
                     }
                   />
-                </div>
+                </div>}
               </div>
 
               {/* Phone & Teacher */}
@@ -1982,7 +2020,7 @@ export default function StudentsPage() {
               </div>
 
               {/* Progress (New Enrollment Only) */}
-              {!editingId && (
+              {!editingId && canManageProgress && (
                 <div className="p-3 bg-slate-50 rounded-xl space-y-2">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                     {t("students", "initialProgress")}
@@ -2252,13 +2290,13 @@ export default function StudentsPage() {
                           <span className="text-[10px] text-slate-400 font-medium">
                             {format(new Date(entry.date), "MMM dd, yyyy")}
                           </span>
-                          <button 
+                          {canManageProgress && <button
                             onClick={() => handleDeleteProgress(entry.id)}
                             className="bg-white hover:bg-rose-50 text-rose-400 hover:text-rose-600 p-1 rounded-lg transition-all ml-2"
                             title={t("students", "deleteMilestone")}
                           >
                             <Trash2 className="h-3 w-3" />
-                          </button>
+                          </button>}
                         </div>
                         <p className="text-sm font-medium text-slate-700">
                           {entry.surah ||

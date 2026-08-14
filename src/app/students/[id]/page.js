@@ -118,6 +118,12 @@ export default function StudentProfilePage() {
   const canView =
     !authLoading && Boolean(user) && hasPermission(PERMISSIONS.STUDENTS_VIEW);
   const canEdit = hasPermission(PERMISSIONS.STUDENTS_UPDATE);
+  const canViewProgress = hasPermission(PERMISSIONS.PROGRESS_VIEW);
+  const canManageProgress = hasPermission(PERMISSIONS.PROGRESS_MANAGE);
+  const canViewAttendance = hasPermission(PERMISSIONS.ATTENDANCE_VIEW);
+  const canManageAttendance = hasPermission(PERMISSIONS.ATTENDANCE_MANAGE);
+  const canViewFees = hasPermission(PERMISSIONS.FEES_VIEW);
+  const canManageFees = hasPermission(PERMISSIONS.FEES_MANAGE);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -438,17 +444,17 @@ export default function StudentProfilePage() {
                       </p>
                     </div>
                   </div>
-                  {canEdit && (
+                  {(canManageProgress || canManageAttendance || canManageFees) && (
                     <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:flex sm:w-auto sm:flex-wrap">
-                      <button onClick={() => setModal("progress")} className="rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-primary-800 hover:bg-primary-50">
+                      {canManageProgress && <button onClick={() => setModal("progress")} className="rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-primary-800 hover:bg-primary-50">
                         {t("studentProfile", "updateProgress")}
-                      </button>
-                      <button onClick={() => setModal("attendance")} className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20">
+                      </button>}
+                      {canManageAttendance && <button onClick={() => setModal("attendance")} className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20">
                         {t("studentProfile", "recordAttendance")}
-                      </button>
-                      <button onClick={() => setModal("fee")} className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20">
+                      </button>}
+                      {canManageFees && <button onClick={() => setModal("fee")} className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20">
                         {t("studentProfile", "receiveFee")}
-                      </button>
+                      </button>}
                     </div>
                   )}
                 </div>
@@ -456,7 +462,12 @@ export default function StudentProfilePage() {
 
               <div className="overflow-x-auto border-b border-slate-100 px-3 sm:px-6">
                 <nav className="flex min-w-max gap-1" aria-label={t("studentProfile", "recordSections")}>
-                  {tabs.map((tab) => (
+                  {tabs.filter((tab) =>
+                    (tab.id !== "academic" || canViewProgress) &&
+                    (tab.id !== "attendance" || canViewAttendance) &&
+                    (tab.id !== "fees" || canViewFees) &&
+                    (tab.id !== "history" || canViewProgress || canViewAttendance || canViewFees)
+                  ).map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
@@ -497,7 +508,7 @@ export default function StudentProfilePage() {
                   </section>
                 </div>
                 <aside className="space-y-4">
-                  <div className="metric-card metric-card-emerald p-5">
+                  {canViewAttendance && <div className="metric-card metric-card-emerald p-5">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("studentProfile", "attendanceRate")}</p>
                     <div className="mt-3 flex items-end justify-between">
                       <p className="text-3xl font-extrabold text-slate-900">{data.summary.attendanceRate}%</p>
@@ -506,22 +517,22 @@ export default function StudentProfilePage() {
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
                       <div className="h-full rounded-full bg-emerald-500" style={{ width: `${data.summary.attendanceRate}%` }} />
                     </div>
-                  </div>
-                  <div className="metric-card metric-card-indigo p-5">
+                  </div>}
+                  {canViewProgress && <div className="metric-card metric-card-indigo p-5">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("studentProfile", "currentProgress")}</p>
                     <p className="mt-3 text-xl font-extrabold text-primary-800">{data.student.current_progress?.type || t("studentProfile", "notRecorded")}</p>
                     <p className="mt-1 text-sm text-slate-500">
                       {[data.student.current_progress?.para ? `${t("studentProfile", "para")} ${data.student.current_progress.para}` : "", data.student.current_progress?.surah].filter(Boolean).join(" · ") || t("studentProfile", "noMilestoneDetails")}
                     </p>
                     <p className="mt-4 text-xs text-slate-400">{t("studentProfile", "updated")} {formatDate(data.student.current_progress?.last_updated)}</p>
-                  </div>
-                  <div className="metric-card metric-card-amber p-5">
+                  </div>}
+                  {canViewFees && <div className="metric-card metric-card-amber p-5">
                     <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("studentProfile", "currentFeeStatus")}</p>
                     <div className="mt-3 flex items-center justify-between">
                       <p className={`text-xl font-extrabold ${data.student.fee_status === "Paid" ? "text-emerald-600" : "text-rose-600"}`}>{data.student.fee_status === "Paid" ? t("common", "paid") : t("dashboard", "unpaid")}</p>
                       <p className="text-sm font-bold text-slate-700">{currency(data.student.monthly_fee)} / {t("studentProfile", "perMonth")}</p>
                     </div>
-                  </div>
+                  </div>}
                 </aside>
               </div>
             )}
@@ -530,7 +541,7 @@ export default function StudentProfilePage() {
               <section className="surface-card rounded-2xl p-5 sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "academicMilestones")}</h2><p className="mt-1 text-xs text-slate-400">{t("studentProfile", "learningProgress")}</p></div>
-                  {canEdit && <button onClick={() => setModal("progress")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "addMilestone")}</button>}
+                  {canManageProgress && <button onClick={() => setModal("progress")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "addMilestone")}</button>}
                 </div>
                 <div className="mt-6">
                   {data.progress.length === 0 ? <EmptyState icon={BookOpen} title={t("studentProfile", "noProgress")} description={t("studentProfile", "noProgressHint")} /> : (
@@ -562,7 +573,7 @@ export default function StudentProfilePage() {
                   ].map(([label, value, tone]) => <div key={label} className="metric-card p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-2 text-2xl font-extrabold ${tone}`}>{value}</p></div>)}
                 </div>
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "attendanceLog")}</h2>{canEdit && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "record")}</button>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "attendanceLog")}</h2>{canManageAttendance && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "record")}</button>}</div>
                   <div className="data-table-scroll mt-5">
                     {data.attendance.length === 0 ? <EmptyState icon={CalendarCheck} title={t("studentProfile", "noAttendance")} description={t("studentProfile", "noAttendanceHint")} /> : <table className="data-table min-w-[560px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "date")}</th><th className="px-4 py-3">{t("tables", "status")}</th><th className="px-4 py-3">{t("tables", "notes")}</th></tr></thead><tbody>{data.attendance.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-semibold text-slate-700">{formatDate(entry.date, "EEEE, MMM d, yyyy")}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${attendanceTone[entry.status] || "bg-slate-50 text-slate-600"}`}>{t("students", entry.status.toLowerCase())}</span></td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td></tr>)}</tbody></table>}
                   </div>
@@ -578,7 +589,7 @@ export default function StudentProfilePage() {
                   <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{t("studentProfile", "currentDue")}</p><p className={`mt-2 text-2xl font-extrabold ${data.summary.currentDue > 0 ? "text-rose-600" : "text-emerald-600"}`}>{currency(data.summary.currentDue)}</p></div>
                 </div>
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "paymentHistory")}</h2>{canEdit && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "receiveFee")}</button>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "paymentHistory")}</h2>{canManageFees && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "receiveFee")}</button>}</div>
                   <div className="data-table-scroll mt-5">
                     {data.fees.length === 0 ? <EmptyState icon={Receipt} title={t("studentProfile", "noPayments")} description={t("studentProfile", "noPaymentsHint")} /> : <table className="data-table min-w-[620px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "period")}</th><th className="px-4 py-3">{t("tables", "paidOn")}</th><th className="px-4 py-3">{t("tables", "notes")}</th><th className="px-4 py-3 text-right">{t("tables", "amount")}</th></tr></thead><tbody>{data.fees.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-bold text-slate-800">{t("months", entry.month)} {entry.year}</td><td className="px-4 py-4 text-sm text-slate-500">{formatDate(entry.date)}</td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td><td className="px-4 py-4 text-right text-sm font-extrabold text-emerald-600">{currency(entry.amount)}</td></tr>)}</tbody></table>}
                   </div>

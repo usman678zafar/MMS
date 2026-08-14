@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ROLES } from "@/lib/rbac";
+import { PERMISSIONS, ROLES } from "@/lib/rbac";
 
 const text = (max = 500) => z.string().trim().max(max);
 const requiredText = (max = 200) => text(max).min(1);
@@ -30,6 +30,13 @@ export const userCreateSchema = z.object({
   name: requiredText(100),
   email: z.string().trim().toLowerCase().email().max(254),
   role: z.enum(Object.values(ROLES)).default(ROLES.VIEWER),
+  permissions: z
+    .array(z.enum(Object.values(PERMISSIONS)))
+    .max(Object.values(PERMISSIONS).length)
+    .transform((permissions) => [...new Set(permissions)])
+    .nullable()
+    .optional()
+    .default(null),
   password: z.string().min(8).max(128),
 });
 

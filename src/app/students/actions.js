@@ -8,7 +8,7 @@ import { staff, studentAttendance, studentFees, studentProgresses, students } fr
 import { getErrorMessage, serializeRow, serializeRows } from "@/db/utils";
 import { formatPaginatedResponse, PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { requirePermission } from "@/lib/auth";
-import { PERMISSIONS } from "@/lib/rbac";
+import { hasPermission, PERMISSIONS } from "@/lib/rbac";
 import { s3Client } from "@/lib/r2";
 import { attendanceSchema, feeSchema, objectId, parsePagination, progressSchema, studentNotesSchema, studentSchema } from "@/lib/validation";
 
@@ -22,7 +22,7 @@ const hasValidDocumentSignature = (type, buffer) => {
   return type === "image/webp" && buffer.subarray(0, 4).toString() === "RIFF" && buffer.subarray(8, 12).toString() === "WEBP";
 };
 
-const studentValues = (data) => ({
+const studentValues = (data, { includeFees = true } = {}) => ({
   name: data.name,
   fatherName: data.father_name,
   religiousClass: data.religious_class,
@@ -31,9 +31,8 @@ const studentValues = (data) => ({
   phone: data.phone,
   address: data.address,
   gender: data.gender,
-  monthlyFee: data.monthly_fee,
+  ...(includeFees ? { monthlyFee: data.monthly_fee, feeStatus: data.fee_status } : {}),
   teacherId: data.teacher_id ? objectId(data.teacher_id, "teacher id") : null,
-  feeStatus: data.fee_status,
   isActive: data.is_active,
 });
 
@@ -46,13 +45,17 @@ const dateAtMidnight = (value) => {
 
 export async function addStudent(studentData) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_CREATE);
+    const current = await requirePermission(PERMISSIONS.STUDENTS_CREATE);
+    const canManageProgress = hasPermission(current.role, PERMISSIONS.PROGRESS_MANAGE, current.permissions);
+    const canManageFees = hasPermission(current.role, PERMISSIONS.FEES_MANAGE, current.permissions);
     const parsed = studentSchema.parse(studentData);
     const now = new Date();
     const currentProgress = { type: parsed.progress_type, para: parsed.progress_para, surah: parsed.progress_surah, ayat: null, last_updated: now.toISOString() };
     const row = await db.transaction(async (tx) => {
-      const [student] = await tx.insert(students).values({ ...studentValues(parsed), currentProgress }).returning();
-      await tx.insert(studentProgresses).values({ studentId: student.id, teacherId: student.teacherId, type: currentProgress.type, para: currentProgress.para, surah: currentProgress.surah, ayat: null, notes: "Initial enrollment progress", date: now });
+      const [student] = await tx.insert(students).values({ ...studentValues(parsed, { includeFees: canManageFees }), currentProgress: canManageProgress ? currentProgress : {} }).returning();
+      if (canManageProgress) {
+        await tx.insert(studentProgresses).values({ studentId: student.id, teacherId: student.teacherId, type: currentProgress.type, para: currentProgress.para, surah: currentProgress.surah, ayat: null, notes: "Initial enrollment progress", date: now });
+      }
       return student;
     });
     return { success: true, data: serializeRow(row) };
@@ -61,15 +64,18 @@ export async function addStudent(studentData) {
 
 export async function updateStudent(id, studentData) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
-    const [row] = await db.update(students).set({ ...studentValues(studentSchema.parse(studentData)), updatedAt: new Date() }).where(eq(students.id, objectId(id, "student id"))).returning();
+    const current = await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    const canManageFees = hasPermission(current.role, PERMISSIONS.FEES_MANAGE, current.permissions);
+    const [row] = await db.update(students).set({ ...studentValues(studentSchema.parse(studentData), { includeFees: canManageFees }), updatedAt: new Date() }).where(eq(students.id, objectId(id, "student id"))).returning();
     return row ? { success: true, data: serializeRow(row) } : { success: false, error: "Student not found" };
   } catch (error) { console.error("updateStudent Error:", error); return { success: false, error: getErrorMessage(error) }; }
 }
 
 export async function getStudents(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_SIZE, search = "", status = "", educationClass = "All") {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    const current = await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    const canViewProgress = hasPermission(current.role, PERMISSIONS.PROGRESS_VIEW, current.permissions);
+    const canViewFees = hasPermission(current.role, PERMISSIONS.FEES_VIEW, current.permissions);
     const pagination = parsePagination(page, pageSize);
     const term = String(search).trim().slice(0, 100);
     const filters = [];
@@ -81,7 +87,14 @@ export async function getStudents(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_
       db.select({ value: count() }).from(students).where(where),
       db.select({ student: students, teacherName: staff.name }).from(students).leftJoin(staff, eq(staff.id, students.teacherId)).where(where).orderBy(desc(students.createdAt)).offset((pagination.page - 1) * pagination.pageSize).limit(pagination.pageSize),
     ]);
-    const data = rows.map(({ student, teacherName }) => ({ ...student, teacherName }));
+    const data = rows.map(({ student, teacherName }) => ({
+      ...student,
+      currentProgress: canViewProgress ? student.currentProgress : {},
+      monthlyFee: canViewFees ? student.monthlyFee : 0,
+      feeStatus: canViewFees ? student.feeStatus : null,
+      lastFeePaid: canViewFees ? student.lastFeePaid : null,
+      teacherName,
+    }));
     return formatPaginatedResponse(serializeRows(data), summary.value, pagination.page, pagination.pageSize);
   } catch (error) { console.error("getStudents Error:", error); return { success: false, error: getErrorMessage(error) }; }
 }
@@ -112,7 +125,7 @@ export async function deleteStudent(id) {
 
 export async function updateStudentProgress(studentId, progressData) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.PROGRESS_MANAGE);
     const parsed = progressSchema.parse(progressData);
     const id = objectId(studentId, "student id");
     await db.transaction(async (tx) => {
@@ -128,7 +141,7 @@ export async function updateStudentProgress(studentId, progressData) {
 
 export async function updateFeeStatus(id, fee_status) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.FEES_MANAGE);
     if (!["Paid", "Unpaid"].includes(fee_status)) throw new Error("Invalid fee status");
     const [row] = await db.update(students).set({ feeStatus: fee_status, updatedAt: new Date() }).where(eq(students.id, objectId(id, "student id"))).returning({ id: students.id });
     return row ? { success: true } : { success: false, error: "Student not found" };
@@ -137,7 +150,7 @@ export async function updateFeeStatus(id, fee_status) {
 
 export async function getStudentProgressHistory(studentId) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    await requirePermission(PERMISSIONS.PROGRESS_VIEW);
     const rows = await db.select().from(studentProgresses).where(eq(studentProgresses.studentId, objectId(studentId, "student id"))).orderBy(desc(studentProgresses.date));
     return { success: true, data: serializeRows(rows) };
   } catch (error) { console.error("getStudentProgressHistory Error:", error); return { success: false, error: getErrorMessage(error) }; }
@@ -145,7 +158,7 @@ export async function getStudentProgressHistory(studentId) {
 
 export async function recordFeePayment(studentId, feeData) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.FEES_MANAGE);
     const parsed = feeSchema.parse(feeData);
     const id = objectId(studentId, "student id");
     await db.transaction(async (tx) => {
@@ -161,7 +174,7 @@ export async function recordFeePayment(studentId, feeData) {
 
 export async function deleteFeePayment(studentId, month, year) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.FEES_MANAGE);
     const id = objectId(studentId, "student id");
     const period = feeSchema.pick({ month: true, year: true }).parse({ month, year });
     await db.transaction(async (tx) => {
@@ -175,7 +188,7 @@ export async function deleteFeePayment(studentId, month, year) {
 
 export async function deleteBulkFeePayments(studentIds, month, year) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.FEES_MANAGE);
     if (!Array.isArray(studentIds) || !studentIds.length || studentIds.length > 500) throw new Error("Invalid student list");
     const ids = studentIds.map((id) => objectId(id, "student id"));
     const period = feeSchema.pick({ month: true, year: true }).parse({ month, year });
@@ -189,7 +202,7 @@ export async function deleteBulkFeePayments(studentIds, month, year) {
 
 export async function getStudentFeeHistory(studentId) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    await requirePermission(PERMISSIONS.FEES_VIEW);
     const rows = await db.select().from(studentFees).where(eq(studentFees.studentId, objectId(studentId, "student id"))).orderBy(desc(studentFees.date));
     return { success: true, data: serializeRows(rows) };
   } catch (error) { console.error("getStudentFeeHistory Error:", error); return { success: false, error: getErrorMessage(error) }; }
@@ -197,7 +210,7 @@ export async function getStudentFeeHistory(studentId) {
 
 export async function recordAttendance(attendanceRecords, dateString = null) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.ATTENDANCE_MANAGE);
     if (!Array.isArray(attendanceRecords) || attendanceRecords.length > 1000) throw new Error("Invalid attendance records");
     const date = dateAtMidnight(dateString || new Date());
     const records = attendanceRecords.map((record) => {
@@ -215,7 +228,7 @@ export async function recordAttendance(attendanceRecords, dateString = null) {
 
 export async function getAttendanceByDate(dateString) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    await requirePermission(PERMISSIONS.ATTENDANCE_VIEW);
     const date = dateAtMidnight(dateString); const nextDay = new Date(date); nextDay.setDate(nextDay.getDate() + 1);
     const rows = await db.select().from(studentAttendance).where(and(gte(studentAttendance.date, date), lt(studentAttendance.date, nextDay)));
     return { success: true, data: serializeRows(rows) };
@@ -228,13 +241,13 @@ async function attendanceStats(studentId) {
 }
 
 export async function getStudentAttendanceReport(studentId) {
-  try { await requirePermission(PERMISSIONS.STUDENTS_VIEW); return { success: true, data: await attendanceStats(objectId(studentId, "student id")) }; }
+  try { await requirePermission(PERMISSIONS.ATTENDANCE_VIEW); return { success: true, data: await attendanceStats(objectId(studentId, "student id")) }; }
   catch (error) { return { success: false, error: getErrorMessage(error) }; }
 }
 
 export async function deleteProgressHistory(entryId) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.PROGRESS_MANAGE);
     const [row] = await db.delete(studentProgresses).where(eq(studentProgresses.id, objectId(entryId, "progress id"))).returning({ id: studentProgresses.id });
     return row ? { success: true } : { success: false, error: "Progress record not found" };
   } catch (error) { return { success: false, error: getErrorMessage(error) }; }
@@ -242,7 +255,7 @@ export async function deleteProgressHistory(entryId) {
 
 export async function getMonthlyFeeStatus(month, year) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    await requirePermission(PERMISSIONS.FEES_VIEW);
     const period = feeSchema.pick({ month: true, year: true }).parse({ month, year });
     const rows = await db.select({ studentId: studentFees.studentId }).from(studentFees).where(and(eq(studentFees.month, period.month), eq(studentFees.year, period.year)));
     return { success: true, data: Object.fromEntries(rows.map((row) => [row.studentId, true])) };
@@ -251,7 +264,7 @@ export async function getMonthlyFeeStatus(month, year) {
 
 export async function recordBulkFeePayments(paymentsData) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.FEES_MANAGE);
     if (!Array.isArray(paymentsData) || !paymentsData.length || paymentsData.length > 500) throw new Error("Invalid payment list");
     const records = paymentsData.map((data) => { const parsed = feeSchema.parse(data); return { studentId: objectId(data.studentId, "student id"), amount: parsed.amount, month: parsed.month, year: parsed.year, notes: parsed.notes, date: new Date(), updatedAt: new Date() }; });
     const ids = [...new Set(records.map((item) => item.studentId))];
@@ -267,31 +280,38 @@ export async function recordBulkFeePayments(paymentsData) {
 
 export async function getStudentProfile(studentId) {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    const current = await requirePermission(PERMISSIONS.STUDENTS_VIEW);
+    const canViewProgress = hasPermission(current.role, PERMISSIONS.PROGRESS_VIEW, current.permissions);
+    const canViewFees = hasPermission(current.role, PERMISSIONS.FEES_VIEW, current.permissions);
+    const canViewAttendance = hasPermission(current.role, PERMISSIONS.ATTENDANCE_VIEW, current.permissions);
     const id = objectId(studentId, "student id");
     const [studentRows, progress, fees, attendance, stats] = await Promise.all([
       db.select({ student: students, teacherName: staff.name, teacherPhone: staff.phone }).from(students).leftJoin(staff, eq(staff.id, students.teacherId)).where(eq(students.id, id)).limit(1),
-      db.select().from(studentProgresses).where(eq(studentProgresses.studentId, id)).orderBy(desc(studentProgresses.date), desc(studentProgresses.createdAt)).limit(100),
-      db.select().from(studentFees).where(eq(studentFees.studentId, id)).orderBy(desc(studentFees.date), desc(studentFees.year)).limit(120),
-      db.select().from(studentAttendance).where(eq(studentAttendance.studentId, id)).orderBy(desc(studentAttendance.date)).limit(365),
-      attendanceStats(id),
+      canViewProgress ? db.select().from(studentProgresses).where(eq(studentProgresses.studentId, id)).orderBy(desc(studentProgresses.date), desc(studentProgresses.createdAt)).limit(100) : Promise.resolve([]),
+      canViewFees ? db.select().from(studentFees).where(eq(studentFees.studentId, id)).orderBy(desc(studentFees.date), desc(studentFees.year)).limit(120) : Promise.resolve([]),
+      canViewAttendance ? db.select().from(studentAttendance).where(eq(studentAttendance.studentId, id)).orderBy(desc(studentAttendance.date)).limit(365) : Promise.resolve([]),
+      canViewAttendance ? attendanceStats(id) : Promise.resolve({ present: 0, absent: 0, late: 0, leave: 0 }),
     ]);
     if (!studentRows[0]) return { success: false, error: "Student not found" };
     const student = {
       ...studentRows[0].student,
+      currentProgress: canViewProgress ? studentRows[0].student.currentProgress : {},
+      monthlyFee: canViewFees ? studentRows[0].student.monthlyFee : null,
+      feeStatus: canViewFees ? studentRows[0].student.feeStatus : null,
+      lastFeePaid: canViewFees ? studentRows[0].student.lastFeePaid : null,
       documents: Array.isArray(studentRows[0].student.documents) ? studentRows[0].student.documents : [],
       teacherName: studentRows[0].teacherName,
       teacherPhone: studentRows[0].teacherPhone,
     };
     const totalAttendance = Object.values(stats).reduce((sum, value) => sum + value, 0);
     const paidTotal = fees.reduce((sum, fee) => sum + Number(fee.amount || 0), 0);
-    return { success: true, data: { student: serializeRow(student), progress: serializeRows(progress), fees: serializeRows(fees), attendance: serializeRows(attendance), summary: { attendance: stats, attendanceRate: totalAttendance ? Math.round(((stats.present + stats.late) / totalAttendance) * 100) : 0, totalAttendance, paidTotal, paidMonths: fees.length, currentDue: student.feeStatus === "Unpaid" ? Number(student.monthlyFee || 0) : 0 } } };
+    return { success: true, data: { student: serializeRow(student), progress: serializeRows(progress), fees: serializeRows(fees), attendance: serializeRows(attendance), summary: { attendance: stats, attendanceRate: totalAttendance ? Math.round(((stats.present + stats.late) / totalAttendance) * 100) : 0, totalAttendance, paidTotal, paidMonths: fees.length, currentDue: canViewFees && student.feeStatus === "Unpaid" ? Number(student.monthlyFee || 0) : 0 } } };
   } catch (error) { console.error("getStudentProfile Error:", error); return { success: false, error: getErrorMessage(error) }; }
 }
 
 export async function recordStudentAttendance(studentId, status, dateString, notes = "") {
   try {
-    await requirePermission(PERMISSIONS.STUDENTS_UPDATE);
+    await requirePermission(PERMISSIONS.ATTENDANCE_MANAGE);
     const parsed = attendanceSchema.parse({ student_id: studentId, status, notes });
     const values = { studentId: objectId(parsed.student_id, "student id"), status: parsed.status, date: dateAtMidnight(dateString), notes: parsed.notes, updatedAt: new Date() };
     await db.insert(studentAttendance).values(values).onConflictDoUpdate({ target: [studentAttendance.studentId, studentAttendance.date], set: values });

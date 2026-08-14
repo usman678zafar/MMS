@@ -71,6 +71,7 @@ export async function POST(request) {
         email: user.email,
         name: user.name,
         role: user.role,
+        permissions: Array.isArray(user.permissions) ? user.permissions : null,
       },
     });
   } catch (error) {

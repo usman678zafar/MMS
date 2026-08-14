@@ -42,6 +42,8 @@ export default function DashboardPage() {
   const { t } = useLanguage();
   const canLoadDashboard =
     !authLoading && Boolean(user) && hasPermission(PERMISSIONS.DASHBOARD_VIEW);
+  const canViewDonations = hasPermission(PERMISSIONS.DONATIONS_VIEW);
+  const canViewExpenses = hasPermission(PERMISSIONS.EXPENSES_VIEW);
   const [stats, setStats] = useState({
     totalDonations: 0,
     totalExpenses: 0,
@@ -127,6 +129,7 @@ export default function DashboardPage() {
       color: "bg-emerald-500",
       trend: "+12%",
       trendUp: true,
+      permission: PERMISSIONS.DONATIONS_VIEW,
     },
     {
       name: t("dashboard", "totalExpenses"),
@@ -135,6 +138,7 @@ export default function DashboardPage() {
       color: "bg-rose-500",
       trend: "+4%",
       trendUp: false,
+      permission: PERMISSIONS.EXPENSES_VIEW,
     },
     {
       name: t("dashboard", "studentsEnrolled"),
@@ -143,6 +147,7 @@ export default function DashboardPage() {
       color: "bg-indigo-500",
       trend: t("dashboard", "active"),
       trendUp: true,
+      permission: PERMISSIONS.STUDENTS_VIEW,
     },
     {
       name: t("dashboard", "feeAccountability"),
@@ -151,6 +156,7 @@ export default function DashboardPage() {
       color: stats.pendingFees > 0 ? "bg-orange-500" : "bg-emerald-500",
       trend: stats.pendingFees > 0 ? t("dashboard", "unpaid") : t("dashboard", "clear"),
       trendUp: stats.pendingFees === 0,
+      permission: PERMISSIONS.FEES_VIEW,
     },
     {
       name: t("dashboard", "activeStaff"),
@@ -159,6 +165,7 @@ export default function DashboardPage() {
       color: "bg-amber-500",
       trend: t("dashboard", "stable"),
       trendUp: true,
+      permission: PERMISSIONS.STAFF_VIEW,
     },
     {
       name: t("dashboard", "inventoryItems"),
@@ -167,6 +174,7 @@ export default function DashboardPage() {
       color: "bg-blue-500",
       trend: t("dashboard", "inStock"),
       trendUp: true,
+      permission: PERMISSIONS.INVENTORY_VIEW,
     },
   ];
 
@@ -184,7 +192,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="data-stage metric-grid grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" data-ready={dataReady} aria-busy={!dataReady}>
-            {cards.map((card) => (
+            {cards.filter((card) => hasPermission(card.permission)).map((card) => (
               <div
                 key={card.name}
                 className="metric-card group p-5"
@@ -215,7 +223,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="data-stage grid grid-cols-1 gap-8 lg:grid-cols-2" data-ready={dataReady} aria-busy={!dataReady}>
-            <div className="surface-card rounded-2xl p-4 sm:p-6">
+            {(canViewDonations || canViewExpenses) && <div className="surface-card rounded-2xl p-4 sm:p-6">
               <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 text-lg">
@@ -231,23 +239,23 @@ export default function DashboardPage() {
               </div>
 
               <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-xl bg-emerald-50/60 p-3">
+                {canViewDonations && <div className="rounded-xl bg-emerald-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">
                     {t("dashboard", "donations")}
                   </p>
                   <p dir="ltr" className="mt-1 text-base font-extrabold text-slate-900">
                     {formatCurrency(financeSummary.donations)}
                   </p>
-                </div>
-                <div className="rounded-xl bg-rose-50/60 p-3">
+                </div>}
+                {canViewExpenses && <div className="rounded-xl bg-rose-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-rose-700">
                     {t("dashboard", "expenses")}
                   </p>
                   <p dir="ltr" className="mt-1 text-base font-extrabold text-slate-900">
                     {formatCurrency(financeSummary.expenses)}
                   </p>
-                </div>
-                <div
+                </div>}
+                {canViewDonations && canViewExpenses && <div
                   className={`rounded-xl p-3 ${
                     netBalance >= 0
                       ? "bg-blue-50/60"
@@ -264,7 +272,7 @@ export default function DashboardPage() {
                   <p dir="ltr" className="mt-1 text-base font-extrabold text-slate-900">
                     {formatCurrency(netBalance)}
                   </p>
-                </div>
+                </div>}
               </div>
 
               <div dir="ltr" className="h-56 sm:h-64">
@@ -313,25 +321,25 @@ export default function DashboardPage() {
                         wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }}
                         formatter={(value) => financialSeriesLabels[value] || value}
                       />
-                      <Bar
+                      {canViewDonations && <Bar
                         dataKey="donations"
                         fill="#10b981"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={28}
-                      />
-                      <Bar
+                      />}
+                      {canViewExpenses && <Bar
                         dataKey="expenses"
                         fill="#f43f5e"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={28}
-                      />
+                      />}
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </div>
-            </div>
+            </div>}
 
-            <div className="surface-card rounded-2xl p-4 sm:p-6">
+            {canViewDonations && <div className="surface-card rounded-2xl p-4 sm:p-6">
               <h3 className="font-bold text-slate-900 text-lg mb-6">
                 {t("dashboard", "recentActivity")}
               </h3>
@@ -371,7 +379,7 @@ export default function DashboardPage() {
               >
                 {t("dashboard", "viewAllActivity")}
               </Link>
-            </div>
+            </div>}
           </div>
         </div>
       </ProtectedRoute>

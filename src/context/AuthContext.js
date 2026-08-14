@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }) => {
           full_name: data.user.name,
           email: data.user.email,
           role: data.user.role,
+          permissions: data.user.permissions,
         });
       } else {
         setUser(null);
@@ -51,7 +52,7 @@ export const AuthProvider = ({ children }) => {
   }, [refreshAuth]);
 
   const checkPermission = (permission) => {
-    return hasPermission(profile?.role, permission);
+    return hasPermission(profile?.role, permission, profile?.permissions);
   };
 
   const signOut = async () => {

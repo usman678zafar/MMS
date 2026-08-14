@@ -29,6 +29,7 @@ import { format } from "date-fns";
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 const ROLES = [
   "Imam",
@@ -55,6 +56,10 @@ const defaultForm = {
 
 export default function StaffPage() {
   const { t } = useLanguage();
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission(PERMISSIONS.STAFF_CREATE);
+  const canUpdate = hasPermission(PERMISSIONS.STAFF_UPDATE);
+  const canDelete = hasPermission(PERMISSIONS.STAFF_DELETE);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -170,7 +175,7 @@ export default function StaffPage() {
                 {t("staff", "subtitle")}
               </p>
             </div>
-            <button
+            {canCreate && <button
               onClick={() => {
                 setEditingId(null);
                 setNewStaff(defaultForm);
@@ -180,7 +185,7 @@ export default function StaffPage() {
             >
               <Plus className="h-4 w-4 mr-2" />
               {t("staff", "add")}
-            </button>
+            </button>}
           </div>
 
           {/* Stats Bar */}
@@ -335,20 +340,20 @@ export default function StaffPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button
+                            {canUpdate && <button
                               onClick={() => handleOpenEdit(member)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                               title={t("staff", "edit")}
                             >
                               <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
+                            </button>}
+                            {canDelete && <button
                               onClick={() => setDeleteId(member.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                               title={t("staff", "delete")}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>

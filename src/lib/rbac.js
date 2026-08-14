@@ -28,6 +28,18 @@ export const PERMISSIONS = {
   STUDENTS_UPDATE: "students_update",
   STUDENTS_DELETE: "students_delete",
 
+  // Student progress
+  PROGRESS_VIEW: "progress_view",
+  PROGRESS_MANAGE: "progress_manage",
+
+  // Student fees
+  FEES_VIEW: "fees_view",
+  FEES_MANAGE: "fees_manage",
+
+  // Student attendance
+  ATTENDANCE_VIEW: "attendance_view",
+  ATTENDANCE_MANAGE: "attendance_manage",
+
   // Donors
   DONORS_VIEW: "donors_view",
   DONORS_CREATE: "donors_create",
@@ -74,6 +86,12 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.STUDENTS_CREATE,
     PERMISSIONS.STUDENTS_UPDATE,
     PERMISSIONS.STUDENTS_DELETE,
+    PERMISSIONS.PROGRESS_VIEW,
+    PERMISSIONS.PROGRESS_MANAGE,
+    PERMISSIONS.FEES_VIEW,
+    PERMISSIONS.FEES_MANAGE,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.ATTENDANCE_MANAGE,
     PERMISSIONS.DONORS_VIEW,
     PERMISSIONS.DONORS_CREATE,
     PERMISSIONS.DONORS_UPDATE,
@@ -115,6 +133,12 @@ export const ROLE_PERMISSIONS = {
     PERMISSIONS.STUDENTS_CREATE,
     PERMISSIONS.STUDENTS_UPDATE,
     PERMISSIONS.STUDENTS_DELETE,
+    PERMISSIONS.PROGRESS_VIEW,
+    PERMISSIONS.PROGRESS_MANAGE,
+    PERMISSIONS.FEES_VIEW,
+    PERMISSIONS.FEES_MANAGE,
+    PERMISSIONS.ATTENDANCE_VIEW,
+    PERMISSIONS.ATTENDANCE_MANAGE,
     PERMISSIONS.STAFF_VIEW,
     PERMISSIONS.STAFF_CREATE,
     PERMISSIONS.STAFF_UPDATE,
@@ -132,20 +156,44 @@ export const ROLE_PERMISSIONS = {
   [ROLES.VIEWER]: [PERMISSIONS.DASHBOARD_VIEW],
 };
 
-export const hasPermission = (userRole, permission) => {
+export const hasPermission = (userRole, permission, customPermissions = null) => {
   if (!userRole || !permission) return false;
+  if (userRole === ROLES.SUPER_ADMIN) return true;
+  if (Array.isArray(customPermissions)) {
+    return customPermissions.includes(permission);
+  }
   return ROLE_PERMISSIONS[userRole]?.includes(permission) || false;
 };
 
-export const hasAnyPermission = (userRole, permissions) => {
+export const hasAnyPermission = (userRole, permissions, customPermissions = null) => {
   if (!userRole || !permissions || !Array.isArray(permissions)) return false;
-  return permissions.some((permission) => hasPermission(userRole, permission));
+  return permissions.some((permission) => hasPermission(userRole, permission, customPermissions));
 };
 
-export const hasAllPermissions = (userRole, permissions) => {
+export const hasAllPermissions = (userRole, permissions, customPermissions = null) => {
   if (!userRole || !permissions || !Array.isArray(permissions)) return false;
-  return permissions.every((permission) => hasPermission(userRole, permission));
+  return permissions.every((permission) => hasPermission(userRole, permission, customPermissions));
 };
+
+export const getEffectivePermissions = (userRole, customPermissions = null) => {
+  if (userRole === ROLES.SUPER_ADMIN) return [...ROLE_PERMISSIONS[ROLES.SUPER_ADMIN]];
+  return Array.isArray(customPermissions)
+    ? customPermissions.filter((permission) => Object.values(PERMISSIONS).includes(permission))
+    : [...(ROLE_PERMISSIONS[userRole] || [])];
+};
+
+export const PERMISSION_GROUPS = [
+  { key: "dashboard", view: [PERMISSIONS.DASHBOARD_VIEW], manage: [] },
+  { key: "students", view: [PERMISSIONS.STUDENTS_VIEW], manage: [PERMISSIONS.STUDENTS_CREATE, PERMISSIONS.STUDENTS_UPDATE, PERMISSIONS.STUDENTS_DELETE] },
+  { key: "progress", view: [PERMISSIONS.PROGRESS_VIEW], manage: [PERMISSIONS.PROGRESS_MANAGE], requiresStudents: true },
+  { key: "fees", view: [PERMISSIONS.FEES_VIEW], manage: [PERMISSIONS.FEES_MANAGE], requiresStudents: true },
+  { key: "attendance", view: [PERMISSIONS.ATTENDANCE_VIEW], manage: [PERMISSIONS.ATTENDANCE_MANAGE], requiresStudents: true },
+  { key: "donations", view: [PERMISSIONS.DONATIONS_VIEW, PERMISSIONS.DONORS_VIEW], manage: [PERMISSIONS.DONATIONS_CREATE, PERMISSIONS.DONATIONS_UPDATE, PERMISSIONS.DONATIONS_DELETE, PERMISSIONS.DONORS_CREATE, PERMISSIONS.DONORS_UPDATE, PERMISSIONS.DONORS_DELETE] },
+  { key: "expenses", view: [PERMISSIONS.EXPENSES_VIEW], manage: [PERMISSIONS.EXPENSES_CREATE, PERMISSIONS.EXPENSES_UPDATE, PERMISSIONS.EXPENSES_DELETE] },
+  { key: "staff", view: [PERMISSIONS.STAFF_VIEW], manage: [PERMISSIONS.STAFF_CREATE, PERMISSIONS.STAFF_UPDATE, PERMISSIONS.STAFF_DELETE] },
+  { key: "inventory", view: [PERMISSIONS.INVENTORY_VIEW], manage: [PERMISSIONS.INVENTORY_CREATE, PERMISSIONS.INVENTORY_UPDATE, PERMISSIONS.INVENTORY_DELETE] },
+  { key: "users", view: [PERMISSIONS.USERS_VIEW], manage: [PERMISSIONS.USERS_CREATE, PERMISSIONS.USERS_UPDATE, PERMISSIONS.USERS_DELETE] },
+];
 
 export const getRoleLevel = (role) => {
   return ROLE_HIERARCHY[role] || 0;

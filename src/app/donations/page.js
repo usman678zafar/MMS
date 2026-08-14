@@ -45,6 +45,7 @@ import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { format } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 const DONATION_TYPES = ["Sadqah", "Zakat", "Fitra", "Hadiya", "Other"];
 const TYPE_KEYS = {
@@ -62,6 +63,13 @@ const defaultForm = {
 
 export default function DonationsPage() {
   const { t } = useLanguage();
+  const { hasPermission } = useAuth();
+  const canCreateDonation = hasPermission(PERMISSIONS.DONATIONS_CREATE);
+  const canUpdateDonation = hasPermission(PERMISSIONS.DONATIONS_UPDATE);
+  const canDeleteDonation = hasPermission(PERMISSIONS.DONATIONS_DELETE);
+  const canCreateDonor = hasPermission(PERMISSIONS.DONORS_CREATE);
+  const canUpdateDonor = hasPermission(PERMISSIONS.DONORS_UPDATE);
+  const canDeleteDonor = hasPermission(PERMISSIONS.DONORS_DELETE);
   const [activeTab, setActiveTab] = useState("donations"); // 'donations' | 'donors'
 
   useEffect(() => {
@@ -370,7 +378,8 @@ export default function DonationsPage() {
               </p>
             </div>
             <div className="flex gap-2 sm:w-auto">
-              <button
+              {((activeTab === "donations" && canCreateDonation) ||
+                (activeTab === "donors" && canCreateDonor)) && <button
                 onClick={() => {
                   if (activeTab === "donations") {
                     setEditingId(null);
@@ -392,7 +401,7 @@ export default function DonationsPage() {
               >
                 <Plus className="h-4 w-4 mr-2" />
                 {activeTab === "donations" ? t("donations", "addDonation") : t("donations", "addDonor")}
-              </button>
+              </button>}
             </div>
           </div>
 
@@ -641,20 +650,20 @@ export default function DonationsPage() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <button
+                              {canUpdateDonation && <button
                                 onClick={() => handleOpenEdit(d)}
                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                 title={t("donations", "editDonation")}
                               >
                                 <Edit2 className="h-4 w-4" />
-                              </button>
-                              <button
+                              </button>}
+                              {canDeleteDonation && <button
                                 onClick={() => setDeleteId(d.id)}
                                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                                 title={t("donations", "deleteDonation")}
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </button>
+                              </button>}
                             </div>
                           </td>
                         </tr>
@@ -728,7 +737,7 @@ export default function DonationsPage() {
                             {donor.email || t("common", "notAvailable")}
                           </td>
                           <td className="px-6 py-4">
-                            <button
+                            {canUpdateDonor ? <button
                               onClick={() =>
                                 handleToggleDonorStatus(
                                   donor.id,
@@ -744,24 +753,28 @@ export default function DonationsPage() {
                               {donor.is_active !== false
                                 ? t("common", "active")
                                 : t("common", "inactive")}
-                            </button>
+                            </button> : (
+                              <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${donor.is_active !== false ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-slate-100 bg-slate-50 text-slate-400"}`}>
+                                {donor.is_active !== false ? t("common", "active") : t("common", "inactive")}
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <button
+                              {canUpdateDonor && <button
                                 onClick={() => handleViewHistory(donor)}
                                 className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
                                 title={t("donations", "viewHistory")}
                               >
                                 <History className="h-4 w-4" />
-                              </button>
-                              <button
+                              </button>}
+                              {canDeleteDonor && <button
                                 onClick={() => handleOpenDonorEdit(donor)}
                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                 title={t("donations", "editDonor")}
                               >
                                 <Edit2 className="h-4 w-4" />
-                              </button>
+                              </button>}
                               <button
                                 onClick={() => setDeleteDonorId(donor.id)}
                                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"

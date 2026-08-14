@@ -27,14 +27,38 @@ import {
   deleteUser,
   toggleUserStatus,
 } from "./actions";
-import { PERMISSIONS, ROLES } from "@/lib/rbac";
+import { canAccessRole, getEffectivePermissions, PERMISSION_GROUPS, PERMISSIONS, ROLE_PERMISSIONS, ROLES } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
-const defaultForm = { name: "", email: "", role: "viewer", password: "" };
+const createDefaultForm = (role = ROLES.VIEWER) => ({
+  name: "",
+  email: "",
+  role,
+  password: "",
+  permissions: [...(ROLE_PERMISSIONS[role] || [])],
+});
+
+const ACCESS_LABEL_KEYS = {
+  dashboard: "accessDashboard",
+  students: "accessStudents",
+  progress: "accessProgress",
+  fees: "accessFees",
+  attendance: "accessAttendance",
+  donations: "accessDonations",
+  expenses: "accessExpenses",
+  staff: "accessStaff",
+  inventory: "accessInventory",
+  users: "accessUsers",
+};
 
 export default function UsersPage() {
   const { t } = useLanguage();
+  const { profile, hasPermission } = useAuth();
+  const canCreate = hasPermission(PERMISSIONS.USERS_CREATE);
+  const canUpdate = hasPermission(PERMISSIONS.USERS_UPDATE);
+  const canDelete = hasPermission(PERMISSIONS.USERS_DELETE);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -46,7 +70,7 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [newUser, setNewUser] = useState(defaultForm);
+  const [newUser, setNewUser] = useState(createDefaultForm());
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -93,7 +117,7 @@ export default function UsersPage() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setNewUser(defaultForm);
+    setNewUser(createDefaultForm());
     setEditingId(null);
   };
 
@@ -103,6 +127,9 @@ export default function UsersPage() {
       email: user.email,
       role: user.role,
       password: "",
+      permissions: Array.isArray(user.permissions)
+        ? [...user.permissions]
+        : [...(ROLE_PERMISSIONS[user.role] || [])],
     });
     setEditingId(user.id);
     setShowModal(true);
@@ -137,6 +164,45 @@ export default function UsersPage() {
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const availablePermissions = new Set(
+    getEffectivePermissions(profile?.role, profile?.permissions),
+  );
+
+  const changeRole = (role) => {
+    setNewUser((current) => ({
+      ...current,
+      role,
+      permissions: [...(ROLE_PERMISSIONS[role] || [])],
+    }));
+  };
+
+  const hasGroupAccess = (permissions) =>
+    permissions.length > 0 &&
+    permissions.every((permission) => newUser.permissions.includes(permission));
+
+  const toggleGroupAccess = (group, type, enabled) => {
+    const next = new Set(newUser.permissions);
+    const selected = type === "manage" ? group.manage : group.view;
+
+    if (enabled) {
+      [...group.view, ...(type === "manage" ? group.manage : [])].forEach((permission) => next.add(permission));
+      if (group.requiresStudents) next.add(PERMISSIONS.STUDENTS_VIEW);
+    } else {
+      selected.forEach((permission) => next.delete(permission));
+      if (type === "view") group.manage.forEach((permission) => next.delete(permission));
+      if (group.key === "students") {
+        PERMISSION_GROUPS.filter((item) => item.requiresStudents).forEach((item) =>
+          [...item.view, ...item.manage].forEach((permission) => next.delete(permission)),
+        );
+      }
+    }
+
+    setNewUser((current) => ({
+      ...current,
+      permissions: Object.values(PERMISSIONS).filter((permission) => next.has(permission)),
+    }));
   };
 
   const active = users.filter((u) => u.is_active !== false).length;
@@ -194,17 +260,17 @@ export default function UsersPage() {
                 {t("users", "subtitle")}
               </p>
             </div>
-            <button
+            {canCreate && <button
               onClick={() => {
                 setEditingId(null);
-                setNewUser(defaultForm);
+                setNewUser(createDefaultForm());
                 setShowModal(true);
               }}
               className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
               {t("users", "add")}
-            </button>
+            </button>}
           </div>
 
           {/* Stats Bar */}
@@ -329,7 +395,7 @@ export default function UsersPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <button
+                          {canUpdate ? <button
                             onClick={() => handleToggleStatus(user.id)}
                             className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
                               user.is_active
@@ -339,7 +405,11 @@ export default function UsersPage() {
                             title={t("users", "toggleStatus")}
                           >
                             {user.is_active ? t("common", "active") : t("common", "inactive")}
-                          </button>
+                          </button> : (
+                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${user.is_active ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-slate-100 bg-slate-50 text-slate-400"}`}>
+                              {user.is_active ? t("common", "active") : t("common", "inactive")}
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {user.created_at
@@ -348,20 +418,20 @@ export default function UsersPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button
+                            {canUpdate && <button
                               onClick={() => handleEdit(user)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                               title={t("users", "edit")}
                             >
                               <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
+                            </button>}
+                            {canDelete && <button
                               onClick={() => setDeleteId(user.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                               title={t("users", "delete")}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>
@@ -425,21 +495,111 @@ export default function UsersPage() {
                   </label>
                   <select
                     value={newUser.role}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, role: e.target.value })
-                    }
+                    onChange={(e) => changeRole(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-primary-500 outline-none"
                   >
-                    <option value={ROLES.VIEWER}>{t("options", "viewer")}</option>
-                    <option value={ROLES.INVENTORY_MANAGER}>
-                      {t("options", "inventoryManager")}
-                    </option>
-                    <option value={ROLES.TEACHER}>{t("options", "teacher")}</option>
-                    <option value={ROLES.ACCOUNTANT}>{t("options", "accountant")}</option>
-                    <option value={ROLES.ADMIN}>{t("options", "admin")}</option>
-                    <option value={ROLES.SUPER_ADMIN}>{t("options", "superAdmin")}</option>
+                    {[
+                      [ROLES.VIEWER, "viewer"],
+                      [ROLES.INVENTORY_MANAGER, "inventoryManager"],
+                      [ROLES.TEACHER, "teacher"],
+                      [ROLES.ACCOUNTANT, "accountant"],
+                      [ROLES.ADMIN, "admin"],
+                      [ROLES.SUPER_ADMIN, "superAdmin"],
+                    ].filter(([role]) => canAccessRole(profile?.role, role)).map(([role, label]) => (
+                      <option key={role} value={role}>{t("options", label)}</option>
+                    ))}
                   </select>
                 </div>
+
+                <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <legend className="text-sm font-bold text-slate-800">
+                        {t("users", "permissions")}
+                      </legend>
+                      <p className="mt-1 max-w-md text-xs leading-5 text-slate-500">
+                        {newUser.role === ROLES.SUPER_ADMIN
+                          ? t("users", "fullAccessNotice")
+                          : t("users", "permissionsHint")}
+                      </p>
+                    </div>
+                    {newUser.role !== ROLES.SUPER_ADMIN && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewUser((current) => ({
+                            ...current,
+                            permissions: [...(ROLE_PERMISSIONS[current.role] || [])],
+                          }))
+                        }
+                        className="shrink-0 text-xs font-bold text-primary-700 hover:text-primary-900"
+                      >
+                        {t("users", "roleDefaults")}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                    <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] items-center border-b border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      <span>{t("users", "permissions")}</span>
+                      <span className="text-center">{t("users", "viewAccess")}</span>
+                      <span className="text-center">{t("users", "manageAccess")}</span>
+                    </div>
+                    {PERMISSION_GROUPS.map((group) => {
+                      const viewDisabled =
+                        newUser.role === ROLES.SUPER_ADMIN ||
+                        !group.view.every((permission) => availablePermissions.has(permission));
+                      const manageDisabled =
+                        newUser.role === ROLES.SUPER_ADMIN ||
+                        ![...group.view, ...group.manage].every((permission) =>
+                          availablePermissions.has(permission),
+                        );
+
+                      return (
+                        <div
+                          key={group.key}
+                          className="grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] items-center border-b border-slate-100 px-3 py-2.5 last:border-0"
+                        >
+                          <span className="truncate text-xs font-semibold text-slate-700">
+                            {t("users", ACCESS_LABEL_KEYS[group.key])}
+                          </span>
+                          <label className="flex justify-center">
+                            <input
+                              type="checkbox"
+                              checked={
+                                newUser.role === ROLES.SUPER_ADMIN ||
+                                hasGroupAccess(group.view)
+                              }
+                              disabled={viewDisabled}
+                              onChange={(event) =>
+                                toggleGroupAccess(group, "view", event.target.checked)
+                              }
+                              className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-40"
+                            />
+                          </label>
+                          <label className="flex justify-center">
+                            {group.manage.length > 0 ? (
+                              <input
+                                type="checkbox"
+                                checked={
+                                  newUser.role === ROLES.SUPER_ADMIN ||
+                                  hasGroupAccess(group.manage)
+                                }
+                                disabled={manageDisabled}
+                                onChange={(event) =>
+                                  toggleGroupAccess(group, "manage", event.target.checked)
+                                }
+                                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-40"
+                              />
+                            ) : (
+                              <span className="text-xs text-slate-300">—</span>
+                            )}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </fieldset>
 
                 {!editingId && (
                   <div>

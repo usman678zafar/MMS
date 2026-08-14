@@ -30,6 +30,7 @@ const sanitizeUser = (user) => ({
   email: user.email,
   name: user.name,
   role: user.role,
+  permissions: Array.isArray(user.permissions) ? user.permissions : null,
   is_active: user.isActive !== false,
 });
 
@@ -80,6 +81,7 @@ export async function getCurrentUser() {
       email: users.email,
       name: users.name,
       role: users.role,
+      permissions: users.permissions,
       isActive: users.isActive,
     })
     .from(sessions)
@@ -104,7 +106,7 @@ export async function requireUser() {
 
 export async function requirePermission(permission) {
   const user = await requireUser();
-  if (!hasPermission(user.role, permission)) {
+  if (!hasPermission(user.role, permission, user.permissions)) {
     throw new Error("Forbidden");
   }
   return user;

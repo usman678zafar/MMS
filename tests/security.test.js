@@ -20,6 +20,17 @@ describe("role permissions", () => {
     expect(hasPermission(ROLES.VIEWER, PERMISSIONS.STUDENTS_UPDATE)).toBe(false);
     expect(hasPermission(ROLES.VIEWER, PERMISSIONS.USERS_CREATE)).toBe(false);
   });
+
+  it("uses an explicit permission list instead of the role defaults", () => {
+    const permissions = [PERMISSIONS.STUDENTS_VIEW, PERMISSIONS.ATTENDANCE_VIEW];
+    expect(hasPermission(ROLES.ADMIN, PERMISSIONS.ATTENDANCE_VIEW, permissions)).toBe(true);
+    expect(hasPermission(ROLES.ADMIN, PERMISSIONS.FEES_VIEW, permissions)).toBe(false);
+    expect(hasPermission(ROLES.ADMIN, PERMISSIONS.STUDENTS_DELETE, [])).toBe(false);
+  });
+
+  it("never restricts a super admin with an override", () => {
+    expect(hasPermission(ROLES.SUPER_ADMIN, PERMISSIONS.USERS_DELETE, [])).toBe(true);
+  });
 });
 
 describe("input validation", () => {
@@ -31,6 +42,24 @@ describe("input validation", () => {
         password: "short",
         role: "owner",
       }),
+    ).toThrow();
+  });
+
+  it("rejects unknown permission values and removes duplicates", () => {
+    const base = {
+      name: "Permission Test",
+      email: "permission@example.com",
+      password: "strong-password",
+      role: ROLES.VIEWER,
+    };
+    expect(
+      userCreateSchema.parse({
+        ...base,
+        permissions: [PERMISSIONS.STUDENTS_VIEW, PERMISSIONS.STUDENTS_VIEW],
+      }).permissions,
+    ).toEqual([PERMISSIONS.STUDENTS_VIEW]);
+    expect(() =>
+      userCreateSchema.parse({ ...base, permissions: ["database_owner"] }),
     ).toThrow();
   });
 

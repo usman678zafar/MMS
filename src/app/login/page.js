@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 
 function PostLoginLoading() {
   return (
-    <main className="flex min-h-svh items-center justify-center bg-[#f7faf8] px-5 py-10">
+    <main dir="ltr" className="flex min-h-svh items-center justify-center bg-[#f7faf8] px-5 py-10 text-left">
       <div className="w-full max-w-md px-6 py-9 text-center sm:px-10 sm:py-11" role="status" aria-live="polite">
         <div className="relative mx-auto h-32 w-32">
           <span className="loading-logo-ring absolute inset-0 rounded-full border-2 border-transparent border-t-primary-700 border-r-primary-200" aria-hidden="true" />
@@ -90,7 +90,7 @@ export default function Login() {
   if (user) return null;
 
   return (
-    <main className="min-h-svh bg-[#f7faf8] lg:grid lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,0.88fr)]">
+    <main dir="ltr" className="min-h-svh bg-[#f7faf8] text-left lg:grid lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,0.88fr)]">
       <section className="relative hidden min-h-svh overflow-hidden border-r border-slate-200 lg:block">
         <Image
           src="/images/islamic-courtyard-login.png"

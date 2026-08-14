@@ -28,6 +28,7 @@ import {
 import { PERMISSIONS } from "@/lib/rbac";
 import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 
 const CATEGORIES = [
   "Utilities",
@@ -45,6 +46,10 @@ const CATEGORY_KEYS = {
 
 export default function ExpensesPage() {
   const { t } = useLanguage();
+  const { hasPermission } = useAuth();
+  const canCreate = hasPermission(PERMISSIONS.EXPENSES_CREATE);
+  const canUpdate = hasPermission(PERMISSIONS.EXPENSES_UPDATE);
+  const canDelete = hasPermission(PERMISSIONS.EXPENSES_DELETE);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -173,7 +178,7 @@ export default function ExpensesPage() {
               <h2 className="text-2xl font-bold text-slate-900">{t("expenses", "title")}</h2>
               <p className="text-slate-500">{t("expenses", "subtitle")}</p>
             </div>
-            <button
+            {canCreate && <button
               onClick={() => {
                 setEditingId(null);
                 setNewExpense({
@@ -188,7 +193,7 @@ export default function ExpensesPage() {
             >
               <Plus className="h-4 w-4 mr-2" />
               {t("expenses", "record")}
-            </button>
+            </button>}
           </div>
 
           {/* Stats Bar */}
@@ -329,20 +334,20 @@ export default function ExpensesPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button
+                            {canUpdate && <button
                               onClick={() => handleOpenEdit(e)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                               title={t("expenses", "edit")}
                             >
                               <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
+                            </button>}
+                            {canDelete && <button
                               onClick={() => setDeleteId(e.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                               title={t("expenses", "delete")}
                             >
                               <Trash2 className="h-4 w-4" />
-                            </button>
+                            </button>}
                           </div>
                         </td>
                       </tr>
