@@ -3,6 +3,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { PERMISSIONS } from "@/lib/rbac";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function ProtectedRoute({
   children,
@@ -10,6 +11,7 @@ export default function ProtectedRoute({
   fallbackPath = "/dashboard",
 }) {
   const { profile, loading, hasPermission } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -44,10 +46,10 @@ export default function ProtectedRoute({
       <div className="h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            Access Denied
+            {t("common", "accessDenied")}
           </h2>
           <p className="text-slate-600">
-            You don&apos;t have permission to access this page.
+            {t("common", "noPermission")}
           </p>
         </div>
       </div>

@@ -387,6 +387,12 @@ const CONTEMPORARY_CLASSES = [
   "None",
 ];
 const GENDERS = ["Male", "Female"];
+const OPTION_KEYS = {
+  Hifz: "hifz", Nazra: "nazra", Qaida: "qaida", Girdan: "girdan", None: "none",
+  Nursery: "nursery", KG: "kindergarten", "Class 1": "class1", "Class 2": "class2",
+  "Class 3": "class3", "Class 4": "class4", "Class 5": "class5", Male: "male", Female: "female",
+};
+const ATTENDANCE_KEYS = { Present: "present", Absent: "absent", Late: "late", Leave: "leave" };
 const MONTHS = [
   "January",
   "February",
@@ -913,7 +919,7 @@ export default function StudentsPage() {
                       {students.length}
                     </p>
                     <p className="text-xs text-slate-500 mt-1 font-medium">
-                      Total Enrolled
+                      {t("students", "totalEnrolled")}
                     </p>
                   </div>
                   <div className="metric-card p-4 text-center">
@@ -921,7 +927,7 @@ export default function StudentsPage() {
                       {students.filter((s) => s.is_active !== false).length}
                     </p>
                     <p className="text-xs text-slate-500 mt-1 font-medium">
-                      Active
+                      {t("common", "active")}
                     </p>
                   </div>
                   <div className="metric-card p-4 text-center">
@@ -929,7 +935,7 @@ export default function StudentsPage() {
                       {students.filter((s) => s.is_active === false).length}
                     </p>
                     <p className="text-xs text-slate-500 mt-1 font-medium">
-                      Inactive
+                      {t("common", "inactive")}
                     </p>
                   </div>
                   <div className="metric-card p-4 text-center">
@@ -937,7 +943,7 @@ export default function StudentsPage() {
                       {students.filter((student) => !hasCurrentMonthProgress(student)).length}
                     </p>
                     <p className="text-xs text-slate-500 mt-1 font-medium">
-                      Pending Progress
+                      {t("students", "pendingProgress")}
                     </p>
                   </div>
                 </div>
@@ -967,7 +973,7 @@ export default function StudentsPage() {
                           : "text-slate-500 hover:bg-slate-50"
                       }`}
                     >
-                      All
+                      {t("students", "all")}
                     </button>
                     {RELIGIOUS_CLASSES.filter(c => c !== "None").map((c) => (
                       <button
@@ -979,7 +985,7 @@ export default function StudentsPage() {
                             : "text-slate-500 hover:bg-slate-50"
                         }`}
                       >
-                        {c}
+                        {t("options", OPTION_KEYS[c])}
                       </button>
                     ))}
                   </div>
@@ -1027,10 +1033,10 @@ export default function StudentsPage() {
                           <td colSpan="7" className="px-6 py-12 text-center">
                             <GraduationCap className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                             <p className="text-slate-400 text-lg font-medium">
-                              No students found
+                              {t("students", "empty")}
                             </p>
                             <p className="text-slate-400 text-sm mt-1">
-                              Enroll your first student to get started
+                              {t("students", "emptyHint")}
                             </p>
                           </td>
                         </tr>
@@ -1051,23 +1057,23 @@ export default function StudentsPage() {
                                     {student.name}
                                   </Link>
                                   <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                                    {student.gender || "Male"} ·{" "}
+                                    {student.gender === "Female" ? t("students", "female") : t("students", "male")} ·{" "}
                                     {student.admission_date
                                       ? format(
                                           new Date(student.admission_date),
                                           "MMM yyyy",
                                         )
-                                      : "N/A"}
+                                      : t("common", "notAvailable")}
                                   </p>
                                   <p className="student-laptop-meta truncate text-[10px] font-medium text-slate-500">
-                                    Father: {student.father_name || "N/A"}
+                                    {t("students", "father")}: {student.father_name || t("common", "notAvailable")}
                                   </p>
                                 </div>
                               </div>
                             </td>
                             <td className="student-father-column px-6 py-4">
                               <span className="text-sm font-semibold text-slate-700">
-                                {student.father_name || "N/A"}
+                                {student.father_name || t("common", "notAvailable")}
                               </span>
                             </td>
                             <td className="student-education-column px-6 py-4">
@@ -1077,25 +1083,25 @@ export default function StudentsPage() {
                                   <span className="text-xs font-bold text-slate-700">
                                     {student.religious_class ||
                                       student.class ||
-                                      "N/A"}
+                                      t("common", "notAvailable")}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
                                   <span className="text-[10px] font-semibold text-slate-400">
                                     {student.contemporary_class ||
-                                      "No Schooling"}
+                                      t("students", "noSchooling")}
                                   </span>
                                 </div>
                                 <div className="student-laptop-meta mt-0.5 truncate text-[10px] font-semibold text-slate-500">
-                                  Teacher: {student.teacher_name || "Unassigned"}
+                                  {t("students", "teacher")}: {student.teacher_name || t("students", "unassigned")}
                                 </div>
                               </div>
                             </td>
                             <td className="student-teacher-column px-6 py-4 text-sm text-slate-600 font-medium">
                               {student.teacher_name || (
                                 <span className="text-slate-300 italic text-xs">
-                                  Unassigned
+                                  {t("students", "unassigned")}
                                 </span>
                               )}
                             </td>
@@ -1110,8 +1116,8 @@ export default function StudentsPage() {
                                 <span className="text-[10px] text-slate-500 flex flex-col items-start gap-0.5">
                                   <span>
                                     {!student.current_progress?.type || student.current_progress?.type === "Qaida"
-                                      ? "Progressing"
-                                      : `${PARA_NAMES[student.current_progress?.para || 1]} (${student.current_progress?.para || 1})${student.current_progress?.ayat ? ` · Ayat ${student.current_progress.ayat}` : ""}`}
+                                      ? t("students", "progressing")
+                                      : `${PARA_NAMES[student.current_progress?.para || 1]} (${student.current_progress?.para || 1})${student.current_progress?.ayat ? ` · ${t("students", "ayat")} ${student.current_progress.ayat}` : ""}`}
                                   </span>
                                   <span className={`text-[9px] font-bold uppercase tracking-tighter flex items-center gap-1 ${
                                     !hasCurrentMonthProgress(student)
@@ -1119,8 +1125,8 @@ export default function StudentsPage() {
                                     : "text-emerald-500"
                                   }`}>
                                     {parseLegacyDate(student.current_progress?.last_updated)
-                                      ? `Last Update: ${format(parseLegacyDate(student.current_progress.last_updated), "MMM dd")}`
-                                      : "No Update This Month"}
+                                      ? `${t("students", "lastUpdate")}: ${format(parseLegacyDate(student.current_progress.last_updated), "MMM dd")}`
+                                      : t("students", "noUpdateThisMonth")}
                                     <BookOpen className="h-2 w-2 opacity-50 transition-opacity" />
                                   </span>
                                 </span>
@@ -1148,9 +1154,9 @@ export default function StudentsPage() {
                                 {updatingStatusIds.has(student.id) ? (
                                   <Loader2 className="h-3 w-3 animate-spin" />
                                 ) : student.is_active !== false ? (
-                                  "Active"
+                                  t("common", "active")
                                 ) : (
-                                  "Inactive"
+                                  t("common", "inactive")
                                 )}
                               </button>
                             </td>
@@ -1159,28 +1165,28 @@ export default function StudentsPage() {
                                 <Link
                                   href={`/students/${student.id}`}
                                   className="rounded-xl p-2 text-slate-400 transition-all hover:bg-primary-50 hover:text-primary-700"
-                                  title="Open Student Profile"
+                                  title={t("students", "openProfile")}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Link>
                                 <button
                                   onClick={() => handleOpenHistory(student)}
                                   className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                                  title="View Progress History"
+                                  title={t("students", "viewProgressHistory")}
                                 >
                                   <Calendar className="h-4 w-4" />
                                 </button>
                                 <button
                                   onClick={() => handleOpenEdit(student)}
                                   className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                  title="Edit Student"
+                                  title={t("students", "editStudent")}
                                 >
                                   <Edit2 className="h-4 w-4" />
                                 </button>
                                 <button
                                   onClick={() => setDeleteId(student.id)}
                                   className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                  title="Delete Student"
+                                  title={t("students", "deleteStudent")}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -1202,8 +1208,8 @@ export default function StudentsPage() {
                   ) : students.length === 0 ? (
                     <div className="px-4 py-10 text-center">
                       <GraduationCap className="mx-auto mb-3 h-10 w-10 text-slate-200" />
-                      <p className="font-semibold text-slate-500">No students found</p>
-                      <p className="mt-1 text-xs text-slate-400">Enroll your first student to get started</p>
+                      <p className="font-semibold text-slate-500">{t("students", "empty")}</p>
+                      <p className="mt-1 text-xs text-slate-400">{t("students", "emptyHint")}</p>
                     </div>
                   ) : (
                     students.map((student) => (
@@ -1217,7 +1223,7 @@ export default function StudentsPage() {
                                   {student.name}
                                 </Link>
                                 <p className="truncate text-[11px] text-slate-500">
-                                  Father: {student.father_name || "N/A"}
+                                  {t("students", "father")}: {student.father_name || t("common", "notAvailable")}
                                 </p>
                               </div>
                               <button
@@ -1229,44 +1235,44 @@ export default function StudentsPage() {
                                     : "border-slate-200 bg-slate-50 text-slate-500"
                                 }`}
                               >
-                                {updatingStatusIds.has(student.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : student.is_active !== false ? "Active" : "Inactive"}
+                                {updatingStatusIds.has(student.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : student.is_active !== false ? t("common", "active") : t("common", "inactive")}
                               </button>
                             </div>
                             <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                              {student.gender || "Male"} · {student.admission_date ? format(new Date(student.admission_date), "MMM yyyy") : "N/A"}
+                              {student.gender === "Female" ? t("students", "female") : t("students", "male")} · {student.admission_date ? format(new Date(student.admission_date), "MMM yyyy") : t("common", "notAvailable")}
                             </p>
                           </div>
                         </div>
 
                         <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2.5">
                           <div className="min-w-0">
-                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Education</p>
-                            <p className="truncate text-xs font-bold text-slate-700">{student.religious_class || student.class || "N/A"}</p>
-                            <p className="truncate text-[10px] text-slate-500">{student.contemporary_class || "No Schooling"}</p>
+                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "education")}</p>
+                            <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.religious_class || student.class] ? t("options", OPTION_KEYS[student.religious_class || student.class]) : t("common", "notAvailable")}</p>
+                            <p className="truncate text-[10px] text-slate-500">{OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("students", "noSchooling")}</p>
                           </div>
                           <div className="min-w-0 border-l border-slate-200 pl-2.5">
-                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Teacher / Qari</p>
-                            <p className="truncate text-xs font-bold text-slate-700">{student.teacher_name || "Unassigned"}</p>
+                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colTeacher")}</p>
+                            <p className="truncate text-xs font-bold text-slate-700">{student.teacher_name || t("students", "unassigned")}</p>
                           </div>
                         </div>
 
                         <button onClick={() => handleOpenProgress(student)} className="mt-2 flex w-full items-center justify-between rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-left">
                           <span>
-                            <span className="block text-[9px] font-bold uppercase tracking-wide text-blue-500">Current progress</span>
+                            <span className="block text-[9px] font-bold uppercase tracking-wide text-blue-500">{t("students", "currentProgress")}</span>
                             <span className="block text-xs font-bold text-blue-700">{student.current_progress?.type || "Qaida"}</span>
                           </span>
                           <span className={`text-right text-[9px] font-bold uppercase ${hasCurrentMonthProgress(student) ? "text-emerald-600" : "text-rose-500"}`}>
                             {parseLegacyDate(student.current_progress?.last_updated)
-                              ? `Updated ${format(parseLegacyDate(student.current_progress.last_updated), "MMM dd")}`
-                              : "Update pending"}
+                              ? `${t("students", "updated")} ${format(parseLegacyDate(student.current_progress.last_updated), "MMM dd")}`
+                              : t("students", "updatePending")}
                           </span>
                         </button>
 
                         <div className="mt-2 grid grid-cols-4 gap-1 border-t border-slate-100 pt-2">
-                          <Link href={`/students/${student.id}`} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary-50 hover:text-primary-700" title="Open Student Profile"><Eye className="h-4 w-4" /></Link>
-                          <button onClick={() => handleOpenHistory(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600" title="View Progress History"><Calendar className="h-4 w-4" /></button>
-                          <button onClick={() => handleOpenEdit(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600" title="Edit Student"><Edit2 className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteId(student.id)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" title="Delete Student"><Trash2 className="h-4 w-4" /></button>
+                          <Link href={`/students/${student.id}`} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary-50 hover:text-primary-700" title={t("students", "openProfile")}><Eye className="h-4 w-4" /></Link>
+                          <button onClick={() => handleOpenHistory(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600" title={t("students", "viewProgressHistory")}><Calendar className="h-4 w-4" /></button>
+                          <button onClick={() => handleOpenEdit(student)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-600" title={t("students", "editStudent")}><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => setDeleteId(student.id)} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" title={t("students", "deleteStudent")}><Trash2 className="h-4 w-4" /></button>
                         </div>
                       </article>
                     ))
@@ -1311,7 +1317,7 @@ export default function StudentsPage() {
                           : "text-slate-500 hover:bg-slate-50"
                       }`}
                     >
-                      All
+                      {t("students", "all")}
                     </button>
                     {RELIGIOUS_CLASSES.filter(c => c !== "None").map((c) => (
                       <button
@@ -1323,7 +1329,7 @@ export default function StudentsPage() {
                             : "text-slate-500 hover:bg-slate-50"
                         }`}
                       >
-                        {c}
+                        {t("options", OPTION_KEYS[c])}
                       </button>
                     ))}
                   </div>
@@ -1333,10 +1339,10 @@ export default function StudentsPage() {
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                   <div>
                     <h3 className="font-bold text-slate-900 text-lg leading-tight">
-                      Fee Tracking
+                      {t("students", "feeTracking")}
                     </h3>
                     <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">
-                      Month-wise Records
+                      {t("students", "monthWiseRecords")}
                     </p>
                   </div>
 
@@ -1348,7 +1354,7 @@ export default function StudentsPage() {
                     >
                       {MONTHS.map((m) => (
                         <option key={m} value={m}>
-                          {m}
+                          {t("months", m)}
                         </option>
                       ))}
                     </select>
@@ -1379,7 +1385,7 @@ export default function StudentsPage() {
                         ) : (
                           <CheckCircle2 className="h-3 w-3" />
                         )}
-                        Mark Paid
+                        {t("students", "markPaid")}
                       </button>
                       <div className="w-px h-5 bg-slate-200" />
                       <button
@@ -1392,14 +1398,14 @@ export default function StudentsPage() {
                         ) : (
                           <Trash2 className="h-3 w-3" />
                         )}
-                        Mark Unpaid
+                        {t("students", "markUnpaid")}
                       </button>
                     </div>
                   )}
                   <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                      Paid:{" "}
+                      {t("common", "paid")}:{" "}
                       {
                         Object.values(monthlyPayments).filter((v) => v === true)
                           .length
@@ -1407,7 +1413,7 @@ export default function StudentsPage() {
                     </div>
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 rounded-lg">
                       <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>
-                      Unpaid:{" "}
+                      {t("dashboard", "unpaid")}:{" "}
                       {students.length -
                         Object.values(monthlyPayments).filter((v) => v === true)
                           .length}
@@ -1518,7 +1524,7 @@ export default function StudentsPage() {
                                     new Date(student.last_fee_paid),
                                     "MMM dd, yyyy",
                                   )
-                                : "No records"}
+                                : t("students", "noRecords")}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -1548,9 +1554,9 @@ export default function StudentsPage() {
                               {updatingFeeIds.has(student.id) ? (
                                 <Loader2 className="h-3 w-3 animate-spin mx-auto" />
                               ) : monthlyPayments[student.id] ? (
-                                "PAID"
+                                t("common", "paid")
                               ) : (
-                                "UNPAID"
+                                t("dashboard", "unpaid")
                               )}
                             </button>
                           </td>
@@ -1589,7 +1595,7 @@ export default function StudentsPage() {
                           : "text-slate-500 hover:bg-slate-50"
                       }`}
                     >
-                      All
+                      {t("students", "all")}
                     </button>
                     {RELIGIOUS_CLASSES.filter(c => c !== "None").map((c) => (
                       <button
@@ -1601,7 +1607,7 @@ export default function StudentsPage() {
                             : "text-slate-500 hover:bg-slate-50"
                         }`}
                       >
-                        {c}
+                        {t("options", OPTION_KEYS[c])}
                       </button>
                     ))}
                   </div>
@@ -1611,10 +1617,10 @@ export default function StudentsPage() {
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                   <div>
                     <h3 className="font-bold text-slate-900">
-                      Mark Attendance
+                      {t("students", "markAttendance")}
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Daily presence records
+                      {t("students", "dailyPresence")}
                     </p>
                   </div>
                   <input
@@ -1639,7 +1645,7 @@ export default function StudentsPage() {
                                   : "hover:bg-blue-100 text-blue-700"
                           } bg-white shadow-sm border border-slate-200`}
                         >
-                          {status}
+                          {t("students", ATTENDANCE_KEYS[status])}
                         </button>
                       ))}
                     </div>
@@ -1650,7 +1656,7 @@ export default function StudentsPage() {
                   disabled={saving}
                   className="btn btn-primary w-full sm:w-auto"
                 >
-                  {saving ? "Saving..." : "Save Attendance"}
+                  {saving ? t("common", "saving") : t("students", "saveAttendance")}
                 </button>
               </div>
 
@@ -1757,7 +1763,7 @@ export default function StudentsPage() {
                                       : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
                                   }`}
                                 >
-                                  {status.toUpperCase()}
+                                  {t("students", ATTENDANCE_KEYS[status])}
                                 </button>
                               ),
                             )}
@@ -1775,20 +1781,20 @@ export default function StudentsPage() {
           <Modal
             open={showModal}
             onClose={handleCloseModal}
-            title={editingId ? "Edit Student" : "Enroll New Student"}
+            title={editingId ? t("students", "editStudent") : t("students", "enrollNew")}
           >
             <form onSubmit={handleSave} className="space-y-3">
               {/* Name & Father */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Student Name *
+                    {t("tables", "studentName")} *
                   </label>
                   <input
                     type="text"
                     required
                     className="input-field text-sm"
-                    placeholder="Full name"
+                    placeholder={t("students", "fullNamePlaceholder")}
                     value={newStudent.name}
                     onChange={(e) =>
                       setNewStudent({ ...newStudent, name: e.target.value })
@@ -1797,13 +1803,13 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Father&apos;s Name *
+                    {t("tables", "fatherName")} *
                   </label>
                   <input
                     type="text"
                     required
                     className="input-field text-sm"
-                    placeholder="Father's full name"
+                    placeholder={t("students", "fatherNamePlaceholder")}
                     value={newStudent.father_name}
                     onChange={(e) =>
                       setNewStudent({
@@ -1819,7 +1825,7 @@ export default function StudentsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-blue-50/50 rounded-2xl">
                 <div>
                   <label className="block text-xs font-bold text-emerald-700 mb-1 leading-none">
-                    Religious Education
+                    {t("students", "religiousEducation")}
                   </label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {RELIGIOUS_CLASSES.map((c) => (
@@ -1833,14 +1839,14 @@ export default function StudentsPage() {
                             : "bg-white text-slate-600 border-slate-200 hover:border-emerald-200"
                         }`}
                       >
-                        {c}
+                        {t("options", OPTION_KEYS[c])}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-blue-700 mb-1 leading-none">
-                    Contemporary Education
+                    {t("students", "contemporaryEducation")}
                   </label>
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     {CONTEMPORARY_CLASSES.map((c) => (
@@ -1854,7 +1860,7 @@ export default function StudentsPage() {
                             : "bg-white text-slate-500 border-slate-200 hover:border-blue-200"
                         }`}
                       >
-                        {c}
+                        {t("options", OPTION_KEYS[c])}
                       </button>
                     ))}
                   </div>
@@ -1865,7 +1871,7 @@ export default function StudentsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Admission Date
+                    {t("students", "admissionDate")}
                   </label>
                   <input
                     type="date"
@@ -1881,7 +1887,7 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Monthly Fee (Rs)
+                    {t("students", "monthlyFee")}
                   </label>
                   <input
                     type="number"
@@ -1902,7 +1908,7 @@ export default function StudentsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Contact Phone
+                    {t("students", "contactPhone")}
                   </label>
                   <input
                     type="tel"
@@ -1916,7 +1922,7 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Assigned Teacher (Qari)
+                    {t("students", "assignedTeacher")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -1928,7 +1934,7 @@ export default function StudentsPage() {
                       })
                     }
                   >
-                    <option value="">Unassigned</option>
+                    <option value="">{t("students", "unassigned")}</option>
                     {teachers.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
@@ -1942,7 +1948,7 @@ export default function StudentsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Gender
+                    {t("students", "gender")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -1952,18 +1958,18 @@ export default function StudentsPage() {
                     }
                   >
                     {GENDERS.map((g) => (
-                      <option key={g}>{g}</option>
+                      <option key={g} value={g}>{t("options", OPTION_KEYS[g])}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Address
+                    {t("students", "address")}
                   </label>
                   <input
                     type="text"
                     className="input-field text-sm"
-                    placeholder="Village, City"
+                    placeholder={t("students", "addressPlaceholder")}
                     value={newStudent.address}
                     onChange={(e) =>
                       setNewStudent({ ...newStudent, address: e.target.value })
@@ -1976,26 +1982,26 @@ export default function StudentsPage() {
               {!editingId && (
                 <div className="p-3 bg-slate-50 rounded-xl space-y-2">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Initial Educational Progress
+                    {t("students", "initialProgress")}
                   </p>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <div>
                       <label className="block text-[10px] text-slate-500 mb-1">
-                        Type
+                        {t("students", "type")}
                       </label>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {PROGRESS_TYPES.map((t) => (
+                        {PROGRESS_TYPES.map((progressType) => (
                           <button
-                            key={t}
+                            key={progressType}
                             type="button"
-                            onClick={() => setNewStudent({ ...newStudent, progress_type: t })}
+                            onClick={() => setNewStudent({ ...newStudent, progress_type: progressType })}
                             className={`px-2 py-1 rounded-lg text-[9px] font-bold transition-all border ${
-                              newStudent.progress_type === t
+                              newStudent.progress_type === progressType
                                 ? "bg-slate-700 text-white border-slate-700"
                                 : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
                             }`}
                           >
-                            {t}
+                            {OPTION_KEYS[progressType] ? t("options", OPTION_KEYS[progressType]) : progressType}
                           </button>
                         ))}
                       </div>
@@ -2006,7 +2012,7 @@ export default function StudentsPage() {
                       }
                     >
                       <label className="block text-[10px] text-slate-500 mb-1">
-                        Para #
+                        {t("students", "paraNumber")}
                       </label>
                       <select
                         disabled={newStudent.progress_type === "Qaida"}
@@ -2028,12 +2034,12 @@ export default function StudentsPage() {
                     </div>
                     <div>
                       <label className="block text-[10px] text-slate-500 mb-1">
-                        Surah / Lesson
+                        {t("students", "surahLesson")}
                       </label>
                       <input
                         type="text"
                         className="input-field text-xs py-1"
-                        placeholder="e.g. Al-Baqarah"
+                        placeholder={t("students", "surahPlaceholder")}
                         value={newStudent.progress_surah}
                         onChange={(e) =>
                           setNewStudent({
@@ -2053,7 +2059,7 @@ export default function StudentsPage() {
                   onClick={handleCloseModal}
                   className="btn btn-secondary text-sm"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
@@ -2061,10 +2067,10 @@ export default function StudentsPage() {
                   className="btn btn-primary text-sm disabled:opacity-50"
                 >
                   {saving
-                    ? "Saving..."
+                    ? t("common", "saving")
                     : editingId
-                      ? "Update Student"
-                      : "Enroll Student"}
+                      ? t("students", "updateStudent")
+                      : t("students", "enrollBtn")}
                 </button>
               </div>
             </form>
@@ -2074,19 +2080,19 @@ export default function StudentsPage() {
             open={!!deleteId}
             onClose={() => setDeleteId(null)}
             onConfirm={confirmDelete}
-            title="Delete Student Record"
-            message="Are you sure you want to completely remove this student? This action cannot be undone."
+            title={t("students", "deleteRecord")}
+            message={t("students", "deleteMessage")}
           />
 
           <Modal
             open={showProgressModal}
             onClose={() => setShowProgressModal(false)}
-            title="Update Progress Milestone"
+            title={t("students", "updateMilestone")}
           >
             <form onSubmit={handleSaveProgress} className="space-y-4">
               <div className="p-3 bg-slate-50 rounded-xl">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">
-                  Select Reporting Month & Year
+                  {t("students", "reportingPeriod")}
                 </label>
                 <div className="flex gap-2">
                   <select
@@ -2094,7 +2100,7 @@ export default function StudentsPage() {
                     value={progressData.month}
                     onChange={(e) => setProgressData({ ...progressData, month: e.target.value })}
                   >
-                    {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+                    {MONTHS.map(m => <option key={m} value={m}>{t("months", m)}</option>)}
                   </select>
                   <select
                     className="w-24 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-700 outline-none"
@@ -2108,7 +2114,7 @@ export default function StudentsPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Religious Education Type
+                    {t("students", "religiousEducationType")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -2119,7 +2125,7 @@ export default function StudentsPage() {
                   >
                     {RELIGIOUS_CLASSES.filter((c) => c !== "None").map((c) => (
                       <option key={c} value={c}>
-                        {c}
+                        {t("options", OPTION_KEYS[c])}
                       </option>
                     ))}
                   </select>
@@ -2128,7 +2134,7 @@ export default function StudentsPage() {
                   className={progressData.type === "Qaida" ? "opacity-50" : ""}
                 >
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Para
+                    {t("students", "para")}
                   </label>
                   <select
                     disabled={progressData.type === "Qaida"}
@@ -2151,12 +2157,12 @@ export default function StudentsPage() {
                   className={progressData.type === "Qaida" ? "opacity-50" : ""}
                 >
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Surah
+                    {t("students", "surah")}
                   </label>
                   <select
                     disabled={progressData.type === "Qaida"}
                     readOnly
-                    title="Surah number is automatically updated based on current progress"
+                    title={t("students", "autoSurah")}
                     className="input-field text-sm"
                     value={progressData.surahNumber}
                     onChange={(e) => {
@@ -2170,7 +2176,7 @@ export default function StudentsPage() {
                       });
                     }}
                   >
-                    <option value="">— Select —</option>
+                    <option value="">— {t("students", "select")} —</option>
                     {SURAH_NUMBERS.map((n) => (
                       <option key={n} value={n}>
                         {getArabicScript(n)} ({n})
@@ -2180,7 +2186,7 @@ export default function StudentsPage() {
                 </div>
                 <div className={progressData.type === "Qaida" ? "opacity-50" : ""}>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Ayat Number
+                    {t("students", "ayatNumber")}
                   </label>
                   <input
                     type="number"
@@ -2201,14 +2207,14 @@ export default function StudentsPage() {
                   onClick={() => setShowProgressModal(false)}
                   className="btn btn-secondary text-sm"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
                   className="btn btn-primary text-sm disabled:opacity-50"
                 >
-                  {saving ? "Recording..." : "Update Progress"}
+                  {saving ? t("students", "recording") : t("students", "updateProgress")}
                 </button>
               </div>
             </form>
@@ -2217,7 +2223,7 @@ export default function StudentsPage() {
           <Modal
             open={showHistoryModal}
             onClose={() => setShowHistoryModal(false)}
-            title="Progress Milestones History"
+            title={t("students", "progressHistory")}
           >
             <div className="space-y-4">
               {fetchingHistory ? (
@@ -2226,7 +2232,7 @@ export default function StudentsPage() {
                 </div>
               ) : historyList.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
-                  No history records found for this student.
+                  {t("students", "emptyProgressHistory")}
                 </div>
               ) : (
                 <div className="relative border-l-2 border-slate-100 ml-3 pl-6 space-y-6">
@@ -2238,7 +2244,7 @@ export default function StudentsPage() {
                           <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
                             {entry.type}{" "}
                             {entry.para ? `· ${PARA_NAMES[entry.para]} (${entry.para})` : ""}
-                            {entry.ayat ? ` · Ayat ${entry.ayat}` : ""}
+                            {entry.ayat ? ` · ${t("students", "ayat")} ${entry.ayat}` : ""}
                           </span>
                           <span className="text-[10px] text-slate-400 font-medium">
                             {format(new Date(entry.date), "MMM dd, yyyy")}
@@ -2246,7 +2252,7 @@ export default function StudentsPage() {
                           <button 
                             onClick={() => handleDeleteProgress(entry.id)}
                             className="bg-white hover:bg-rose-50 text-rose-400 hover:text-rose-600 p-1 rounded-lg transition-all ml-2"
-                            title="Delete this milestone"
+                            title={t("students", "deleteMilestone")}
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -2255,7 +2261,7 @@ export default function StudentsPage() {
                           {entry.surah ||
                             (entry.surah_number
                               ? `${getArabicScript(entry.surah_number)} (${entry.surah_number})`
-                              : "General Progress")}
+                              : t("students", "generalProgress"))}
                         </p>
                         {entry.notes && (
                           <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
@@ -2265,9 +2271,9 @@ export default function StudentsPage() {
                           </div>
                         )}
                         <p className="text-[10px] text-slate-400 mt-1">
-                          Verified by:{" "}
+                          {t("students", "verifiedBy")}:{" "}
                           {teachers.find((t) => t.id === entry.teacher_id)
-                            ?.name || "Unknown Teacher"}
+                            ?.name || t("students", "unknownTeacher")}
                         </p>
                       </div>
                     </div>
@@ -2279,7 +2285,7 @@ export default function StudentsPage() {
                   onClick={() => setShowHistoryModal(false)}
                   className="btn btn-secondary text-sm"
                 >
-                  Close
+                  {t("common", "close")}
                 </button>
               </div>
             </div>
@@ -2288,7 +2294,7 @@ export default function StudentsPage() {
           <Modal
             open={showFeeHistoryModal}
             onClose={() => setShowFeeHistoryModal(false)}
-            title="Student Fee History"
+            title={t("students", "feeHistory")}
           >
             <div className="space-y-4">
               {fetchingHistory ? (
@@ -2297,7 +2303,7 @@ export default function StudentsPage() {
                 </div>
               ) : feeHistoryList.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
-                  No fee payment records found.
+                  {t("students", "emptyFeeHistory")}
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
@@ -2308,7 +2314,7 @@ export default function StudentsPage() {
                     >
                       <div>
                         <p className="text-sm font-bold text-slate-900">
-                          {fee.month} {fee.year}
+                          {t("months", fee.month)} {fee.year}
                         </p>
                         <p className="text-[10px] text-slate-500">
                           {format(new Date(fee.date), "MMM dd, yyyy")}
@@ -2324,7 +2330,7 @@ export default function StudentsPage() {
                           Rs. {fee.amount}
                         </p>
                         <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded uppercase">
-                          Paid
+                          {t("common", "paid")}
                         </span>
                       </div>
                     </div>
@@ -2336,7 +2342,7 @@ export default function StudentsPage() {
                   onClick={() => setShowFeeHistoryModal(false)}
                   className="btn btn-secondary text-sm"
                 >
-                  Close
+                  {t("common", "close")}
                 </button>
               </div>
             </div>
@@ -2351,18 +2357,17 @@ export default function StudentsPage() {
                 <CheckCircle2 className="h-8 w-8" />
               </div>
               <h3 className="text-xl font-bold text-slate-900">
-                Attendance Saved!
+                {t("students", "attendanceSaved")}
               </h3>
               <p className="text-sm text-slate-500">
-                The daily attendance records for{" "}
-                {format(new Date(attendanceDate), "PPP")} have been successfully
-                updated.
+                {t("students", "attendanceSavedPrefix")}{" "}
+                {format(new Date(attendanceDate), "PPP")} {t("students", "attendanceSavedSuffix")}
               </p>
               <button
                 onClick={() => setShowSuccessModal(false)}
                 className="mt-4 px-6 py-2.5 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors w-full"
               >
-                Continue
+                {t("students", "continue")}
               </button>
             </div>
           </Modal>

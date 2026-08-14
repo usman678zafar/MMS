@@ -1,8 +1,10 @@
 "use client";
 import { useEffect } from "react";
 import { X } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Modal({ open, onClose, title, children }) {
+  const { t } = useLanguage();
   // Close on Escape key
   useEffect(() => {
     const handler = (e) => {
@@ -27,6 +29,7 @@ export default function Modal({ open, onClose, title, children }) {
           <h3 className="text-base font-bold text-slate-900">{title}</h3>
           <button
             onClick={onClose}
+            aria-label={t("common", "close")}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
           >
             <X className="h-4 w-4" />

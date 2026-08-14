@@ -38,6 +38,10 @@ const CATEGORIES = [
   "Food",
   "Other",
 ];
+const CATEGORY_KEYS = {
+  Utilities: "utilities", Maintenance: "maintenance", Salaries: "salaries",
+  Educational: "educational", Events: "events", Food: "food", Other: "other",
+};
 
 export default function ExpensesPage() {
   const { t } = useLanguage();
@@ -166,8 +170,8 @@ export default function ExpensesPage() {
           {/* Header */}
           <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Expenses</h2>
-              <p className="text-slate-500">Track and categorize spending.</p>
+              <h2 className="text-2xl font-bold text-slate-900">{t("expenses", "title")}</h2>
+              <p className="text-slate-500">{t("expenses", "subtitle")}</p>
             </div>
             <button
               onClick={() => {
@@ -183,7 +187,7 @@ export default function ExpensesPage() {
               className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Record Expense
+              {t("expenses", "record")}
             </button>
           </div>
 
@@ -194,17 +198,17 @@ export default function ExpensesPage() {
             <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
-                  label: "Total Expenses",
+                  label: t("expenses", "total"),
                   value: `Rs ${totalExpenses.toLocaleString()}`,
                   color: "text-slate-900",
                 },
                 {
-                  label: "This Month",
+                  label: t("expenses", "thisMonth"),
                   value: `Rs ${thisMonth.toLocaleString()}`,
                   color: "text-rose-500",
                 },
                 {
-                  label: "Transactions",
+                  label: t("expenses", "transactions"),
                   value: expenses.length,
                   color: "text-emerald-600",
                 },
@@ -229,15 +233,15 @@ export default function ExpensesPage() {
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
-              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder="Search description or category..." />
+              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder={t("expenses", "searchPlaceholder")} />
               <select
                 value={filterCategory}
                 onChange={(e) => handleCategoryFilter(e.target.value)}
                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
               >
-                <option value="">All Categories</option>
+                <option value="">{t("common", "allCategories")}</option>
                 {CATEGORIES.map((category) => (
-                  <option key={category}>{category}</option>
+                  <option key={category} value={category}>{t("options", CATEGORY_KEYS[category])}</option>
                 ))}
               </select>
             </div>
@@ -278,10 +282,10 @@ export default function ExpensesPage() {
                       <td colSpan="5" className="px-6 py-12 text-center">
                         <ReceiptText className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                         <p className="text-slate-400 text-lg font-medium">
-                          No expenses found
+                          {t("expenses", "empty")}
                         </p>
                         <p className="text-slate-400 text-sm mt-1">
-                          Add your first expense to get started
+                          {t("expenses", "emptyHint")}
                         </p>
                       </td>
                     </tr>
@@ -301,10 +305,10 @@ export default function ExpensesPage() {
                             </div>
                             <div>
                               <p className="font-bold text-slate-900 text-sm">
-                                {e.category}
+                                {CATEGORY_KEYS[e.category] ? t("options", CATEGORY_KEYS[e.category]) : e.category}
                               </p>
                               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                                Expense
+                                {t("expenses", "expense")}
                               </p>
                             </div>
                           </div>
@@ -314,7 +318,7 @@ export default function ExpensesPage() {
                             <span className="truncate">{e.description}</span>
                           ) : (
                             <span className="text-slate-300 italic text-xs">
-                              No description
+                              {t("expenses", "noDescription")}
                             </span>
                           )}
                         </td>
@@ -328,14 +332,14 @@ export default function ExpensesPage() {
                             <button
                               onClick={() => handleOpenEdit(e)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                              title="Edit Expense"
+                              title={t("expenses", "edit")}
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setDeleteId(e.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                              title="Delete Expense"
+                              title={t("expenses", "delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -361,13 +365,13 @@ export default function ExpensesPage() {
           <Modal
             open={showModal}
             onClose={handleCloseModal}
-            title={editingId ? "Edit Expense" : "Record Expense"}
+            title={editingId ? t("expenses", "edit") : t("expenses", "record")}
           >
             <form onSubmit={handleSaveExpense} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Category
+                    {t("expenses", "category")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -377,13 +381,13 @@ export default function ExpensesPage() {
                     }
                   >
                     {CATEGORIES.map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>{t("options", CATEGORY_KEYS[c])}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Date
+                    {t("expenses", "date")}
                   </label>
                   <input
                     type="date"
@@ -397,7 +401,7 @@ export default function ExpensesPage() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Amount (Rs) *
+                    {t("expenses", "amount")} *
                   </label>
                   <input
                     type="number"
@@ -413,12 +417,12 @@ export default function ExpensesPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Description
+                  {t("expenses", "description")}
                 </label>
                 <textarea
                   className="input-field text-sm"
                   rows="2"
-                  placeholder="e.g. Electric bill"
+                  placeholder={t("expenses", "descriptionPlaceholder")}
                   value={newExpense.description}
                   onChange={(e) =>
                     setNewExpense({
@@ -434,7 +438,7 @@ export default function ExpensesPage() {
                   onClick={handleCloseModal}
                   className="btn btn-secondary text-sm"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
@@ -442,10 +446,10 @@ export default function ExpensesPage() {
                   className="btn bg-rose-600 text-white hover:bg-rose-700 text-sm disabled:opacity-50"
                 >
                   {saving
-                    ? "Saving..."
+                    ? t("common", "saving")
                     : editingId
-                      ? "Update Expense"
-                      : "Record Expense"}
+                      ? t("expenses", "updateExpense")
+                      : t("expenses", "record")}
                 </button>
               </div>
             </form>
@@ -455,8 +459,8 @@ export default function ExpensesPage() {
             open={!!deleteId}
             onClose={() => setDeleteId(null)}
             onConfirm={confirmDelete}
-            title="Delete Expense"
-            message="Are you sure you want to completely remove this expense record? This action cannot be undone."
+            title={t("expenses", "delete")}
+            message={t("expenses", "deleteMessage")}
           />
         </div>
       </ProtectedRoute>

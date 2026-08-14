@@ -97,6 +97,7 @@ svg {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
@@ -562,6 +563,15 @@ svg {
 }
 
 /* Complete right-to-left treatment for the Urdu interface. */
+html {
+  scrollbar-gutter: stable;
+}
+
+.sidebar-brand-title {
+  font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  letter-spacing: 0.055em;
+}
+
 html[dir="rtl"] .dashboard-page,
 html[dir="rtl"] .management-page {
   text-align: right;

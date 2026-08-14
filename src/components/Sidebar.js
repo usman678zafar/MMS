@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen, onClose }) {
       {isOpen && (
         <button
           type="button"
-          aria-label="Close navigation"
+          aria-label={t("header", "closeNavigation")}
           className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] lg:hidden"
           onClick={onClose}
         />
@@ -104,16 +104,16 @@ export default function Sidebar({ isOpen, onClose }) {
         }`}
       >
         <div className="relative flex h-28 shrink-0 items-center justify-center border-b border-slate-100 px-4 min-[1700px]:h-32 min-[1700px]:px-5">
-          <Link href="/" onClick={onClose} aria-label="Madrasa Management dashboard" dir="ltr" className="flex flex-col items-center gap-1.5 text-center">
+          <Link href="/" onClick={onClose} aria-label={t("header", "dashboardLink")} dir="ltr" className="flex flex-col items-center gap-1.5 text-center">
             <Image src="/logo-mark-black.svg" alt="Madrasa Management" width={68} height={68} className="h-16 w-16 shrink-0 min-[1700px]:h-[4.5rem] min-[1700px]:w-[4.5rem]" priority />
-            <span className="whitespace-nowrap text-[11px] font-bold leading-none text-slate-900 min-[1700px]:text-xs">
+            <span className="sidebar-brand-title whitespace-nowrap text-[11px] font-semibold leading-none text-slate-900 min-[1700px]:text-xs">
               Madrasa Management System
             </span>
           </Link>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close navigation"
+            aria-label={t("header", "closeNavigation")}
             className={`absolute rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden ${isRtl ? "left-3" : "right-3"}`}
           >
             <X className="h-5 w-5" />
@@ -121,7 +121,7 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
 
         <div className="no-scrollbar flex-1 overflow-y-auto overscroll-contain px-3 py-4 min-[1700px]:px-4 min-[1700px]:py-6">
-          <nav aria-label="Main navigation" className="space-y-1.5">
+          <nav aria-label={t("header", "mainNavigation")} className="space-y-1.5">
             {navigation.map((item) => {
               const isActive =
                 item.href === "/"

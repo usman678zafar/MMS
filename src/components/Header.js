@@ -45,7 +45,7 @@ export default function Header({ onMenuClick }) {
           <button
             type="button"
             onClick={onMenuClick}
-            aria-label="Open navigation"
+            aria-label={t("header", "openNavigation")}
             className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 lg:hidden"
           >
             <Menu className="h-5 w-5" />
@@ -79,7 +79,7 @@ export default function Header({ onMenuClick }) {
             type="button"
             onClick={toggleLanguage}
             className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:bg-primary-50 hover:text-primary-700"
-            title="Toggle language"
+            title={t("header", "toggleLanguage")}
           >
             <Globe className="h-4 w-4" />
             <span lang={language === "en" ? "ur" : "en"}>

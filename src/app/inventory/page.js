@@ -29,6 +29,11 @@ import { PAGINATION_DEFAULTS } from "@/lib/pagination";
 import { useLanguage } from "@/context/LanguageContext";
 
 const CATEGORIES = ["General", "Cleaning", "Educational", "Office", "Kitchen"];
+const CATEGORY_KEYS = {
+  General: "general", Cleaning: "cleaning", Educational: "educational",
+  Office: "office", Kitchen: "kitchen",
+};
+const UNIT_KEYS = { pcs: "pcs", kg: "kg", liters: "liters", boxes: "boxes", rolls: "rolls" };
 
 export default function InventoryPage() {
   const { t } = useLanguage();
@@ -147,9 +152,9 @@ export default function InventoryPage() {
           {/* Header */}
           <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">Inventory</h2>
+              <h2 className="text-2xl font-bold text-slate-900">{t("inventory", "title")}</h2>
               <p className="text-slate-500">
-                Track supplies, equipment, and assets.
+                {t("inventory", "subtitle")}
               </p>
             </div>
             <button
@@ -166,7 +171,7 @@ export default function InventoryPage() {
               className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Item
+              {t("inventory", "add")}
             </button>
           </div>
 
@@ -177,17 +182,17 @@ export default function InventoryPage() {
             <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
-                  label: "Total Items",
+                  label: t("inventory", "total"),
                   value: totalItems,
                   color: "text-slate-900",
                 },
                 {
-                  label: "Low Stock",
+                  label: t("inventory", "lowStock"),
                   value: lowStockItems,
                   color: "text-amber-500",
                 },
                 {
-                  label: "Categories",
+                  label: t("inventory", "categories"),
                   value: totalCategories,
                   color: "text-emerald-600",
                 },
@@ -212,15 +217,15 @@ export default function InventoryPage() {
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
-              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder="Search items..." />
+              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder={t("inventory", "searchPlaceholder")} />
               <select
                 value={filterCategory}
                 onChange={(e) => handleCategoryFilter(e.target.value)}
                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
               >
-                <option value="">All Categories</option>
+                <option value="">{t("common", "allCategories")}</option>
                 {CATEGORIES.map((category) => (
-                  <option key={category}>{category}</option>
+                  <option key={category} value={category}>{t("options", CATEGORY_KEYS[category])}</option>
                 ))}
               </select>
             </div>
@@ -258,10 +263,10 @@ export default function InventoryPage() {
                       <td colSpan="5" className="px-6 py-12 text-center">
                         <Package className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                         <p className="text-slate-400 text-lg font-medium">
-                          No items found
+                          {t("inventory", "empty")}
                         </p>
                         <p className="text-slate-400 text-sm mt-1">
-                          Add your first item to get started
+                          {t("inventory", "emptyHint")}
                         </p>
                       </td>
                     </tr>
@@ -281,23 +286,23 @@ export default function InventoryPage() {
                                 {item.item_name}
                               </p>
                               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                                {item.category}
+                                {CATEGORY_KEYS[item.category] ? t("options", CATEGORY_KEYS[item.category]) : item.category}
                               </p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-slate-900 whitespace-nowrap">
-                          {item.quantity} {item.unit}
+                          <bdi>{item.quantity}</bdi> {UNIT_KEYS[item.unit] ? t("options", UNIT_KEYS[item.unit]) : item.unit}
                         </td>
                         <td className="px-6 py-4">
                           {Number(item.quantity) < 5 ? (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-100 ">
                               <AlertTriangle className="h-3 w-3 mr-1" />
-                              Low Stock
+                              {t("inventory", "lowStock")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100 ">
-                              In Stock
+                              {t("inventory", "inStock")}
                             </span>
                           )}
                         </td>
@@ -306,14 +311,14 @@ export default function InventoryPage() {
                             <button
                               onClick={() => handleOpenEdit(item)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                              title="Edit Item"
+                              title={t("inventory", "editAction")}
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setDeleteId(item.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                              title="Delete Item"
+                              title={t("inventory", "deleteAction")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -339,18 +344,18 @@ export default function InventoryPage() {
           <Modal
             open={showModal}
             onClose={handleCloseModal}
-            title={editingId ? "Edit Inventory Item" : "Add Inventory Item"}
+            title={editingId ? t("inventory", "edit") : t("inventory", "add")}
           >
             <form onSubmit={handleSaveItem} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Item Name *
+                  {t("inventory", "itemName")} *
                 </label>
                 <input
                   type="text"
                   required
                   className="input-field text-sm"
-                  placeholder="e.g. Prayer Mats"
+                  placeholder={t("inventory", "itemPlaceholder")}
                   value={newItem.item_name}
                   onChange={(e) =>
                     setNewItem({ ...newItem, item_name: e.target.value })
@@ -360,7 +365,7 @@ export default function InventoryPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Category
+                    {t("tables", "category")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -370,13 +375,13 @@ export default function InventoryPage() {
                     }
                   >
                     {CATEGORIES.map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>{t("options", CATEGORY_KEYS[c])}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Unit
+                    {t("inventory", "unit")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -386,13 +391,13 @@ export default function InventoryPage() {
                     }
                   >
                     {["pcs", "kg", "liters", "boxes", "rolls"].map((u) => (
-                      <option key={u}>{u}</option>
+                      <option key={u} value={u}>{t("options", UNIT_KEYS[u])}</option>
                     ))}
                   </select>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Quantity *
+                    {t("inventory", "quantity")} *
                   </label>
                   <input
                     type="number"
@@ -412,7 +417,7 @@ export default function InventoryPage() {
                   onClick={handleCloseModal}
                   className="btn btn-secondary text-sm"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
@@ -420,10 +425,10 @@ export default function InventoryPage() {
                   className="btn btn-primary text-sm disabled:opacity-50"
                 >
                   {saving
-                    ? "Saving..."
+                    ? t("common", "saving")
                     : editingId
-                      ? "Update Item"
-                      : "Add Item"}
+                      ? t("inventory", "updateItem")
+                      : t("inventory", "add")}
                 </button>
               </div>
             </form>
@@ -433,8 +438,8 @@ export default function InventoryPage() {
             open={!!deleteId}
             onClose={() => setDeleteId(null)}
             onConfirm={confirmDelete}
-            title="Delete Inventory Item"
-            message="Are you sure you want to completely remove this inventory item? This action cannot be undone."
+            title={t("inventory", "delete")}
+            message={t("inventory", "deleteMessage")}
           />
         </div>
       </ProtectedRoute>

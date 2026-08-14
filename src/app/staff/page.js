@@ -40,6 +40,11 @@ const ROLES = [
   "Other",
 ];
 
+const ROLE_KEYS = {
+  Imam: "imam", Moazzin: "moazzin", Qari: "qari", Teacher: "teacher",
+  Cleaner: "cleaner", Manager: "manager", Other: "other",
+};
+
 const defaultForm = {
   name: "",
   role: "Imam",
@@ -160,11 +165,9 @@ export default function StaffPage() {
           {/* Header */}
           <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                Staff Management
-              </h2>
+              <h2 className="text-2xl font-bold text-slate-900">{t("staff", "title")}</h2>
               <p className="text-slate-500">
-                Manage Madrasa and Masjid staff records.
+                {t("staff", "subtitle")}
               </p>
             </div>
             <button
@@ -176,7 +179,7 @@ export default function StaffPage() {
               className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Staff Member
+              {t("staff", "add")}
             </button>
           </div>
 
@@ -187,12 +190,12 @@ export default function StaffPage() {
             <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
-                  label: "Total Staff",
+                  label: t("staff", "total"),
                   value: staff.length,
                   color: "text-slate-900",
                 },
-                { label: "Active", value: active, color: "text-emerald-600" },
-                { label: "Inactive", value: inactive, color: "text-rose-500" },
+                { label: t("common", "active"), value: active, color: "text-emerald-600" },
+                { label: t("common", "inactive"), value: inactive, color: "text-rose-500" },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -214,15 +217,15 @@ export default function StaffPage() {
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
-              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder="Search by name, role, or phone..." />
+              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder={t("staff", "searchPlaceholder")} />
               <select
                 value={filterStatus}
                 onChange={(e) => handleStatusFilter(e.target.value)}
                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
               >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="">{t("common", "allStatus")}</option>
+                <option value="active">{t("common", "active")}</option>
+                <option value="inactive">{t("common", "inactive")}</option>
               </select>
             </div>
           )}
@@ -268,10 +271,10 @@ export default function StaffPage() {
                       <td colSpan="7" className="px-6 py-12 text-center">
                         <UserCircle className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                         <p className="text-slate-400 text-lg font-medium">
-                          No staff members found
+                          {t("staff", "empty")}
                         </p>
                         <p className="text-slate-400 text-sm mt-1">
-                          Add your first staff member to get started
+                          {t("staff", "emptyHint")}
                         </p>
                       </td>
                     </tr>
@@ -291,20 +294,20 @@ export default function StaffPage() {
                                 {member.name}
                               </p>
                               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                                Staff ID: {member.id?.slice(-8)}
+                                {t("staff", "staffId")}: {member.id?.slice(-8)}
                               </p>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold whitespace-nowrap">
-                            {member.role}
+                            {ROLE_KEYS[member.role] ? t("options", ROLE_KEYS[member.role]) : member.role}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                           {member.phone || (
                             <span className="text-slate-300 italic text-xs">
-                              No phone
+                              {t("common", "noPhone")}
                             </span>
                           )}
                         </td>
@@ -316,7 +319,7 @@ export default function StaffPage() {
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {member.joining_date
                             ? format(new Date(member.joining_date), "MMM yyyy")
-                            : "N/A"}
+                            : t("common", "notAvailable")}
                         </td>
                         <td className="px-6 py-4">
                           <button
@@ -325,9 +328,9 @@ export default function StaffPage() {
                                 ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100"
                                 : "bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100"
                             }`}
-                            title="Click to toggle status"
+                            title={t("staff", "toggleStatus")}
                           >
-                            {member.is_active !== false ? "Active" : "Inactive"}
+                            {member.is_active !== false ? t("common", "active") : t("common", "inactive")}
                           </button>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -335,14 +338,14 @@ export default function StaffPage() {
                             <button
                               onClick={() => handleOpenEdit(member)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                              title="Edit Staff Member"
+                              title={t("staff", "edit")}
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setDeleteId(member.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                              title="Delete Staff Member"
+                              title={t("staff", "delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -368,18 +371,18 @@ export default function StaffPage() {
           <Modal
             open={showModal}
             onClose={handleCloseModal}
-            title={editingId ? "Edit Staff Member" : "Add Staff Member"}
+            title={editingId ? t("staff", "edit") : t("staff", "add")}
           >
             <form onSubmit={handleSaveStaff} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Full Name *
+                  {t("staff", "fullName")} *
                 </label>
                 <input
                   type="text"
                   required
                   className="input-field text-sm"
-                  placeholder="Staff member name"
+                  placeholder={t("staff", "namePlaceholder")}
                   value={newStaff.name}
                   onChange={(e) =>
                     setNewStaff({ ...newStaff, name: e.target.value })
@@ -389,7 +392,7 @@ export default function StaffPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Role
+                    {t("tables", "role")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -400,14 +403,14 @@ export default function StaffPage() {
                   >
                     {ROLES.map((r) => (
                       <option key={r} value={r}>
-                        {r}
+                        {t("options", ROLE_KEYS[r])}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Monthly Salary (Rs)
+                    {t("staff", "monthlySalary")}
                   </label>
                   <input
                     type="number"
@@ -425,7 +428,7 @@ export default function StaffPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Phone
+                    {t("staff", "phone")}
                   </label>
                   <input
                     type="text"
@@ -439,7 +442,7 @@ export default function StaffPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Joining Date
+                    {t("staff", "joiningDate")}
                   </label>
                   <input
                     type="date"
@@ -457,7 +460,7 @@ export default function StaffPage() {
                   onClick={handleCloseModal}
                   className="btn btn-secondary text-sm"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
@@ -465,10 +468,10 @@ export default function StaffPage() {
                   className="btn btn-primary text-sm disabled:opacity-50"
                 >
                   {saving
-                    ? "Saving..."
+                    ? t("common", "saving")
                     : editingId
-                      ? "Update Member"
-                      : "Save Member"}
+                      ? t("staff", "updateMember")
+                      : t("staff", "saveMember")}
                 </button>
               </div>
             </form>
@@ -478,8 +481,8 @@ export default function StaffPage() {
             open={!!deleteId}
             onClose={() => setDeleteId(null)}
             onConfirm={confirmDelete}
-            title="Delete Staff Member"
-            message="Are you sure you want to completely remove this staff member? This action cannot be undone."
+            title={t("staff", "delete")}
+            message={t("staff", "deleteMessage")}
           />
         </div>
       </ProtectedRoute>

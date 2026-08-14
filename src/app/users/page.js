@@ -164,17 +164,17 @@ export default function UsersPage() {
   const getRoleLabel = (role) => {
     switch (role) {
       case ROLES.SUPER_ADMIN:
-        return "Super Admin";
+        return t("options", "superAdmin");
       case ROLES.ADMIN:
-        return "Admin";
+        return t("options", "admin");
       case ROLES.ACCOUNTANT:
-        return "Accountant";
+        return t("options", "accountant");
       case ROLES.TEACHER:
-        return "Teacher";
+        return t("options", "teacher");
       case ROLES.INVENTORY_MANAGER:
-        return "Inventory Manager";
+        return t("options", "inventoryManager");
       case ROLES.VIEWER:
-        return "Viewer";
+        return t("options", "viewer");
       default:
         return role;
     }
@@ -188,10 +188,10 @@ export default function UsersPage() {
           <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
-                User Management
+                {t("users", "title")}
               </h2>
               <p className="text-slate-500">
-                Manage system users and their access permissions.
+                {t("users", "subtitle")}
               </p>
             </div>
             <button
@@ -203,7 +203,7 @@ export default function UsersPage() {
               className="btn btn-primary page-primary-action"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add User
+              {t("users", "add")}
             </button>
           </div>
 
@@ -214,12 +214,12 @@ export default function UsersPage() {
             <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
-                  label: "Total Users",
+                  label: t("users", "total"),
                   value: users.length,
                   color: "text-slate-900",
                 },
-                { label: "Active", value: active, color: "text-emerald-600" },
-                { label: "Inactive", value: inactive, color: "text-rose-500" },
+                { label: t("common", "active"), value: active, color: "text-emerald-600" },
+                { label: t("common", "inactive"), value: inactive, color: "text-rose-500" },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -241,18 +241,18 @@ export default function UsersPage() {
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
-              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder="Search users..." />
+              <SearchField value={searchInput} onChange={setSearchInput} onSearch={handleSearch} placeholder={t("users", "searchPlaceholder")} />
               <select
                 value={filterRole}
                 onChange={(e) => handleRoleFilter(e.target.value)}
                 className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
               >
-                <option value="">All Roles</option>
-                <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
-                <option value={ROLES.ADMIN}>Admin</option>
-                <option value={ROLES.ACCOUNTANT}>Accountant</option>
-                <option value={ROLES.TEACHER}>Teacher</option>
-                <option value={ROLES.VIEWER}>Viewer</option>
+                <option value="">{t("users", "allRoles")}</option>
+                <option value={ROLES.SUPER_ADMIN}>{t("options", "superAdmin")}</option>
+                <option value={ROLES.ADMIN}>{t("options", "admin")}</option>
+                <option value={ROLES.ACCOUNTANT}>{t("options", "accountant")}</option>
+                <option value={ROLES.TEACHER}>{t("options", "teacher")}</option>
+                <option value={ROLES.VIEWER}>{t("options", "viewer")}</option>
               </select>
             </div>
           )}
@@ -292,10 +292,10 @@ export default function UsersPage() {
                       <td colSpan="5" className="px-6 py-12 text-center">
                         <Shield className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                         <p className="text-slate-400 text-lg font-medium">
-                          No users found
+                          {t("users", "empty")}
                         </p>
                         <p className="text-slate-400 text-sm mt-1">
-                          Add your first user to get started
+                          {t("users", "emptyHint")}
                         </p>
                       </td>
                     </tr>
@@ -336,29 +336,29 @@ export default function UsersPage() {
                                 ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100"
                                 : "bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100"
                             }`}
-                            title="Click to toggle status"
+                            title={t("users", "toggleStatus")}
                           >
-                            {user.is_active ? "Active" : "Inactive"}
+                            {user.is_active ? t("common", "active") : t("common", "inactive")}
                           </button>
                         </td>
                         <td className="px-6 py-4 text-sm text-slate-500">
                           {user.created_at
                             ? new Date(user.created_at).toLocaleDateString()
-                            : "N/A"}
+                            : t("common", "notAvailable")}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleEdit(user)}
                               className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                              title="Edit User"
+                              title={t("users", "edit")}
                             >
                               <Edit2 className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => setDeleteId(user.id)}
                               className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                              title="Delete User"
+                              title={t("users", "delete")}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -385,13 +385,13 @@ export default function UsersPage() {
           <Modal open={showModal} onClose={handleCloseModal}>
             <form onSubmit={handleSave} className="p-6">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                {editingId ? "Edit User" : "Add New User"}
+                {editingId ? t("users", "edit") : t("users", "add")}
               </h3>
 
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Name
+                    {t("users", "fullName")}
                   </label>
                   <input
                     type="text"
@@ -406,7 +406,7 @@ export default function UsersPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Email
+                    {t("users", "email")}
                   </label>
                   <input
                     type="email"
@@ -421,7 +421,7 @@ export default function UsersPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Role
+                    {t("tables", "role")}
                   </label>
                   <select
                     value={newUser.role}
@@ -430,21 +430,21 @@ export default function UsersPage() {
                     }
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-primary-500 outline-none"
                   >
-                    <option value={ROLES.VIEWER}>Viewer</option>
+                    <option value={ROLES.VIEWER}>{t("options", "viewer")}</option>
                     <option value={ROLES.INVENTORY_MANAGER}>
-                      Inventory Manager
+                      {t("options", "inventoryManager")}
                     </option>
-                    <option value={ROLES.TEACHER}>Teacher</option>
-                    <option value={ROLES.ACCOUNTANT}>Accountant</option>
-                    <option value={ROLES.ADMIN}>Admin</option>
-                    <option value={ROLES.SUPER_ADMIN}>Super Admin</option>
+                    <option value={ROLES.TEACHER}>{t("options", "teacher")}</option>
+                    <option value={ROLES.ACCOUNTANT}>{t("options", "accountant")}</option>
+                    <option value={ROLES.ADMIN}>{t("options", "admin")}</option>
+                    <option value={ROLES.SUPER_ADMIN}>{t("options", "superAdmin")}</option>
                   </select>
                 </div>
 
                 {!editingId && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Password
+                      {t("users", "password")}
                     </label>
                     <input
                       type="password"
@@ -466,7 +466,7 @@ export default function UsersPage() {
                   onClick={handleCloseModal}
                   className="btn btn-secondary"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
@@ -474,10 +474,10 @@ export default function UsersPage() {
                   className="btn btn-primary disabled:opacity-50"
                 >
                   {saving
-                    ? "Saving..."
+                    ? t("common", "saving")
                     : editingId
-                      ? "Update User"
-                      : "Create User"}
+                      ? t("users", "updateUser")
+                      : t("users", "createUser")}
                 </button>
               </div>
             </form>
@@ -488,8 +488,8 @@ export default function UsersPage() {
             open={!!deleteId}
             onClose={() => setDeleteId(null)}
             onConfirm={confirmDelete}
-            title="Delete User"
-            message="Are you sure you want to completely remove this user? This action cannot be undone."
+            title={t("users", "delete")}
+            message={t("users", "deleteMessage")}
           />
         </div>
       </ProtectedRoute>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function ConfirmModal({
   open,
@@ -9,6 +10,7 @@ export default function ConfirmModal({
   title,
   message,
 }) {
+  const { t } = useLanguage();
   // Close on Escape key
   useEffect(() => {
     const handler = (e) => {
@@ -40,7 +42,7 @@ export default function ConfirmModal({
             onClick={onClose}
             className="flex-1 py-2.5 px-4 font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors text-sm"
           >
-            Cancel
+            {t("common", "cancel")}
           </button>
           <button
             onClick={() => {
@@ -49,7 +51,7 @@ export default function ConfirmModal({
             }}
             className="flex-1 py-2.5 px-4 font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all text-sm"
           >
-            Delete
+            {t("common", "delete")}
           </button>
         </div>
       </div>

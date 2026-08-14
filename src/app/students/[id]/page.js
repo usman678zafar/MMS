@@ -45,12 +45,12 @@ import {
 } from "../actions";
 
 const tabs = [
-  { id: "overview", name: "Overview", icon: UserRound },
-  { id: "academic", name: "Academic Progress", icon: BookOpen },
-  { id: "attendance", name: "Attendance", icon: CalendarCheck },
-  { id: "fees", name: "Fees", icon: WalletCards },
-  { id: "documents", name: "Documents & Notes", icon: FileText },
-  { id: "history", name: "History", icon: History },
+  { id: "overview", nameKey: "overview", icon: UserRound },
+  { id: "academic", nameKey: "academicProgress", icon: BookOpen },
+  { id: "attendance", nameKey: "attendance", icon: CalendarCheck },
+  { id: "fees", nameKey: "fees", icon: WalletCards },
+  { id: "documents", nameKey: "documentsNotes", icon: FileText },
+  { id: "history", nameKey: "history", icon: History },
 ];
 
 const months = [
@@ -72,9 +72,9 @@ const today = () => format(new Date(), "yyyy-MM-dd");
 const currentMonth = () => format(new Date(), "MMMM");
 const currentYear = () => new Date().getFullYear();
 const formatDate = (value, pattern = "MMM d, yyyy") => {
-  if (!value) return "Not recorded";
+  if (!value) return "—";
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Not recorded" : format(date, pattern);
+  return Number.isNaN(date.getTime()) ? "—" : format(date, pattern);
 };
 const currency = (value) => `Rs ${Number(value || 0).toLocaleString()}`;
 
@@ -104,7 +104,7 @@ function InfoItem({ label, value, icon: Icon }) {
           {label}
         </p>
         <p className="mt-1 break-words text-sm font-semibold text-slate-800">
-          {value || "Not provided"}
+          {value || "—"}
         </p>
       </div>
     </div>
@@ -229,11 +229,11 @@ export default function StudentProfilePage() {
     return [
       ...data.progress.map((entry) => ({
         id: `progress-${entry.id}`,
-        type: "Academic",
-        title: `${entry.type || "Academic"} progress recorded`,
+        type: t("studentProfile", "academic"),
+        title: `${entry.type || t("studentProfile", "academic")} ${t("studentProfile", "progressRecorded")}`,
         detail:
           entry.notes ||
-          [entry.surah, entry.para ? `Para ${entry.para}` : ""]
+          [entry.surah, entry.para ? `${t("studentProfile", "para")} ${entry.para}` : ""]
             .filter(Boolean)
             .join(" · "),
         date: entry.date || entry.created_at,
@@ -241,24 +241,24 @@ export default function StudentProfilePage() {
       })),
       ...data.fees.map((entry) => ({
         id: `fee-${entry.id}`,
-        type: "Fee",
-        title: `${entry.month} ${entry.year} fee received`,
+        type: t("studentProfile", "fee"),
+        title: `${t("months", entry.month)} ${entry.year} ${t("studentProfile", "feeReceived")}`,
         detail: `${currency(entry.amount)}${entry.notes ? ` · ${entry.notes}` : ""}`,
         date: entry.date || entry.created_at,
         color: "bg-emerald-500",
       })),
       ...data.attendance.map((entry) => ({
         id: `attendance-${entry.id}`,
-        type: "Attendance",
-        title: `Marked ${entry.status}`,
-        detail: entry.notes || "Daily attendance recorded",
+        type: t("studentProfile", "attendance"),
+        title: `${t("studentProfile", "marked")} ${t("students", entry.status.toLowerCase())}`,
+        detail: entry.notes || t("studentProfile", "dailyAttendance"),
         date: entry.date,
         color: "bg-amber-500",
       })),
       ...documents.map((entry) => ({
         id: `document-${entry.id}`,
-        type: "Document",
-        title: "Document uploaded",
+        type: t("studentProfile", "document"),
+        title: t("studentProfile", "documentUploaded"),
         detail: entry.name,
         date: entry.uploaded_at,
         color: "bg-blue-500",
@@ -266,7 +266,7 @@ export default function StudentProfilePage() {
     ]
       .filter((entry) => entry.date)
       .sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [data]);
+  }, [data, t]);
 
   const saveNotes = async () => {
     await runMutation(
@@ -356,11 +356,11 @@ export default function StudentProfilePage() {
           <div className="mx-auto max-w-lg rounded-2xl border border-rose-100 bg-white p-8 text-center">
             <XCircle className="mx-auto h-10 w-10 text-rose-400" />
             <h1 className="mt-4 text-xl font-bold text-slate-900">
-              Student record unavailable
+              {t("studentProfile", "unavailable")}
             </h1>
             <p className="mt-2 text-sm text-slate-500">{error}</p>
             <Link href="/students" className="btn btn-primary mx-auto mt-6 w-fit text-sm">
-              Return to Students
+              {t("studentProfile", "returnToStudents")}
             </Link>
           </div>
         ) : data ? (
@@ -374,7 +374,7 @@ export default function StudentProfilePage() {
             {error && (
               <div className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 <span>{error}</span>
-                <button onClick={() => setError("")} aria-label="Dismiss error">
+                <button onClick={() => setError("")} aria-label={t("studentProfile", "dismissError")}>
                   <XCircle className="h-4 w-4" />
                 </button>
               </div>
@@ -385,7 +385,7 @@ export default function StudentProfilePage() {
               className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-primary-700"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to students
+              {t("studentProfile", "backToStudents")}
             </Link>
 
             <section className="surface-card overflow-hidden rounded-2xl">
@@ -404,7 +404,7 @@ export default function StudentProfilePage() {
                         (data.student.name?.charAt(0)?.toUpperCase() || "S")}
                       {canEdit && (
                         <label
-                          title="Update profile photo"
+                          title={t("studentProfile", "updatePhoto")}
                           className="absolute -bottom-2 -right-2 flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg bg-white text-primary-700 shadow-md hover:bg-primary-50"
                         >
                           <Camera className="h-3.5 w-3.5" />
@@ -430,24 +430,24 @@ export default function StudentProfilePage() {
                               : "bg-white/15 text-white/70"
                           }`}
                         >
-                          {data.student.is_active !== false ? "Active" : "Inactive"}
+                          {data.student.is_active !== false ? t("common", "active") : t("common", "inactive")}
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-white/70">
-                        Student ID: {data.student.id.slice(-8).toUpperCase()} · Admitted {formatDate(data.student.admission_date)}
+                        {t("studentProfile", "studentId")}: {data.student.id.slice(-8).toUpperCase()} · {t("studentProfile", "admitted")} {formatDate(data.student.admission_date)}
                       </p>
                     </div>
                   </div>
                   {canEdit && (
                     <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:flex sm:w-auto sm:flex-wrap">
                       <button onClick={() => setModal("progress")} className="rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-primary-800 hover:bg-primary-50">
-                        Update progress
+                        {t("studentProfile", "updateProgress")}
                       </button>
                       <button onClick={() => setModal("attendance")} className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20">
-                        Record attendance
+                        {t("studentProfile", "recordAttendance")}
                       </button>
                       <button onClick={() => setModal("fee")} className="rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/20">
-                        Receive fee
+                        {t("studentProfile", "receiveFee")}
                       </button>
                     </div>
                   )}
@@ -455,7 +455,7 @@ export default function StudentProfilePage() {
               </div>
 
               <div className="overflow-x-auto border-b border-slate-100 px-3 sm:px-6">
-                <nav className="flex min-w-max gap-1" aria-label="Student record sections">
+                <nav className="flex min-w-max gap-1" aria-label={t("studentProfile", "recordSections")}>
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
@@ -467,7 +467,7 @@ export default function StudentProfilePage() {
                       }`}
                     >
                       <tab.icon className="h-4 w-4" />
-                      {tab.name}
+                      {t("studentProfile", tab.nameKey)}
                     </button>
                   ))}
                 </nav>
@@ -478,48 +478,48 @@ export default function StudentProfilePage() {
               <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
                 <div className="space-y-6">
                   <section className="surface-card rounded-2xl p-5 sm:p-6">
-                    <h2 className="text-base font-bold text-slate-900">Personal & guardian information</h2>
+                    <h2 className="text-base font-bold text-slate-900">{t("studentProfile", "personalInfo")}</h2>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      <InfoItem label="Father / Guardian" value={data.student.father_name} icon={UserRound} />
-                      <InfoItem label="Gender" value={data.student.gender} icon={UserRound} />
-                      <InfoItem label="Phone" value={data.student.phone} icon={Phone} />
-                      <InfoItem label="Address" value={data.student.address} icon={MapPin} />
+                      <InfoItem label={t("studentProfile", "guardian")} value={data.student.father_name} icon={UserRound} />
+                      <InfoItem label={t("studentProfile", "gender")} value={data.student.gender === "Female" ? t("students", "female") : t("students", "male")} icon={UserRound} />
+                      <InfoItem label={t("studentProfile", "phone")} value={data.student.phone} icon={Phone} />
+                      <InfoItem label={t("studentProfile", "address")} value={data.student.address} icon={MapPin} />
                     </div>
                   </section>
                   <section className="surface-card rounded-2xl p-5 sm:p-6">
-                    <h2 className="text-base font-bold text-slate-900">Enrollment & instruction</h2>
+                    <h2 className="text-base font-bold text-slate-900">{t("studentProfile", "enrollmentInstruction")}</h2>
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      <InfoItem label="Religious class" value={data.student.religious_class} icon={BookOpen} />
-                      <InfoItem label="Contemporary class" value={data.student.contemporary_class === "None" ? "Not enrolled" : data.student.contemporary_class} icon={GraduationCap} />
-                      <InfoItem label="Assigned teacher" value={data.student.teacher_name || "Unassigned"} icon={UserRound} />
-                      <InfoItem label="Teacher phone" value={data.student.teacher_phone} icon={Phone} />
+                      <InfoItem label={t("studentProfile", "religiousClass")} value={data.student.religious_class} icon={BookOpen} />
+                      <InfoItem label={t("studentProfile", "contemporaryClass")} value={data.student.contemporary_class === "None" ? t("studentProfile", "notEnrolled") : data.student.contemporary_class} icon={GraduationCap} />
+                      <InfoItem label={t("studentProfile", "assignedTeacher")} value={data.student.teacher_name || t("students", "unassigned")} icon={UserRound} />
+                      <InfoItem label={t("studentProfile", "teacherPhone")} value={data.student.teacher_phone} icon={Phone} />
                     </div>
                   </section>
                 </div>
                 <aside className="space-y-4">
                   <div className="metric-card metric-card-emerald p-5">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Attendance rate</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("studentProfile", "attendanceRate")}</p>
                     <div className="mt-3 flex items-end justify-between">
                       <p className="text-3xl font-extrabold text-slate-900">{data.summary.attendanceRate}%</p>
-                      <p className="text-xs text-slate-400">{data.summary.totalAttendance} records</p>
+                      <p className="text-xs text-slate-400">{data.summary.totalAttendance} {t("studentProfile", "records")}</p>
                     </div>
                     <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
                       <div className="h-full rounded-full bg-emerald-500" style={{ width: `${data.summary.attendanceRate}%` }} />
                     </div>
                   </div>
                   <div className="metric-card metric-card-indigo p-5">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Current progress</p>
-                    <p className="mt-3 text-xl font-extrabold text-primary-800">{data.student.current_progress?.type || "Not recorded"}</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("studentProfile", "currentProgress")}</p>
+                    <p className="mt-3 text-xl font-extrabold text-primary-800">{data.student.current_progress?.type || t("studentProfile", "notRecorded")}</p>
                     <p className="mt-1 text-sm text-slate-500">
-                      {[data.student.current_progress?.para ? `Para ${data.student.current_progress.para}` : "", data.student.current_progress?.surah].filter(Boolean).join(" · ") || "No milestone details"}
+                      {[data.student.current_progress?.para ? `${t("studentProfile", "para")} ${data.student.current_progress.para}` : "", data.student.current_progress?.surah].filter(Boolean).join(" · ") || t("studentProfile", "noMilestoneDetails")}
                     </p>
-                    <p className="mt-4 text-xs text-slate-400">Updated {formatDate(data.student.current_progress?.last_updated)}</p>
+                    <p className="mt-4 text-xs text-slate-400">{t("studentProfile", "updated")} {formatDate(data.student.current_progress?.last_updated)}</p>
                   </div>
                   <div className="metric-card metric-card-amber p-5">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Current fee status</p>
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{t("studentProfile", "currentFeeStatus")}</p>
                     <div className="mt-3 flex items-center justify-between">
-                      <p className={`text-xl font-extrabold ${data.student.fee_status === "Paid" ? "text-emerald-600" : "text-rose-600"}`}>{data.student.fee_status}</p>
-                      <p className="text-sm font-bold text-slate-700">{currency(data.student.monthly_fee)} / month</p>
+                      <p className={`text-xl font-extrabold ${data.student.fee_status === "Paid" ? "text-emerald-600" : "text-rose-600"}`}>{data.student.fee_status === "Paid" ? t("common", "paid") : t("dashboard", "unpaid")}</p>
+                      <p className="text-sm font-bold text-slate-700">{currency(data.student.monthly_fee)} / {t("studentProfile", "perMonth")}</p>
                     </div>
                   </div>
                 </aside>
@@ -529,17 +529,17 @@ export default function StudentProfilePage() {
             {activeTab === "academic" && (
               <section className="surface-card rounded-2xl p-5 sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div><h2 className="text-base font-bold text-slate-900">Academic milestones</h2><p className="mt-1 text-xs text-slate-400">Qur&apos;an learning and revision progress</p></div>
-                  {canEdit && <button onClick={() => setModal("progress")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Add milestone</button>}
+                  <div><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "academicMilestones")}</h2><p className="mt-1 text-xs text-slate-400">{t("studentProfile", "learningProgress")}</p></div>
+                  {canEdit && <button onClick={() => setModal("progress")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "addMilestone")}</button>}
                 </div>
                 <div className="mt-6">
-                  {data.progress.length === 0 ? <EmptyState icon={BookOpen} title="No progress recorded" description="Add the first learning milestone for this student." /> : (
+                  {data.progress.length === 0 ? <EmptyState icon={BookOpen} title={t("studentProfile", "noProgress")} description={t("studentProfile", "noProgressHint")} /> : (
                     <div className="relative ml-2 space-y-6 border-l-2 border-slate-100 pl-7">
                       {data.progress.map((entry) => (
                         <article key={entry.id} className="relative">
                           <span className="absolute -left-[34px] top-1 h-3 w-3 rounded-full border-2 border-white bg-primary-600 ring-2 ring-primary-100" />
                           <div className="flex flex-col justify-between gap-2 sm:flex-row">
-                            <div><p className="text-sm font-bold text-slate-900">{entry.type} {entry.para ? `· Para ${entry.para}` : ""} {entry.ayat ? `· Ayat ${entry.ayat}` : ""}</p><p className="mt-1 text-sm text-slate-500">{entry.surah || "General progress milestone"}</p>{entry.notes && <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs italic text-slate-600">{entry.notes}</p>}</div>
+                            <div><p className="text-sm font-bold text-slate-900">{entry.type} {entry.para ? `· ${t("studentProfile", "para")} ${entry.para}` : ""} {entry.ayat ? `· ${t("studentProfile", "ayat")} ${entry.ayat}` : ""}</p><p className="mt-1 text-sm text-slate-500">{entry.surah || t("studentProfile", "generalMilestone")}</p>{entry.notes && <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs italic text-slate-600">{entry.notes}</p>}</div>
                             <time className="shrink-0 text-xs font-semibold text-slate-400">{formatDate(entry.date)}</time>
                           </div>
                         </article>
@@ -554,17 +554,17 @@ export default function StudentProfilePage() {
               <div className="space-y-6">
                 <div className="metric-grid grid grid-cols-2 gap-3 lg:grid-cols-5">
                   {[
-                    ["Attendance rate", `${data.summary.attendanceRate}%`, "text-primary-700"],
-                    ["Present", data.summary.attendance.present, "text-emerald-600"],
-                    ["Absent", data.summary.attendance.absent, "text-rose-600"],
-                    ["Late", data.summary.attendance.late, "text-amber-600"],
-                    ["Leave", data.summary.attendance.leave, "text-blue-600"],
+                    [t("studentProfile", "attendanceRate"), `${data.summary.attendanceRate}%`, "text-primary-700"],
+                    [t("students", "present"), data.summary.attendance.present, "text-emerald-600"],
+                    [t("students", "absent"), data.summary.attendance.absent, "text-rose-600"],
+                    [t("students", "late"), data.summary.attendance.late, "text-amber-600"],
+                    [t("students", "leave"), data.summary.attendance.leave, "text-blue-600"],
                   ].map(([label, value, tone]) => <div key={label} className="metric-card p-4"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-2 text-2xl font-extrabold ${tone}`}>{value}</p></div>)}
                 </div>
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">Attendance log</h2>{canEdit && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Record</button>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "attendanceLog")}</h2>{canEdit && <button onClick={() => setModal("attendance")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "record")}</button>}</div>
                   <div className="data-table-scroll mt-5">
-                    {data.attendance.length === 0 ? <EmptyState icon={CalendarCheck} title="No attendance records" description="Attendance history will appear here." /> : <table className="data-table min-w-[560px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "date")}</th><th className="px-4 py-3">{t("tables", "status")}</th><th className="px-4 py-3">{t("tables", "notes")}</th></tr></thead><tbody>{data.attendance.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-semibold text-slate-700">{formatDate(entry.date, "EEEE, MMM d, yyyy")}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${attendanceTone[entry.status] || "bg-slate-50 text-slate-600"}`}>{entry.status}</span></td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td></tr>)}</tbody></table>}
+                    {data.attendance.length === 0 ? <EmptyState icon={CalendarCheck} title={t("studentProfile", "noAttendance")} description={t("studentProfile", "noAttendanceHint")} /> : <table className="data-table min-w-[560px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "date")}</th><th className="px-4 py-3">{t("tables", "status")}</th><th className="px-4 py-3">{t("tables", "notes")}</th></tr></thead><tbody>{data.attendance.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-semibold text-slate-700">{formatDate(entry.date, "EEEE, MMM d, yyyy")}</td><td className="px-4 py-4"><span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${attendanceTone[entry.status] || "bg-slate-50 text-slate-600"}`}>{t("students", entry.status.toLowerCase())}</span></td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td></tr>)}</tbody></table>}
                   </div>
                 </section>
               </div>
@@ -573,14 +573,14 @@ export default function StudentProfilePage() {
             {activeTab === "fees" && (
               <div className="space-y-6">
                 <div className="metric-grid grid gap-3 sm:grid-cols-3">
-                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Total received</p><p className="mt-2 text-2xl font-extrabold text-emerald-600">{currency(data.summary.paidTotal)}</p></div>
-                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Payments recorded</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{data.summary.paidMonths}</p></div>
-                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Current amount due</p><p className={`mt-2 text-2xl font-extrabold ${data.summary.currentDue > 0 ? "text-rose-600" : "text-emerald-600"}`}>{currency(data.summary.currentDue)}</p></div>
+                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{t("studentProfile", "totalReceived")}</p><p className="mt-2 text-2xl font-extrabold text-emerald-600">{currency(data.summary.paidTotal)}</p></div>
+                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{t("studentProfile", "paymentsRecorded")}</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{data.summary.paidMonths}</p></div>
+                  <div className="metric-card p-5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{t("studentProfile", "currentDue")}</p><p className={`mt-2 text-2xl font-extrabold ${data.summary.currentDue > 0 ? "text-rose-600" : "text-emerald-600"}`}>{currency(data.summary.currentDue)}</p></div>
                 </div>
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">Payment history</h2>{canEdit && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> Receive fee</button>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "paymentHistory")}</h2>{canEdit && <button onClick={() => setModal("fee")} className="btn btn-primary gap-2 text-xs"><Plus className="h-4 w-4" /> {t("studentProfile", "receiveFee")}</button>}</div>
                   <div className="data-table-scroll mt-5">
-                    {data.fees.length === 0 ? <EmptyState icon={Receipt} title="No payments recorded" description="Fee payments and receipt details will appear here." /> : <table className="data-table min-w-[620px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "period")}</th><th className="px-4 py-3">{t("tables", "paidOn")}</th><th className="px-4 py-3">{t("tables", "notes")}</th><th className="px-4 py-3 text-right">{t("tables", "amount")}</th></tr></thead><tbody>{data.fees.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-bold text-slate-800">{entry.month} {entry.year}</td><td className="px-4 py-4 text-sm text-slate-500">{formatDate(entry.date)}</td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td><td className="px-4 py-4 text-right text-sm font-extrabold text-emerald-600">{currency(entry.amount)}</td></tr>)}</tbody></table>}
+                    {data.fees.length === 0 ? <EmptyState icon={Receipt} title={t("studentProfile", "noPayments")} description={t("studentProfile", "noPaymentsHint")} /> : <table className="data-table min-w-[620px] text-left"><thead><tr><th className="px-4 py-3">{t("tables", "period")}</th><th className="px-4 py-3">{t("tables", "paidOn")}</th><th className="px-4 py-3">{t("tables", "notes")}</th><th className="px-4 py-3 text-right">{t("tables", "amount")}</th></tr></thead><tbody>{data.fees.map((entry) => <tr key={entry.id}><td className="px-4 py-4 text-sm font-bold text-slate-800">{t("months", entry.month)} {entry.year}</td><td className="px-4 py-4 text-sm text-slate-500">{formatDate(entry.date)}</td><td className="px-4 py-4 text-sm text-slate-500">{entry.notes || "—"}</td><td className="px-4 py-4 text-right text-sm font-extrabold text-emerald-600">{currency(entry.amount)}</td></tr>)}</tbody></table>}
                   </div>
                 </section>
               </div>
@@ -589,53 +589,53 @@ export default function StudentProfilePage() {
             {activeTab === "documents" && (
               <div className="grid gap-6 xl:grid-cols-2">
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-base font-bold text-slate-900">Documents</h2><p className="mt-1 text-xs text-slate-400">PDF, JPEG, PNG or WebP · Max 5 MB</p></div>{canEdit && <label className="btn btn-primary cursor-pointer gap-2 text-xs"><Upload className="h-4 w-4" /> Upload<input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={uploadDocument} disabled={saving} className="sr-only" /></label>}</div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "documents")}</h2><p className="mt-1 text-xs text-slate-400">{t("studentProfile", "fileHint")}</p></div>{canEdit && <label className="btn btn-primary cursor-pointer gap-2 text-xs"><Upload className="h-4 w-4" /> {t("studentProfile", "upload")}<input type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={uploadDocument} disabled={saving} className="sr-only" /></label>}</div>
                   <div className="mt-5 space-y-3">
-                    {!Array.isArray(data.student.documents) || data.student.documents.length === 0 ? <EmptyState icon={FileText} title="No documents uploaded" description="Add identification, admission, or supporting documents." /> : data.student.documents.map((document) => <div key={document.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><div className="rounded-lg bg-blue-50 p-2 text-blue-600"><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{document.name}</p><p className="text-[10px] text-slate-400">{Math.max(1, Math.round(document.size / 1024))} KB · {formatDate(document.uploaded_at)}</p></div><a href={document.url} target="_blank" rel="noreferrer" title="Open document" className="rounded-lg p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-600"><Download className="h-4 w-4" /></a>{canEdit && <button onClick={() => { if (window.confirm("Delete this document permanently?")) runMutation(() => deleteStudentDocument(id, document.id), "Document deleted"); }} title="Delete document" className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button>}</div>)}
+                    {!Array.isArray(data.student.documents) || data.student.documents.length === 0 ? <EmptyState icon={FileText} title={t("studentProfile", "noDocuments")} description={t("studentProfile", "noDocumentsHint")} /> : data.student.documents.map((document) => <div key={document.id} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3"><div className="rounded-lg bg-blue-50 p-2 text-blue-600"><FileText className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-800">{document.name}</p><p className="text-[10px] text-slate-400">{Math.max(1, Math.round(document.size / 1024))} KB · {formatDate(document.uploaded_at)}</p></div><a href={document.url} target="_blank" rel="noreferrer" title={t("studentProfile", "openDocument")} className="rounded-lg p-2 text-slate-400 hover:bg-blue-50 hover:text-blue-600"><Download className="h-4 w-4" /></a>{canEdit && <button onClick={() => { if (window.confirm(t("studentProfile", "confirmDeleteDocument"))) runMutation(() => deleteStudentDocument(id, document.id), t("studentProfile", "deleteDocument")); }} title={t("studentProfile", "deleteDocument")} className="rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button>}</div>)}
                   </div>
                 </section>
                 <section className="surface-card rounded-2xl p-5 sm:p-6">
-                  <div className="flex items-center gap-2"><NotebookPen className="h-5 w-5 text-primary-600" /><h2 className="text-base font-bold text-slate-900">Staff notes</h2></div>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">Internal notes about the student, guardian communication, learning needs, or follow-up items.</p>
-                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} disabled={!canEdit} maxLength={5000} rows={10} placeholder="Add internal notes..." className="mt-5 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 disabled:cursor-not-allowed" />
-                  <div className="mt-3 flex items-center justify-between"><span className="text-[10px] text-slate-400">{notes.length}/5000</span>{canEdit && <button onClick={saveNotes} disabled={saving} className="btn btn-primary gap-2 text-xs disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save notes</button>}</div>
+                  <div className="flex items-center gap-2"><NotebookPen className="h-5 w-5 text-primary-600" /><h2 className="text-base font-bold text-slate-900">{t("studentProfile", "staffNotes")}</h2></div>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">{t("studentProfile", "notesHint")}</p>
+                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} disabled={!canEdit} maxLength={5000} rows={10} placeholder={t("studentProfile", "notesPlaceholder")} className="mt-5 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-100 disabled:cursor-not-allowed" />
+                  <div className="mt-3 flex items-center justify-between"><span className="text-[10px] text-slate-400">{notes.length}/5000</span>{canEdit && <button onClick={saveNotes} disabled={saving} className="btn btn-primary gap-2 text-xs disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {t("studentProfile", "saveNotes")}</button>}</div>
                 </section>
               </div>
             )}
 
             {activeTab === "history" && (
               <section className="surface-card rounded-2xl p-5 sm:p-6">
-                <h2 className="text-base font-bold text-slate-900">Complete student activity</h2>
-                <p className="mt-1 text-xs text-slate-400">Academic, attendance, fee, and document events in one timeline</p>
-                <div className="mt-6">{activity.length === 0 ? <EmptyState icon={History} title="No activity recorded" description="Student events will appear here as records are added." /> : <div className="relative ml-2 space-y-6 border-l-2 border-slate-100 pl-7">{activity.map((entry) => <article key={entry.id} className="relative"><span className={`absolute -left-[34px] top-1 h-3 w-3 rounded-full border-2 border-white ring-2 ring-slate-100 ${entry.color}`} /><div className="flex flex-col justify-between gap-1 sm:flex-row"><div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{entry.type}</p><p className="mt-1 text-sm font-bold text-slate-800">{entry.title}</p><p className="mt-1 text-xs text-slate-500">{entry.detail || "No additional details"}</p></div><time className="shrink-0 text-xs font-semibold text-slate-400">{formatDate(entry.date)}</time></div></article>)}</div>}</div>
+                <h2 className="text-base font-bold text-slate-900">{t("studentProfile", "completeActivity")}</h2>
+                <p className="mt-1 text-xs text-slate-400">{t("studentProfile", "activityHint")}</p>
+                <div className="mt-6">{activity.length === 0 ? <EmptyState icon={History} title={t("studentProfile", "noActivity")} description={t("studentProfile", "noActivityHint")} /> : <div className="relative ml-2 space-y-6 border-l-2 border-slate-100 pl-7">{activity.map((entry) => <article key={entry.id} className="relative"><span className={`absolute -left-[34px] top-1 h-3 w-3 rounded-full border-2 border-white ring-2 ring-slate-100 ${entry.color}`} /><div className="flex flex-col justify-between gap-1 sm:flex-row"><div><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{entry.type}</p><p className="mt-1 text-sm font-bold text-slate-800">{entry.title}</p><p className="mt-1 text-xs text-slate-500">{entry.detail || t("studentProfile", "noDetails")}</p></div><time className="shrink-0 text-xs font-semibold text-slate-400">{formatDate(entry.date)}</time></div></article>)}</div>}</div>
               </section>
             )}
 
-            <Modal open={modal === "progress"} onClose={() => setModal(null)} title="Record academic progress">
+            <Modal open={modal === "progress"} onClose={() => setModal(null)} title={t("studentProfile", "recordProgress")}>
               <form onSubmit={(event) => { event.preventDefault(); runMutation(() => updateStudentProgress(id, progressForm), "Academic progress recorded"); }} className="space-y-4">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Track<select value={progressForm.type} onChange={(e) => setProgressForm({ ...progressForm, type: e.target.value })} className="input-field mt-1 text-sm">{["Qaida", "Nazra", "Hifz", "Girdan"].map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Para<select value={progressForm.para} onChange={(e) => setProgressForm({ ...progressForm, para: e.target.value })} className="input-field mt-1 text-sm">{Array.from({ length: 30 }, (_, index) => index + 1).map((value) => <option key={value}>{value}</option>)}</select></label></div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Surah / lesson<input value={progressForm.surah} onChange={(e) => setProgressForm({ ...progressForm, surah: e.target.value })} className="input-field mt-1 text-sm" /></label><label className="text-xs font-semibold text-slate-600">Ayat<input type="number" min="1" value={progressForm.ayat} onChange={(e) => setProgressForm({ ...progressForm, ayat: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Month<select value={progressForm.month} onChange={(e) => setProgressForm({ ...progressForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Year<input type="number" min="2000" max="2200" value={progressForm.year} onChange={(e) => setProgressForm({ ...progressForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
-                <label className="block text-xs font-semibold text-slate-600">Notes<textarea value={progressForm.notes} onChange={(e) => setProgressForm({ ...progressForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
-                <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? "Recording..." : "Record milestone"}</button>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "track")}<select value={progressForm.type} onChange={(e) => setProgressForm({ ...progressForm, type: e.target.value })} className="input-field mt-1 text-sm">{["Qaida", "Nazra", "Hifz", "Girdan"].map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "para")}<select value={progressForm.para} onChange={(e) => setProgressForm({ ...progressForm, para: e.target.value })} className="input-field mt-1 text-sm">{Array.from({ length: 30 }, (_, index) => index + 1).map((value) => <option key={value}>{value}</option>)}</select></label></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "surahLesson")}<input value={progressForm.surah} onChange={(e) => setProgressForm({ ...progressForm, surah: e.target.value })} className="input-field mt-1 text-sm" /></label><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "ayat")}<input type="number" min="1" value={progressForm.ayat} onChange={(e) => setProgressForm({ ...progressForm, ayat: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "month")}<select value={progressForm.month} onChange={(e) => setProgressForm({ ...progressForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{t("months", value)}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "year")}<input type="number" min="2000" max="2200" value={progressForm.year} onChange={(e) => setProgressForm({ ...progressForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
+                <label className="block text-xs font-semibold text-slate-600">{t("studentProfile", "notes")}<textarea value={progressForm.notes} onChange={(e) => setProgressForm({ ...progressForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
+                <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? t("students", "recording") : t("studentProfile", "recordMilestone")}</button>
               </form>
             </Modal>
 
-            <Modal open={modal === "attendance"} onClose={() => setModal(null)} title="Record attendance">
+            <Modal open={modal === "attendance"} onClose={() => setModal(null)} title={t("studentProfile", "recordAttendance")}>
               <form onSubmit={(event) => { event.preventDefault(); runMutation(() => recordStudentAttendance(id, attendanceForm.status, attendanceForm.date, attendanceForm.notes), "Attendance recorded"); }} className="space-y-4">
-                <label className="block text-xs font-semibold text-slate-600">Date<input type="date" required value={attendanceForm.date} onChange={(e) => setAttendanceForm({ ...attendanceForm, date: e.target.value })} className="input-field mt-1 text-sm" /></label>
-                <div><p className="text-xs font-semibold text-slate-600">Status</p><div className="mt-2 grid grid-cols-2 gap-2">{["Present", "Absent", "Late", "Leave"].map((status) => <button key={status} type="button" onClick={() => setAttendanceForm({ ...attendanceForm, status })} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${attendanceForm.status === status ? attendanceTone[status] : "border-slate-200 text-slate-500"}`}>{status}</button>)}</div></div>
-                <label className="block text-xs font-semibold text-slate-600">Notes<textarea value={attendanceForm.notes} onChange={(e) => setAttendanceForm({ ...attendanceForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
-                <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? "Saving..." : "Save attendance"}</button>
+                <label className="block text-xs font-semibold text-slate-600">{t("tables", "date")}<input type="date" required value={attendanceForm.date} onChange={(e) => setAttendanceForm({ ...attendanceForm, date: e.target.value })} className="input-field mt-1 text-sm" /></label>
+                <div><p className="text-xs font-semibold text-slate-600">{t("tables", "status")}</p><div className="mt-2 grid grid-cols-2 gap-2">{["Present", "Absent", "Late", "Leave"].map((status) => <button key={status} type="button" onClick={() => setAttendanceForm({ ...attendanceForm, status })} className={`rounded-xl border px-3 py-2.5 text-xs font-bold ${attendanceForm.status === status ? attendanceTone[status] : "border-slate-200 text-slate-500"}`}>{t("students", status.toLowerCase())}</button>)}</div></div>
+                <label className="block text-xs font-semibold text-slate-600">{t("tables", "notes")}<textarea value={attendanceForm.notes} onChange={(e) => setAttendanceForm({ ...attendanceForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
+                <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? t("common", "saving") : t("studentProfile", "saveAttendance")}</button>
               </form>
             </Modal>
 
-            <Modal open={modal === "fee"} onClose={() => setModal(null)} title="Receive student fee">
+            <Modal open={modal === "fee"} onClose={() => setModal(null)} title={t("studentProfile", "receiveFee")}>
               <form onSubmit={(event) => { event.preventDefault(); runMutation(() => recordFeePayment(id, feeForm), "Fee payment recorded"); }} className="space-y-4">
-                <label className="block text-xs font-semibold text-slate-600">Amount (Rs)<input type="number" min="0" required value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} className="input-field mt-1 text-sm" /></label>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Month<select value={feeForm.month} onChange={(e) => setFeeForm({ ...feeForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Year<input type="number" min="2000" max="2200" value={feeForm.year} onChange={(e) => setFeeForm({ ...feeForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
-                <label className="block text-xs font-semibold text-slate-600">Notes<textarea value={feeForm.notes} onChange={(e) => setFeeForm({ ...feeForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
-                <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? "Recording..." : "Record payment"}</button>
+                <label className="block text-xs font-semibold text-slate-600">{t("studentProfile", "amount")}<input type="number" min="0" required value={feeForm.amount} onChange={(e) => setFeeForm({ ...feeForm, amount: e.target.value })} className="input-field mt-1 text-sm" /></label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "month")}<select value={feeForm.month} onChange={(e) => setFeeForm({ ...feeForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{t("months", value)}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "year")}<input type="number" min="2000" max="2200" value={feeForm.year} onChange={(e) => setFeeForm({ ...feeForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
+                <label className="block text-xs font-semibold text-slate-600">{t("tables", "notes")}<textarea value={feeForm.notes} onChange={(e) => setFeeForm({ ...feeForm, notes: e.target.value })} rows={3} className="input-field mt-1 resize-none text-sm" /></label>
+                <button disabled={saving} className="btn btn-primary w-full text-sm disabled:opacity-50">{saving ? t("students", "recording") : t("studentProfile", "recordPayment")}</button>
               </form>
             </Modal>
           </div>

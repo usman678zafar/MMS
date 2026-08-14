@@ -47,6 +47,10 @@ import { format } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
 
 const DONATION_TYPES = ["Sadqah", "Zakat", "Fitra", "Hadiya", "Other"];
+const TYPE_KEYS = {
+  Sadqah: "sadqah", Zakat: "zakat", Fitra: "fitra", Fitrana: "fitrana",
+  Hadiya: "hadiya", Lillah: "lillah", Masjid: "masjid", Other: "other",
+};
 const defaultForm = {
   donor_id: "",
   amount: "",
@@ -359,10 +363,10 @@ export default function DonationsPage() {
           <div className="page-header flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">
-                Donations & Donors
+                {t("donations", "title")}
               </h2>
               <p className="text-slate-500">
-                Manage contributions and donor profiles.
+                {t("donations", "subtitle")}
               </p>
             </div>
             <div className="flex gap-2 sm:w-auto">
@@ -387,7 +391,7 @@ export default function DonationsPage() {
                 className="btn btn-primary page-primary-action"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                {activeTab === "donations" ? "Add Donation" : "Add Donor"}
+                {activeTab === "donations" ? t("donations", "addDonation") : t("donations", "addDonor")}
               </button>
             </div>
           </div>
@@ -409,7 +413,7 @@ export default function DonationsPage() {
             >
               <div className="flex items-center gap-2">
                 <HandHeart className="h-4 w-4" />
-                Donations
+                {t("donations", "donations")}
               </div>
             </button>
             <button
@@ -427,29 +431,29 @@ export default function DonationsPage() {
             >
               <div className="flex items-center gap-2">
                 <UserRound className="h-4 w-4" />
-                Donors
+                {t("donations", "donors")}
               </div>
             </button>
           </div>
 
           {/* Stats Bar */}
-          {loading ? (
+          {loading && !pagination ? (
             <StatsSkeleton />
           ) : activeTab === "donations" ? (
             <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
-                  label: "Total Donations",
+                  label: t("donations", "totalDonations"),
                   value: pagination?.totalItems || 0,
                   color: "text-slate-900",
                 },
                 {
-                  label: "This Month",
+                  label: t("donations", "thisMonth"),
                   value: `Rs ${thisMonth.toLocaleString()}`,
                   color: "text-emerald-600",
                 },
                 {
-                  label: "Total Amount",
+                  label: t("donations", "totalAmount"),
                   value: `Rs ${totalAmount.toLocaleString()}`,
                   color: "text-primary-600",
                 },
@@ -471,17 +475,17 @@ export default function DonationsPage() {
             <div className="metric-grid grid grid-cols-2 sm:grid-cols-3 gap-4">
               {[
                 {
-                  label: "Total Donors",
+                  label: t("donations", "totalDonors"),
                   value: pagination?.totalItems || 0,
                   color: "text-slate-900",
                 },
                 {
-                  label: "Active",
+                  label: t("common", "active"),
                   value: donorList.filter((d) => d.is_active !== false).length,
                   color: "text-emerald-600",
                 },
                 {
-                  label: "Inactive",
+                  label: t("common", "inactive"),
                   value: donorList.filter((d) => d.is_active === false).length,
                   color: "text-rose-500",
                 },
@@ -502,7 +506,7 @@ export default function DonationsPage() {
           )}
 
           {/* Filters */}
-          {loading ? (
+          {loading && !pagination ? (
             <FilterSkeleton />
           ) : (
             <div className="flex flex-col sm:flex-row gap-3">
@@ -510,7 +514,7 @@ export default function DonationsPage() {
                 value={searchInput}
                 onChange={setSearchInput}
                 onSearch={handleSearch}
-                placeholder={activeTab === "donations" ? "Search donor or type..." : "Search donors..."}
+                placeholder={activeTab === "donations" ? t("donations", "searchDonations") : t("donations", "searchDonors")}
               />
               {activeTab === "donations" ? (
                 <select
@@ -521,9 +525,9 @@ export default function DonationsPage() {
                   }}
                   className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
                 >
-                  <option value="">All Types</option>
+                  <option value="">{t("donations", "allTypes")}</option>
                   {DONATION_TYPES.map((type) => (
-                    <option key={type}>{type}</option>
+                    <option key={type} value={type}>{t("options", TYPE_KEYS[type])}</option>
                   ))}
                 </select>
               ) : (
@@ -535,9 +539,9 @@ export default function DonationsPage() {
                   }}
                   className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none transition-all"
                 >
-                  <option value="">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="">{t("common", "allStatus")}</option>
+                  <option value="active">{t("common", "active")}</option>
+                  <option value="inactive">{t("common", "inactive")}</option>
                 </select>
               )}
             </div>
@@ -545,9 +549,17 @@ export default function DonationsPage() {
 
           {activeTab === "donations" ? (
             /* Donations Table */
-            <div className="surface-card rounded-2xl overflow-hidden">
+            <div className="surface-card min-h-[26rem] rounded-2xl overflow-hidden">
               <div className="data-table-scroll rounded-none border-0 shadow-none">
-                <table className="data-table w-full text-left">
+                <table className="data-table w-full min-w-[920px] table-fixed text-left">
+                  <colgroup>
+                    <col className="w-[15%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[15%]" />
+                    <col className="w-[26%]" />
+                    <col className="w-[10%]" />
+                  </colgroup>
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -576,7 +588,7 @@ export default function DonationsPage() {
                         <td colSpan="6" className="px-6 py-12 text-center">
                           <HandHeart className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                           <p className="text-slate-400 text-lg font-medium">
-                            No donations found
+                            {t("donations", "emptyDonations")}
                           </p>
                         </td>
                       </tr>
@@ -584,39 +596,33 @@ export default function DonationsPage() {
                       donations.map((d) => (
                         <tr
                           key={d.id}
-                          className="hover:bg-slate-50/50 transition-colors group"
+                          className="h-[4.5rem] hover:bg-slate-50/50 transition-colors group"
                         >
                           <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                             {(() => {
-                              if (!d.date) return "N/A";
+                              if (!d.date) return t("common", "notAvailable");
                               try {
                                 return format(new Date(d.date), "MMM dd, yyyy");
                               } catch (error) {
-                                return "Invalid Date";
+                                return t("donations", "invalidDate");
                               }
                             })()}
                           </td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-base flex-shrink-0">
-                                {d.donors?.name?.charAt(0)?.toUpperCase() ||
-                                  "W"}
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-900 text-sm">
-                                  {d.donors?.name || "Walk-in"}
-                                </p>
-                                <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                                  {d.type}
-                                </p>
-                              </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-bold text-slate-900 text-sm">
+                                {d.donors?.name || t("donations", "walkIn")}
+                              </p>
+                              <p className="truncate text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                                {TYPE_KEYS[d.type] ? t("options", TYPE_KEYS[d.type]) : d.type}
+                              </p>
                             </div>
                           </td>
                           <td className="px-6 py-4">
                             <span
                               className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${d.type === "Zakat" ? "bg-emerald-100 text-emerald-800" : d.type === "Sadqah" ? "bg-blue-100 text-blue-800" : d.type === "Masjid" ? "bg-purple-100 text-purple-800" : "bg-amber-100 text-amber-800"}`}
                             >
-                              {d.type}
+                              {TYPE_KEYS[d.type] ? t("options", TYPE_KEYS[d.type]) : d.type}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -626,10 +632,10 @@ export default function DonationsPage() {
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
                             {d.notes ? (
-                              <span className="truncate">{d.notes}</span>
+                              <span className="block truncate">{d.notes}</span>
                             ) : (
                               <span className="text-slate-300 italic text-xs">
-                                No notes
+                                {t("donations", "noNotes")}
                               </span>
                             )}
                           </td>
@@ -638,14 +644,14 @@ export default function DonationsPage() {
                               <button
                                 onClick={() => handleOpenEdit(d)}
                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                title="Edit Donation"
+                                title={t("donations", "editDonation")}
                               >
                                 <Edit2 className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => setDeleteId(d.id)}
                                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                title="Delete Donation"
+                                title={t("donations", "deleteDonation")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -660,9 +666,16 @@ export default function DonationsPage() {
             </div>
           ) : (
             /* Donors Table */
-            <div className="surface-card rounded-2xl overflow-hidden">
+            <div className="surface-card min-h-[26rem] rounded-2xl overflow-hidden">
               <div className="data-table-scroll rounded-none border-0 shadow-none">
-                <table className="data-table w-full text-left">
+                <table className="data-table w-full min-w-[760px] table-fixed text-left">
+                  <colgroup>
+                    <col className="w-[27%]" />
+                    <col className="w-[19%]" />
+                    <col className="w-[25%]" />
+                    <col className="w-[16%]" />
+                    <col className="w-[13%]" />
+                  </colgroup>
                   <thead>
                     <tr className="bg-slate-50/50 border-b border-slate-100">
                       <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -688,7 +701,7 @@ export default function DonationsPage() {
                         <td colSpan="5" className="px-6 py-12 text-center">
                           <UserRound className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                           <p className="text-slate-400 text-lg font-medium">
-                            No donors found
+                            {t("donations", "emptyDonors")}
                           </p>
                         </td>
                       </tr>
@@ -696,28 +709,23 @@ export default function DonationsPage() {
                       donorList.map((donor) => (
                         <tr
                           key={donor.id}
-                          className="hover:bg-slate-50/50 transition-colors group"
+                          className="h-[4.5rem] hover:bg-slate-50/50 transition-colors group"
                         >
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 font-bold text-base flex-shrink-0">
-                                {donor.name?.charAt(0)?.toUpperCase()}
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-900 text-sm">
-                                  {donor.name}
-                                </p>
-                                <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                                  ID: {donor.id?.slice(-8)}
-                                </p>
-                              </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-bold text-slate-900 text-sm">
+                                {donor.name}
+                              </p>
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                                {t("donations", "donorId")}: {donor.id?.slice(-8)}
+                              </p>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {donor.phone || "N/A"}
+                          <td className="truncate px-6 py-4 text-sm text-slate-600">
+                            {donor.phone || t("common", "notAvailable")}
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {donor.email || "N/A"}
+                          <td className="truncate px-6 py-4 text-sm text-slate-600">
+                            {donor.email || t("common", "notAvailable")}
                           </td>
                           <td className="px-6 py-4">
                             <button
@@ -734,8 +742,8 @@ export default function DonationsPage() {
                               }`}
                             >
                               {donor.is_active !== false
-                                ? "Active"
-                                : "Inactive"}
+                                ? t("common", "active")
+                                : t("common", "inactive")}
                             </button>
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -743,21 +751,21 @@ export default function DonationsPage() {
                               <button
                                 onClick={() => handleViewHistory(donor)}
                                 className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all"
-                                title="View History"
+                                title={t("donations", "viewHistory")}
                               >
                                 <History className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleOpenDonorEdit(donor)}
                                 className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                title="Edit Donor"
+                                title={t("donations", "editDonor")}
                               >
                                 <Edit2 className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => setDeleteDonorId(donor.id)}
                                 className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                title="Delete Donor"
+                                title={t("donations", "deleteDonor")}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -784,12 +792,12 @@ export default function DonationsPage() {
           <Modal
             open={showModal}
             onClose={handleCloseModal}
-            title={editingId ? "Edit Donation" : "Add Donation"}
+            title={editingId ? t("donations", "editDonation") : t("donations", "addDonation")}
           >
             <form onSubmit={handleSave} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Donor *
+                  {t("donations", "donor")} *
                 </label>
                 <select
                   required
@@ -799,7 +807,7 @@ export default function DonationsPage() {
                     setNewDonation({ ...newDonation, donor_id: e.target.value })
                   }
                 >
-                  <option value="">Select Donor</option>
+                  <option value="">{t("donations", "selectDonor")}</option>
                   {donorsForSelect.map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name}
@@ -810,7 +818,7 @@ export default function DonationsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Amount (Rs) *
+                    {t("donations", "amount")} *
                   </label>
                   <input
                     type="number"
@@ -825,7 +833,7 @@ export default function DonationsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Type
+                    {t("tables", "type")}
                   </label>
                   <select
                     className="input-field text-sm"
@@ -841,14 +849,14 @@ export default function DonationsPage() {
                       "Fitrana",
                       "Masjid",
                       "Other",
-                    ].map((t) => (
-                      <option key={t}>{t}</option>
+                    ].map((type) => (
+                      <option key={type} value={type}>{t("options", TYPE_KEYS[type])}</option>
                     ))}
                   </select>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Date *
+                    {t("tables", "date")} *
                   </label>
                   <input
                     type="date"
@@ -863,7 +871,7 @@ export default function DonationsPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Notes
+                  {t("tables", "notes")}
                 </label>
                 <textarea
                   rows="2"
@@ -876,17 +884,17 @@ export default function DonationsPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Receipt Image{" "}
+                  {t("donations", "receiptImage")}{" "}
                   {newDonation.receipt_url && !selectedFile && (
                     <>
-                      (Current:{" "}
+                      ({t("donations", "current")}:{" "}
                       <a
                         href={newDonation.receipt_url}
                         className="text-primary-600 underline"
                         target="_blank"
                         rel="noreferrer"
                       >
-                        View
+                        {t("donations", "view")}
                       </a>
                       )
                     </>
@@ -900,7 +908,7 @@ export default function DonationsPage() {
                 />
                 {selectedFile && (
                   <p className="text-[10px] text-green-600 mt-1">
-                    Image selected, will replace current on save.
+                    {t("donations", "imageSelected")}
                   </p>
                 )}
               </div>
@@ -910,7 +918,7 @@ export default function DonationsPage() {
                   onClick={handleCloseModal}
                   className="btn btn-secondary text-sm"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
@@ -918,10 +926,10 @@ export default function DonationsPage() {
                   className="btn btn-primary text-sm disabled:opacity-50"
                 >
                   {uploading
-                    ? "Processing..."
+                    ? t("donations", "processing")
                     : editingId
-                      ? "Update Donation"
-                      : "Save Donation"}
+                      ? t("donations", "updateDonation")
+                      : t("donations", "saveDonation")}
                 </button>
               </div>
             </form>
@@ -931,18 +939,18 @@ export default function DonationsPage() {
           <Modal
             open={showDonorModal}
             onClose={handleCloseDonorModal}
-            title={editingId ? "Edit Donor" : "Add Donor"}
+            title={editingId ? t("donations", "editDonor") : t("donations", "addDonor")}
           >
             <form onSubmit={handleSaveDonor} className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Full Name *
+                  {t("donations", "fullName")} *
                 </label>
                 <input
                   type="text"
                   required
                   className="input-field text-sm"
-                  placeholder="e.g. Ahmad Ali"
+                  placeholder={t("donations", "namePlaceholder")}
                   value={newDonor.name}
                   onChange={(e) =>
                     setNewDonor({ ...newDonor, name: e.target.value })
@@ -952,7 +960,7 @@ export default function DonationsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Phone
+                    {t("donations", "phone")}
                   </label>
                   <input
                     type="tel"
@@ -966,7 +974,7 @@ export default function DonationsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Email
+                    {t("donations", "email")}
                   </label>
                   <input
                     type="email"
@@ -980,12 +988,12 @@ export default function DonationsPage() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Address
+                    {t("donations", "address")}
                   </label>
                   <input
                     type="text"
                     className="input-field text-sm"
-                    placeholder="City, Area"
+                    placeholder={t("donations", "addressPlaceholder")}
                     value={newDonor.address}
                     onChange={(e) =>
                       setNewDonor({ ...newDonor, address: e.target.value })
@@ -999,7 +1007,7 @@ export default function DonationsPage() {
                   onClick={handleCloseDonorModal}
                   className="btn btn-secondary text-sm"
                 >
-                  Cancel
+                  {t("common", "cancel")}
                 </button>
                 <button
                   type="submit"
@@ -1007,10 +1015,10 @@ export default function DonationsPage() {
                   className="btn btn-primary text-sm disabled:opacity-50"
                 >
                   {uploading
-                    ? "Processing..."
+                    ? t("donations", "processing")
                     : editingId
-                      ? "Update Donor"
-                      : "Add Donor"}
+                      ? t("donations", "updateDonor")
+                      : t("donations", "addDonor")}
                 </button>
               </div>
             </form>
@@ -1020,16 +1028,16 @@ export default function DonationsPage() {
             open={!!deleteId}
             onClose={() => setDeleteId(null)}
             onConfirm={confirmDelete}
-            title="Delete Donation"
-            message="Are you sure you want to remove this donation record?"
+            title={t("donations", "deleteDonation")}
+            message={t("donations", "donationDeleteMessage")}
           />
 
           <ConfirmModal
             open={!!deleteDonorId}
             onClose={() => setDeleteDonorId(null)}
             onConfirm={confirmDeleteDonor}
-            title="Delete Donor"
-            message="Are you sure you want to remove this donor? This will not delete their historical donations."
+            title={t("donations", "deleteDonor")}
+            message={t("donations", "donorDeleteMessage")}
           />
 
           {/* Donor History Modal */}
@@ -1040,7 +1048,7 @@ export default function DonationsPage() {
               setDonorHistory([]);
               setSelectedDonorHistory(null);
             }}
-            title={`Donation History: ${selectedDonorHistory?.name || ""}`}
+            title={`${t("donations", "history")}: ${selectedDonorHistory?.name || ""}`}
           >
             <div className="space-y-4">
               {historyLoading ? (
@@ -1056,7 +1064,7 @@ export default function DonationsPage() {
                 <div className="py-12 text-center">
                   <History className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                   <p className="text-slate-400 font-medium">
-                    No donation history found for this donor.
+                    {t("donations", "emptyHistory")}
                   </p>
                 </div>
               ) : (
@@ -1064,7 +1072,7 @@ export default function DonationsPage() {
                   <div className="bg-primary-50 p-4 rounded-2xl flex justify-between items-center mb-6">
                     <div>
                       <p className="text-xs text-primary-600 font-bold uppercase tracking-wider">
-                        Total Contributed
+                        {t("donations", "totalContributed")}
                       </p>
                       <p className="text-2xl font-black text-primary-900">
                         Rs{" "}
@@ -1096,7 +1104,7 @@ export default function DonationsPage() {
                           <p className="text-xs font-bold text-slate-600">
                             {h.date
                               ? format(new Date(h.date), "MMM dd, yyyy")
-                              : "N/A"}
+                              : t("common", "notAvailable")}
                           </p>
                         </div>
                       </div>
@@ -1118,7 +1126,7 @@ export default function DonationsPage() {
                   }}
                   className="btn btn-secondary text-sm"
                 >
-                  Close
+                  {t("common", "close")}
                 </button>
               </div>
             </div>
