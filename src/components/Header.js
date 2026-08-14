@@ -1,20 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, Globe, Menu } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { CalendarDays, Globe, Menu, Search } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-
-const pageTitleKeys = {
-  "/": "dashboard",
-  "/students": "students",
-  "/donations": "donations",
-  "/expenses": "expenses",
-  "/staff": "staff",
-  "/inventory": "inventory",
-  "/users": "users",
-};
 
 function getIslamicDate(locale) {
   const options = { day: "numeric", month: "long", year: "numeric" };
@@ -34,7 +23,6 @@ function getIslamicDate(locale) {
 export default function Header({ onMenuClick }) {
   const { profile } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
-  const pathname = usePathname();
   const [islamicDate, setIslamicDate] = useState({ english: "", arabic: "" });
 
   useEffect(() => {
@@ -50,13 +38,6 @@ export default function Header({ onMenuClick }) {
     return () => window.clearInterval(interval);
   }, []);
 
-  const pageTitleKey = pathname.match(/^\/students\/[^/]+$/)
-    ? "studentProfile"
-    : Object.entries(pageTitleKeys).find(([path]) =>
-        path === "/" ? pathname === path : pathname.startsWith(path),
-      )?.[1] || "fallback";
-  const pageTitle = t("pages", pageTitleKey);
-
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-2 sm:px-5 md:flex-nowrap min-[1700px]:min-h-[3.75rem] min-[1700px]:gap-x-4 min-[1700px]:px-7">
@@ -69,14 +50,15 @@ export default function Header({ onMenuClick }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-slate-900 sm:text-base">
-              {pageTitle}
-            </p>
-            <p dir="ltr" className="hidden text-xs text-slate-400 sm:block">
-              Madrasa Management System
-            </p>
-          </div>
+          <label className="relative block min-w-0">
+            <span className="sr-only">{t("common", "search")}</span>
+            <Search className={`pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 ${language === "ur" ? "right-3" : "left-3"}`} />
+            <input
+              type="search"
+              placeholder={`${t("common", "search")}...`}
+              className={`h-9 w-40 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-100 sm:w-56 lg:w-64 ${language === "ur" ? "pl-3 pr-9" : "pl-9 pr-3"}`}
+            />
+          </label>
         </div>
 
         <div className="order-3 flex w-full items-center justify-center gap-2 border-t border-slate-100 pt-2 md:order-2 md:w-auto md:border-0 md:pt-0">
