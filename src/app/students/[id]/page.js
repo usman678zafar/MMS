@@ -539,7 +539,7 @@ export default function StudentProfilePage() {
                         <article key={entry.id} className="relative">
                           <span className="absolute -left-[34px] top-1 h-3 w-3 rounded-full border-2 border-white bg-primary-600 ring-2 ring-primary-100" />
                           <div className="flex flex-col justify-between gap-2 sm:flex-row">
-                            <div><p className="text-sm font-bold text-slate-900">{entry.type} {entry.para ? `· ${t("studentProfile", "para")} ${entry.para}` : ""} {entry.ayat ? `· ${t("studentProfile", "ayat")} ${entry.ayat}` : ""}</p><p className="mt-1 text-sm text-slate-500">{entry.surah || t("studentProfile", "generalMilestone")}</p>{entry.notes && <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs italic text-slate-600">{entry.notes}</p>}</div>
+                            <div><p className="text-sm font-bold text-slate-900">{["Qaida", "Nazra", "Hifz", "Girdan"].includes(entry.type) ? t("options", entry.type.toLowerCase()) : entry.type} {entry.para ? `· ${t("studentProfile", "para")} ${entry.para}` : ""} {entry.ayat ? `· ${t("studentProfile", "ayat")} ${entry.ayat}` : ""}</p><p className="mt-1 text-sm text-slate-500">{entry.surah || t("studentProfile", "generalMilestone")}</p>{entry.notes && <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs italic text-slate-600">{entry.notes}</p>}</div>
                             <time className="shrink-0 text-xs font-semibold text-slate-400">{formatDate(entry.date)}</time>
                           </div>
                         </article>

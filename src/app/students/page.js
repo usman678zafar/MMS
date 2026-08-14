@@ -1081,16 +1081,17 @@ export default function StudentsPage() {
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
                                   <span className="text-xs font-bold text-slate-700">
-                                    {student.religious_class ||
-                                      student.class ||
-                                      t("common", "notAvailable")}
+                                    {OPTION_KEYS[student.religious_class || student.class]
+                                      ? t("options", OPTION_KEYS[student.religious_class || student.class])
+                                      : t("common", "notAvailable")}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
                                   <span className="text-[10px] font-semibold text-slate-400">
-                                    {student.contemporary_class ||
-                                      t("students", "noSchooling")}
+                                    {OPTION_KEYS[student.contemporary_class]
+                                      ? t("options", OPTION_KEYS[student.contemporary_class])
+                                      : t("students", "noSchooling")}
                                   </span>
                                 </div>
                                 <div className="student-laptop-meta mt-0.5 truncate text-[10px] font-semibold text-slate-500">
@@ -1111,7 +1112,9 @@ export default function StudentsPage() {
                                 className="flex flex-col items-start hover:bg-slate-100 p-1.5 rounded-lg transition-all group/progress w-full"
                               >
                                 <span className="text-xs font-bold text-blue-600">
-                                  {student.current_progress?.type || "Qaida"}
+                                  {OPTION_KEYS[student.current_progress?.type || "Qaida"]
+                                    ? t("options", OPTION_KEYS[student.current_progress?.type || "Qaida"])
+                                    : student.current_progress?.type}
                                 </span>
                                 <span className="text-[10px] text-slate-500 flex flex-col items-start gap-0.5">
                                   <span>
@@ -1259,7 +1262,7 @@ export default function StudentsPage() {
                         <button onClick={() => handleOpenProgress(student)} className="mt-2 flex w-full items-center justify-between rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-left">
                           <span>
                             <span className="block text-[9px] font-bold uppercase tracking-wide text-blue-500">{t("students", "currentProgress")}</span>
-                            <span className="block text-xs font-bold text-blue-700">{student.current_progress?.type || "Qaida"}</span>
+                            <span className="block text-xs font-bold text-blue-700">{OPTION_KEYS[student.current_progress?.type || "Qaida"] ? t("options", OPTION_KEYS[student.current_progress?.type || "Qaida"]) : student.current_progress?.type}</span>
                           </span>
                           <span className={`text-right text-[9px] font-bold uppercase ${hasCurrentMonthProgress(student) ? "text-emerald-600" : "text-rose-500"}`}>
                             {parseLegacyDate(student.current_progress?.last_updated)
@@ -1505,10 +1508,10 @@ export default function StudentsPage() {
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] font-bold text-emerald-600">
-                                {student.religious_class || student.class || "N/A"}
+                                {OPTION_KEYS[student.religious_class || student.class] ? t("options", OPTION_KEYS[student.religious_class || student.class]) : t("common", "notAvailable")}
                               </span>
                               <span className="text-[10px] font-semibold text-slate-400">
-                                {student.contemporary_class || "None"}
+                                {OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("options", "none")}
                               </span>
                             </div>
                           </td>
@@ -1734,10 +1737,10 @@ export default function StudentsPage() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-0.5">
                             <span className="text-[10px] font-bold text-emerald-600">
-                              {student.religious_class || student.class || "N/A"}
+                              {OPTION_KEYS[student.religious_class || student.class] ? t("options", OPTION_KEYS[student.religious_class || student.class]) : t("common", "notAvailable")}
                             </span>
                             <span className="text-[10px] font-semibold text-slate-400">
-                              {student.contemporary_class || "None"}
+                              {OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("options", "none")}
                             </span>
                           </div>
                         </td>
@@ -2242,7 +2245,7 @@ export default function StudentsPage() {
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded">
-                            {entry.type}{" "}
+                            {OPTION_KEYS[entry.type] ? t("options", OPTION_KEYS[entry.type]) : entry.type}{" "}
                             {entry.para ? `· ${PARA_NAMES[entry.para]} (${entry.para})` : ""}
                             {entry.ayat ? ` · ${t("students", "ayat")} ${entry.ayat}` : ""}
                           </span>
