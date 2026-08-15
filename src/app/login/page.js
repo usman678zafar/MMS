@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 
 function PostLoginLoading() {
   return (
-    <main dir="ltr" className="flex min-h-svh items-center justify-center bg-[#f7faf8] px-5 py-10 text-left">
+    <main dir="ltr" className="login-page flex min-h-svh items-center justify-center bg-[#f7faf8] px-5 py-10 text-left">
       <div className="w-full max-w-md px-6 py-9 text-center sm:px-10 sm:py-11" role="status" aria-live="polite">
         <div className="relative mx-auto h-32 w-32">
           <span className="loading-logo-ring absolute inset-0 rounded-full border-2 border-transparent border-t-primary-700 border-r-primary-200" aria-hidden="true" />
@@ -18,7 +18,7 @@ function PostLoginLoading() {
               alt="Madrasa Management"
               width={82}
               height={82}
-              className="h-[5.125rem] w-[5.125rem]"
+              className="theme-responsive-logo h-[5.125rem] w-[5.125rem]"
               priority
             />
           </div>
@@ -90,7 +90,7 @@ export default function Login() {
   if (user) return null;
 
   return (
-    <main dir="ltr" className="min-h-svh bg-[#f7faf8] text-left lg:grid lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,0.88fr)]">
+    <main dir="ltr" className="login-page min-h-svh bg-[#f7faf8] text-left lg:grid lg:grid-cols-[minmax(0,1.12fr)_minmax(420px,0.88fr)]">
       <section className="relative hidden min-h-svh overflow-hidden border-r border-slate-200 lg:block">
         <Image
           src="/images/islamic-courtyard-login.png"
@@ -120,7 +120,7 @@ export default function Login() {
       <section className="flex min-h-svh items-center justify-center px-5 py-10 sm:px-10 lg:bg-white lg:px-12 xl:px-20">
         <div className="w-full max-w-md">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <Image src="/logo-mark.svg" alt="MMS" width={44} height={44} className="h-11 w-11" priority />
+            <Image src="/logo-mark.svg" alt="MMS" width={44} height={44} className="theme-responsive-logo h-11 w-11" priority />
             <div>
               <p className="font-bold text-slate-900">Madrasa Management</p>
               <p className="text-xs text-slate-500">

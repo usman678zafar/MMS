@@ -7,6 +7,7 @@ import {
   parsePagination,
   studentNotesSchema,
   userCreateSchema,
+  userPreferencesSchema,
 } from "@/lib/validation";
 
 describe("role permissions", () => {
@@ -86,6 +87,16 @@ describe("input validation", () => {
       "Guardian follow-up",
     );
     expect(() => studentNotesSchema.parse({ notes: "x".repeat(5001) })).toThrow();
+  });
+
+  it("accepts only supported personal preferences", () => {
+    expect(userPreferencesSchema.parse({ language: "ur", theme: "dark" })).toEqual({
+      language: "ur",
+      theme: "dark",
+    });
+    expect(() => userPreferencesSchema.parse({ theme: "midnight" })).toThrow();
+    expect(() => userPreferencesSchema.parse({ language: "en", role: "super_admin" })).toThrow();
+    expect(() => userPreferencesSchema.parse({})).toThrow();
   });
 });
 

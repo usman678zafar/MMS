@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarDays, Globe, Menu, Search } from "lucide-react";
+import { CalendarDays, Globe, Menu, Monitor, Moon, Search, Sun } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -22,8 +22,9 @@ function getIslamicDate(locale) {
 
 export default function Header({ onMenuClick }) {
   const { profile } = useAuth();
-  const { language, toggleLanguage, t } = useLanguage();
+  const { language, toggleLanguage, theme, setTheme, t } = useLanguage();
   const [islamicDate, setIslamicDate] = useState({ english: "", arabic: "" });
+  const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
 
   useEffect(() => {
     const updateDate = () => {
@@ -75,6 +76,21 @@ export default function Header({ onMenuClick }) {
         </div>
 
         <div className="order-2 flex items-center gap-2 sm:gap-4 md:order-3">
+          <label className="relative flex items-center text-slate-500" title={t("header", "colorTheme")}>
+            <span className="sr-only">{t("header", "colorTheme")}</span>
+            <ThemeIcon className="pointer-events-none absolute left-2.5 h-4 w-4" aria-hidden="true" />
+            <select
+              value={theme}
+              onChange={(event) => setTheme(event.target.value)}
+              aria-label={t("header", "colorTheme")}
+              className="h-9 cursor-pointer appearance-none rounded-xl border border-transparent bg-transparent py-1 pl-8 pr-2 text-xs font-bold outline-none transition-colors hover:bg-primary-50 hover:text-primary-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:pr-7"
+            >
+              <option value="system">{t("header", "themeSystem")}</option>
+              <option value="light">{t("header", "themeLight")}</option>
+              <option value="dark">{t("header", "themeDark")}</option>
+            </select>
+          </label>
+
           <button
             type="button"
             onClick={toggleLanguage}

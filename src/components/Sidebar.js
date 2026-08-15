@@ -105,7 +105,7 @@ export default function Sidebar({ isOpen, onClose }) {
       >
         <div className="relative flex h-28 shrink-0 items-center justify-center border-b border-slate-100 px-4 min-[1700px]:h-32 min-[1700px]:px-5">
           <Link href="/" onClick={onClose} aria-label={t("header", "dashboardLink")} dir="ltr" className="flex flex-col items-center gap-1.5 text-center">
-            <Image src="/logo-mark-black.svg" alt="Madrasa Management" width={68} height={68} className="h-16 w-16 shrink-0 min-[1700px]:h-[4.5rem] min-[1700px]:w-[4.5rem]" priority />
+            <Image src="/logo-mark-black.svg" alt="Madrasa Management" width={68} height={68} className="theme-responsive-logo h-16 w-16 shrink-0 min-[1700px]:h-[4.5rem] min-[1700px]:w-[4.5rem]" priority />
             <span className="sidebar-brand-title whitespace-nowrap text-[11px] font-semibold leading-none text-slate-900 min-[1700px]:text-xs">
               Madrasa Management System
             </span>

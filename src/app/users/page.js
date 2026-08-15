@@ -117,7 +117,7 @@ export default function UsersPage() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setNewUser(createDefaultForm());
+    setNewUser(blankUserForRole());
     setEditingId(null);
   };
 
@@ -170,11 +170,21 @@ export default function UsersPage() {
     getEffectivePermissions(profile?.role, profile?.permissions),
   );
 
+  const permissionsForRole = (role) =>
+    (ROLE_PERMISSIONS[role] || []).filter((permission) =>
+      availablePermissions.has(permission),
+    );
+
+  const blankUserForRole = (role = ROLES.VIEWER) => ({
+    ...createDefaultForm(role),
+    permissions: permissionsForRole(role),
+  });
+
   const changeRole = (role) => {
     setNewUser((current) => ({
       ...current,
       role,
-      permissions: [...(ROLE_PERMISSIONS[role] || [])],
+      permissions: permissionsForRole(role),
     }));
   };
 
@@ -263,7 +273,7 @@ export default function UsersPage() {
             {canCreate && <button
               onClick={() => {
                 setEditingId(null);
-                setNewUser(createDefaultForm());
+                setNewUser(blankUserForRole());
                 setShowModal(true);
               }}
               className="btn btn-primary page-primary-action"
@@ -452,13 +462,14 @@ export default function UsersPage() {
           </div>
 
           {/* Add/Edit User Modal */}
-          <Modal open={showModal} onClose={handleCloseModal}>
-            <form onSubmit={handleSave} className="p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                {editingId ? t("users", "edit") : t("users", "add")}
-              </h3>
-
-              <div className="space-y-4">
+          <Modal
+            open={showModal}
+            onClose={handleCloseModal}
+            title={editingId ? t("users", "edit") : t("users", "add")}
+            size="wide"
+          >
+            <form onSubmit={handleSave} className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     {t("users", "fullName")}
@@ -470,7 +481,8 @@ export default function UsersPage() {
                     onChange={(e) =>
                       setNewUser({ ...newUser, name: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-primary-500 outline-none"
+                    autoFocus
+                    className="input-field mt-1.5 text-sm"
                   />
                 </div>
 
@@ -485,7 +497,8 @@ export default function UsersPage() {
                     onChange={(e) =>
                       setNewUser({ ...newUser, email: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-primary-500 outline-none"
+                    autoComplete="email"
+                    className="input-field mt-1.5 text-sm"
                   />
                 </div>
 
@@ -496,7 +509,7 @@ export default function UsersPage() {
                   <select
                     value={newUser.role}
                     onChange={(e) => changeRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-primary-500 outline-none"
+                    className="input-field mt-1.5 text-sm font-semibold"
                   >
                     {[
                       [ROLES.VIEWER, "viewer"],
@@ -511,17 +524,45 @@ export default function UsersPage() {
                   </select>
                 </div>
 
-                <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t("users", "password")}
+                  </label>
+                  <input
+                    type="password"
+                    minLength={8}
+                    required={!editingId}
+                    autoComplete="new-password"
+                    value={newUser.password}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, password: e.target.value })
+                    }
+                    className="input-field mt-1.5 text-sm"
+                  />
+                  <p className="mt-1.5 text-[10px] font-medium leading-4 text-slate-400">
+                    {editingId
+                      ? t("users", "passwordEditHint")
+                      : t("users", "passwordHint")}
+                  </p>
+                </div>
+
+                <fieldset className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 md:col-span-2 sm:p-4">
+                  <legend className="sr-only">{t("users", "permissions")}</legend>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <legend className="text-sm font-bold text-slate-800">
-                        {t("users", "permissions")}
-                      </legend>
-                      <p className="mt-1 max-w-md text-xs leading-5 text-slate-500">
-                        {newUser.role === ROLES.SUPER_ADMIN
-                          ? t("users", "fullAccessNotice")
-                          : t("users", "permissionsHint")}
-                      </p>
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700">
+                        <Shield className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-800">
+                          {t("users", "accessControl")}
+                        </h4>
+                        <p className="mt-1 max-w-md text-xs leading-5 text-slate-500">
+                          {newUser.role === ROLES.SUPER_ADMIN
+                            ? t("users", "fullAccessNotice")
+                            : t("users", "permissionsHint")}
+                        </p>
+                      </div>
                     </div>
                     {newUser.role !== ROLES.SUPER_ADMIN && (
                       <button
@@ -529,17 +570,17 @@ export default function UsersPage() {
                         onClick={() =>
                           setNewUser((current) => ({
                             ...current,
-                            permissions: [...(ROLE_PERMISSIONS[current.role] || [])],
+                            permissions: permissionsForRole(current.role),
                           }))
                         }
-                        className="shrink-0 text-xs font-bold text-primary-700 hover:text-primary-900"
+                        className="shrink-0 rounded-lg bg-primary-50 px-3 py-2 text-[10px] font-bold text-primary-700 transition-colors hover:bg-primary-100"
                       >
                         {t("users", "roleDefaults")}
                       </button>
                     )}
                   </div>
 
-                  <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] items-center border-b border-slate-100 bg-slate-50 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                       <span>{t("users", "permissions")}</span>
                       <span className="text-center">{t("users", "viewAccess")}</span>
@@ -558,12 +599,12 @@ export default function UsersPage() {
                       return (
                         <div
                           key={group.key}
-                          className="grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] items-center border-b border-slate-100 px-3 py-2.5 last:border-0"
+                          className="grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] items-center border-b border-slate-100 px-3 py-2.5 transition-colors last:border-0 hover:bg-slate-50/80"
                         >
                           <span className="truncate text-xs font-semibold text-slate-700">
                             {t("users", ACCESS_LABEL_KEYS[group.key])}
                           </span>
-                          <label className="flex justify-center">
+                          <label className={`mx-auto flex h-8 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors ${newUser.role === ROLES.SUPER_ADMIN || hasGroupAccess(group.view) ? "border-primary-100 bg-primary-50" : "border-slate-200 bg-white"}`}>
                             <input
                               type="checkbox"
                               checked={
@@ -579,18 +620,20 @@ export default function UsersPage() {
                           </label>
                           <label className="flex justify-center">
                             {group.manage.length > 0 ? (
-                              <input
-                                type="checkbox"
-                                checked={
-                                  newUser.role === ROLES.SUPER_ADMIN ||
-                                  hasGroupAccess(group.manage)
-                                }
-                                disabled={manageDisabled}
-                                onChange={(event) =>
-                                  toggleGroupAccess(group, "manage", event.target.checked)
-                                }
-                                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-40"
-                              />
+                              <span className={`flex h-8 w-12 items-center justify-center rounded-lg border transition-colors ${newUser.role === ROLES.SUPER_ADMIN || hasGroupAccess(group.manage) ? "border-emerald-100 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    newUser.role === ROLES.SUPER_ADMIN ||
+                                    hasGroupAccess(group.manage)
+                                  }
+                                  disabled={manageDisabled}
+                                  onChange={(event) =>
+                                    toggleGroupAccess(group, "manage", event.target.checked)
+                                  }
+                                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                />
+                              </span>
                             ) : (
                               <span className="text-xs text-slate-300">—</span>
                             )}
@@ -601,26 +644,9 @@ export default function UsersPage() {
                   </div>
                 </fieldset>
 
-                {!editingId && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      {t("users", "password")}
-                    </label>
-                    <input
-                      type="password"
-                      minLength={8}
-                      required
-                      value={newUser.password}
-                      onChange={(e) =>
-                        setNewUser({ ...newUser, password: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-primary-500 outline-none"
-                    />
-                  </div>
-                )}
               </div>
 
-              <div className="flex gap-2 justify-end pt-4">
+              <div className="sticky -bottom-4 -mx-4 -mb-4 flex justify-end gap-2 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:px-5">
                 <button
                   type="button"
                   onClick={handleCloseModal}

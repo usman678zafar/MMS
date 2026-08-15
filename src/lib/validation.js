@@ -45,6 +45,16 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
+export const userPreferencesSchema = z
+  .object({
+    language: z.enum(["en", "ur"]).optional(),
+    theme: z.enum(["light", "dark", "system"]).optional(),
+  })
+  .strict()
+  .refine((preferences) => Object.keys(preferences).length > 0, {
+    message: "At least one preference is required",
+  });
+
 export const userUpdateSchema = userCreateSchema
   .omit({ password: true })
   .extend({ password: z.string().min(8).max(128).optional().or(z.literal("")) });

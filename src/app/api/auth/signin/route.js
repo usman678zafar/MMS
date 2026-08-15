@@ -72,6 +72,8 @@ export async function POST(request) {
         name: user.name,
         role: user.role,
         permissions: Array.isArray(user.permissions) ? user.permissions : null,
+        language: user.language || "en",
+        theme: user.theme || "system",
       },
     });
   } catch (error) {

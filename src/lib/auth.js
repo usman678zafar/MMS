@@ -32,6 +32,8 @@ const sanitizeUser = (user) => ({
   role: user.role,
   permissions: Array.isArray(user.permissions) ? user.permissions : null,
   is_active: user.isActive !== false,
+  language: user.language || "en",
+  theme: user.theme || "system",
 });
 
 export async function createSession(userId) {
@@ -83,6 +85,8 @@ export async function getCurrentUser() {
       role: users.role,
       permissions: users.permissions,
       isActive: users.isActive,
+      language: users.language,
+      theme: users.theme,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))

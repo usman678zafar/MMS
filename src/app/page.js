@@ -37,6 +37,31 @@ import {
 const formatCurrency = (value) =>
   `Rs ${Math.round(Number(value) || 0).toLocaleString()}`;
 
+let pendingDashboardRequest = null;
+
+async function retryTransientRequest(request, retries = 1) {
+  try {
+    return await request();
+  } catch (error) {
+    if (retries === 0) throw error;
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    return retryTransientRequest(request, retries - 1);
+  }
+}
+
+function loadDashboardData() {
+  if (!pendingDashboardRequest) {
+    pendingDashboardRequest = Promise.all([
+      retryTransientRequest(getDashboardStats),
+      retryTransientRequest(getFinancialData),
+      retryTransientRequest(getRecentActivity),
+    ]).finally(() => {
+      pendingDashboardRequest = null;
+    });
+  }
+  return pendingDashboardRequest;
+}
+
 export default function DashboardPage() {
   const { user, loading: authLoading, hasPermission } = useAuth();
   const { t } = useLanguage();
@@ -64,11 +89,7 @@ export default function DashboardPage() {
 
     async function fetchAllData() {
       try {
-        const [statsRes, financialRes, activityRes] = await Promise.all([
-          getDashboardStats(),
-          getFinancialData(),
-          getRecentActivity(),
-        ]);
+        const [statsRes, financialRes, activityRes] = await loadDashboardData();
 
         if (!cancelled && statsRes.success) {
           setStats({
@@ -195,7 +216,7 @@ export default function DashboardPage() {
             {cards.filter((card) => hasPermission(card.permission)).map((card) => (
               <div
                 key={card.name}
-                className="metric-card group p-5"
+                className="dashboard-metric-card metric-card group p-5"
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className={`${card.color} p-2.5 rounded-xl text-white `}>
@@ -223,7 +244,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="data-stage grid grid-cols-1 gap-8 lg:grid-cols-2" data-ready={dataReady} aria-busy={!dataReady}>
-            {(canViewDonations || canViewExpenses) && <div className="surface-card rounded-2xl p-4 sm:p-6">
+            {(canViewDonations || canViewExpenses) && <div className="dashboard-panel surface-card rounded-2xl p-4 sm:p-6">
               <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 text-lg">
@@ -233,13 +254,13 @@ export default function DashboardPage() {
                     {t("dashboard", "actualFigures")}
                   </p>
                 </div>
-                <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                <span className="dashboard-period rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
                   {t("dashboard", "lastSixMonths")}
                 </span>
               </div>
 
               <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {canViewDonations && <div className="rounded-xl bg-emerald-50/60 p-3">
+                {canViewDonations && <div className="finance-summary-card finance-summary-donations rounded-xl bg-emerald-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">
                     {t("dashboard", "donations")}
                   </p>
@@ -247,7 +268,7 @@ export default function DashboardPage() {
                     {formatCurrency(financeSummary.donations)}
                   </p>
                 </div>}
-                {canViewExpenses && <div className="rounded-xl bg-rose-50/60 p-3">
+                {canViewExpenses && <div className="finance-summary-card finance-summary-expenses rounded-xl bg-rose-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-rose-700">
                     {t("dashboard", "expenses")}
                   </p>
@@ -256,7 +277,7 @@ export default function DashboardPage() {
                   </p>
                 </div>}
                 {canViewDonations && canViewExpenses && <div
-                  className={`rounded-xl p-3 ${
+                  className={`finance-summary-card finance-summary-balance rounded-xl p-3 ${
                     netBalance >= 0
                       ? "bg-blue-50/60"
                       : "bg-amber-50/60"
@@ -275,9 +296,9 @@ export default function DashboardPage() {
                 </div>}
               </div>
 
-              <div dir="ltr" className="h-56 sm:h-64">
+              <div dir="ltr" className="h-56 min-h-0 min-w-0 overflow-hidden sm:h-64">
                 {hasMounted && (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart
                       data={financialData}
                       margin={{ top: 8, right: 10, left: 0, bottom: 5 }}
@@ -286,19 +307,19 @@ export default function DashboardPage() {
                       <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
-                        stroke="#f1f5f9"
+                        stroke="var(--chart-grid, #f1f5f9)"
                       />
                       <XAxis
                         dataKey="name"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#94a3b8", fontSize: 12 }}
+                        tick={{ fill: "var(--chart-tick, #94a3b8)", fontSize: 12 }}
                         dy={10}
                       />
                       <YAxis
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
+                        tick={{ fill: "var(--chart-tick, #94a3b8)", fontSize: 11 }}
                         tickFormatter={(v) =>
                           v === 0 ? "0" : `${(v / 1000).toFixed(0)}k`
                         }
@@ -323,13 +344,13 @@ export default function DashboardPage() {
                       />
                       {canViewDonations && <Bar
                         dataKey="donations"
-                        fill="#10b981"
+                        fill="var(--chart-donations, #10b981)"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={28}
                       />}
                       {canViewExpenses && <Bar
                         dataKey="expenses"
-                        fill="#f43f5e"
+                        fill="var(--chart-expenses, #f43f5e)"
                         radius={[6, 6, 0, 0]}
                         maxBarSize={28}
                       />}
@@ -339,15 +360,15 @@ export default function DashboardPage() {
               </div>
             </div>}
 
-            {canViewDonations && <div className="surface-card rounded-2xl p-4 sm:p-6">
+            {canViewDonations && <div className="dashboard-panel surface-card rounded-2xl p-4 sm:p-6">
               <h3 className="font-bold text-slate-900 text-lg mb-6">
                 {t("dashboard", "recentActivity")}
               </h3>
-              <div className="space-y-6">
+              <div className="dashboard-activity-list space-y-6">
                 {recentActivity.length > 0 ? (
                   recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-3 sm:items-center">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                    <div key={index} className="dashboard-activity-row flex items-start gap-3 sm:items-center">
+                      <div className="dashboard-activity-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100">
                         <DollarSign className="h-5 w-5 text-slate-500" />
                       </div>
                       <div className="min-w-0 flex-1">

@@ -30,6 +30,8 @@ export const users = pgTable(
     permissions: jsonb("permissions"),
     password: text("password").notNull(),
     isActive: boolean("is_active").notNull().default(true),
+    language: varchar("language", { length: 5 }).notNull().default("en"),
+    theme: varchar("theme", { length: 10 }).notNull().default("system"),
     ...timestamps,
   },
   (table) => [
@@ -39,6 +41,8 @@ export const users = pgTable(
       "users_role_check",
       sql`${table.role} in ('super_admin','admin','accountant','teacher','inventory_manager','viewer')`,
     ),
+    check("users_language_check", sql`${table.language} in ('en','ur')`),
+    check("users_theme_check", sql`${table.theme} in ('light','dark','system')`),
   ],
 );
 

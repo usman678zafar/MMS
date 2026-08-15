@@ -3,7 +3,13 @@ import { useEffect } from "react";
 import { X } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
-export default function Modal({ open, onClose, title, children }) {
+const sizeClasses = {
+  default: "sm:max-w-lg",
+  large: "sm:max-w-2xl",
+  wide: "sm:max-w-4xl",
+};
+
+export default function Modal({ open, onClose, title, children, size = "default" }) {
   const { t } = useLanguage();
   // Close on Escape key
   useEffect(() => {
@@ -23,7 +29,7 @@ export default function Modal({ open, onClose, title, children }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="flex max-h-[calc(100dvh-1rem)] w-full flex-col rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] duration-200 animate-in slide-in-from-bottom-4 sm:max-h-[85vh] sm:max-w-lg sm:rounded-2xl sm:pb-0 sm:zoom-in-95">
+      <div className={`flex max-h-[calc(100dvh-1rem)] w-full flex-col rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] duration-200 animate-in slide-in-from-bottom-4 sm:max-h-[90vh] sm:rounded-2xl sm:pb-0 sm:zoom-in-95 ${sizeClasses[size] || sizeClasses.default}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <h3 className="text-base font-bold text-slate-900">{title}</h3>
