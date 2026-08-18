@@ -1027,8 +1027,11 @@ export default function StudentsPage() {
                         <th className="student-father-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                           {t("students", "colFather")}
                         </th>
-                        <th className="student-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-44">
-                          {t("students", "colEducation")}
+                        <th className="student-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-36">
+                          {t("students", "colReligiousEducation")}
+                        </th>
+                        <th className="student-contemporary-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                          {t("students", "colContemporaryEducation")}
                         </th>
                         <th className="student-teacher-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
                           {t("students", "colTeacher")}
@@ -1047,13 +1050,13 @@ export default function StudentsPage() {
                     <tbody className="divide-y divide-slate-50">
                       {loading ? (
                         <tr>
-                          <td colSpan="7" className="p-0">
-                            <TableSkeleton columns={7} rows={5} />
+                          <td colSpan="8" className="p-0">
+                            <TableSkeleton columns={8} rows={5} />
                           </td>
                         </tr>
                       ) : students.length === 0 ? (
                         <tr>
-                          <td colSpan="7" className="px-6 py-12 text-center">
+                          <td colSpan="8" className="px-6 py-12 text-center">
                             <GraduationCap className="h-12 w-12 text-slate-200 mx-auto mb-3" />
                             <p className="text-slate-400 text-lg font-medium">
                               {t("students", "empty")}
@@ -1100,26 +1103,23 @@ export default function StudentsPage() {
                               </span>
                             </td>
                             <td className="student-education-column px-6 py-4">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
-                                  <span className="text-xs font-bold text-slate-700">
-                                    {OPTION_KEYS[student.religious_class || student.class]
-                                      ? t("options", OPTION_KEYS[student.religious_class || student.class])
-                                      : t("common", "notAvailable")}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
-                                  <span className="text-[10px] font-semibold text-slate-400">
-                                    {OPTION_KEYS[student.contemporary_class]
-                                      ? t("options", OPTION_KEYS[student.contemporary_class])
-                                      : t("students", "noSchooling")}
-                                  </span>
-                                </div>
-                                <div className="student-laptop-meta mt-0.5 truncate text-[10px] font-semibold text-slate-500">
-                                  {t("students", "teacher")}: {student.teacher_name || t("students", "unassigned")}
-                                </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                                <span className="text-xs font-bold text-slate-700">
+                                  {OPTION_KEYS[student.religious_class || student.class]
+                                    ? t("options", OPTION_KEYS[student.religious_class || student.class])
+                                    : t("common", "notAvailable")}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="student-contemporary-column px-6 py-4">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                <span className="text-xs font-semibold text-slate-600">
+                                  {OPTION_KEYS[student.contemporary_class]
+                                    ? t("options", OPTION_KEYS[student.contemporary_class])
+                                    : t("students", "noSchooling")}
+                                </span>
                               </div>
                             </td>
                             <td className="student-teacher-column px-6 py-4 text-sm text-slate-600 font-medium">
@@ -1279,14 +1279,17 @@ export default function StudentsPage() {
                           </div>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2.5">
+                        <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2.5">
                           <div className="min-w-0">
-                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "education")}</p>
+                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colReligiousEducation")}</p>
                             <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.religious_class || student.class] ? t("options", OPTION_KEYS[student.religious_class || student.class]) : t("common", "notAvailable")}</p>
-                            <p className="truncate text-[10px] text-slate-500">{OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("students", "noSchooling")}</p>
                           </div>
                           <div className="min-w-0 border-l border-slate-200 pl-2.5">
-                            <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colTeacher")}</p>
+                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colContemporaryEducation")}</p>
+                            <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("students", "noSchooling")}</p>
+                          </div>
+                          <div className="min-w-0 border-l border-slate-200 pl-2.5">
+                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colTeacher")}</p>
                             <p className="truncate text-xs font-bold text-slate-700">{student.teacher_name || t("students", "unassigned")}</p>
                           </div>
                         </div>

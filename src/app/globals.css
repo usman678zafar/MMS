@@ -192,6 +192,11 @@ svg {
   background: #ffffff;
 }
 
+.student-management-table thead th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .student-management-table thead .student-identity-cell,
 .student-management-table thead .student-actions-cell {
   z-index: 4;
@@ -291,7 +296,6 @@ svg {
   }
 
   .student-management-table .student-father-column,
-  .student-management-table .student-teacher-column,
   .student-management-table .student-default-actions-label {
     display: none;
   }
@@ -301,24 +305,32 @@ svg {
   }
 
   .student-management-table .student-identity-cell {
-    width: 24%;
+    width: 20%;
     min-width: 0;
   }
 
   .student-management-table .student-education-column {
-    width: 20%;
+    width: 12%;
   }
 
-  .student-management-table .student-progress-column {
-    width: 23%;
-  }
-
-  .student-management-table .student-status-column {
+  .student-management-table .student-contemporary-column {
     width: 13%;
   }
 
-  .student-management-table .student-actions-cell {
+  .student-management-table .student-teacher-column {
+    width: 14%;
+  }
+
+  .student-management-table .student-progress-column {
     width: 20%;
+  }
+
+  .student-management-table .student-status-column {
+    width: 9%;
+  }
+
+  .student-management-table .student-actions-cell {
+    width: 12%;
     min-width: 0;
   }
 
