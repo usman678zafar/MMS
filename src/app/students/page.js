@@ -31,9 +31,9 @@ import {
   getStudents,
   deleteStudent,
   updateStudentStatus,
-  updateStudentProgress,
+  updateStudentQuranicProgress,
   updateFeeStatus,
-  getStudentProgressHistory,
+  getStudentQuranicProgressHistory,
   recordFeePayment,
   getStudentFeeHistory,
   recordAttendance,
@@ -43,9 +43,9 @@ import {
   recordBulkFeePayments,
   deleteFeePayment,
   deleteBulkFeePayments,
-  deleteProgressHistory,
+  deleteQuranicProgressHistory,
 } from "./actions";
-import { getAllTeachers } from "../staff/actions";
+import { getAllTeachers as getAllReligiousTeachers } from "../staff/actions";
 
 import { format } from "date-fns";
 import { PERMISSIONS } from "@/lib/rbac";
@@ -461,10 +461,10 @@ export default function StudentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const [newStudent, setNewStudent] = useState(defaultForm);
-  const [teachers, setTeachers] = useState([]);
-  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [religiousTeachers, setReligiousTeachers] = useState([]);
+  const [showQuranicProgressModal, setShowQuranicProgressModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [progressData, setProgressData] = useState({
+  const [quranicProgressData, setQuranicProgressData] = useState({
     type: "Qaida",
     para: 1,
     surahNumber: "",
@@ -550,9 +550,9 @@ export default function StudentsPage() {
     window.history.pushState({ activeTab: tab }, "", `?tab=${tab}`);
   };
 
-  const fetchTeachers = useCallback(async () => {
-    const res = await getAllTeachers();
-    if (res.success) setTeachers(res.data);
+  const fetchReligiousTeachers = useCallback(async () => {
+    const res = await getAllReligiousTeachers();
+    if (res.success) setReligiousTeachers(res.data);
   }, []);
 
   const fetchStudents = useCallback(
@@ -598,10 +598,10 @@ export default function StudentsPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       fetchStudents();
-      fetchTeachers();
+      fetchReligiousTeachers();
     }, 0);
     return () => clearTimeout(t);
-  }, [fetchStudents, fetchTeachers]);
+  }, [fetchStudents, fetchReligiousTeachers]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -612,7 +612,7 @@ export default function StudentsPage() {
   }, [activeTab, fetchMonthlyFeeStatus, fetchAttendanceForDate]);
 
   const handleOpenEdit = (student) => {
-    fetchTeachers();
+    fetchReligiousTeachers();
     setNewStudent({ ...student });
     setEditingId(student.id);
     setShowModal(true);
@@ -628,12 +628,12 @@ export default function StudentsPage() {
     setActiveStudentId(student.id);
     setFetchingHistory(true);
     setShowHistoryModal(true);
-    const res = await getStudentProgressHistory(student.id);
+    const res = await getStudentQuranicProgressHistory(student.id);
     if (res.success) setHistoryList(res.data);
     setFetchingHistory(false);
   };
 
-  const handleOpenProgress = (student) => {
+  const handleOpenQuranicProgress = (student) => {
     setActiveStudentId(student.id);
     // Lock progress type to student's religious class
     const classToType = { Hifz: "Hifz", Nazra: "Nazra", Qaida: "Qaida", Girdan: "Girdan" };
@@ -647,7 +647,7 @@ export default function StudentsPage() {
     const surahName = getArabicScript(currentSurahNumber);
     const initialSurahDisplay = surahName ? `${surahName} (${currentSurahNumber})` : "";
     
-    setProgressData({
+    setQuranicProgressData({
       type: lockedType,
       para: student.current_progress?.para || 1,
       surahNumber: currentSurahNumber,
@@ -657,12 +657,12 @@ export default function StudentsPage() {
       year: new Date().getFullYear(),
       notes: "",
     });
-    setShowProgressModal(true);
+    setShowQuranicProgressModal(true);
   };
 
   const handleDeleteProgress = async (id) => {
     if (!confirm("Are you sure you want to delete this progress record?")) return;
-    const res = await deleteProgressHistory(id);
+    const res = await deleteQuranicProgressHistory(id);
     if (res.success) {
       const student = students.find((s) => s.id === activeStudentId);
       handleOpenHistory(student);
@@ -672,12 +672,12 @@ export default function StudentsPage() {
     }
   };
 
-  const handleSaveProgress = async (e) => {
+  const handleSaveQuranicProgress = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const res = await updateStudentProgress(activeStudentId, progressData);
+    const res = await updateStudentQuranicProgress(activeStudentId, quranicProgressData);
     if (res.success) {
-      setShowProgressModal(false);
+      setShowQuranicProgressModal(false);
       fetchStudents();
     } else {
       alert(`Error: ${res.error}`);
@@ -874,7 +874,7 @@ export default function StudentsPage() {
             {canCreateStudents && (
               <button
                 onClick={() => {
-                  fetchTeachers();
+                  fetchReligiousTeachers();
                   setEditingId(null);
                   setNewStudent(defaultForm);
                   setShowModal(true);
@@ -1027,17 +1027,20 @@ export default function StudentsPage() {
                         <th className="student-father-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                           {t("students", "colFather")}
                         </th>
-                        <th className="student-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-36">
-                          {t("students", "colReligiousEducation")}
+                        <th className="student-religious-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                          {t("students", "colReligiousTrack")}
                         </th>
-                        <th className="student-contemporary-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
-                          {t("students", "colContemporaryEducation")}
+                        <th className="student-religious-teacher-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                          {t("students", "colReligiousTeacher")}
                         </th>
-                        <th className="student-teacher-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
-                          {t("students", "colTeacher")}
+                        <th className="student-quranic-progress-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                          {t("students", "colQuranicProgress")}
                         </th>
-                        <th className="student-progress-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
-                          {t("students", "colProgress")}
+                        <th
+                          className="student-contemporary-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-44"
+                          style={{ whiteSpace: "normal", textOverflow: "clip" }}
+                        >
+                          {t("students", "colContemporaryTrack")}
                         </th>
                         <th className="student-status-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">
                           {t("students", "colStatus")}
@@ -1102,7 +1105,7 @@ export default function StudentsPage() {
                                 {student.father_name || t("common", "notAvailable")}
                               </span>
                             </td>
-                            <td className="student-education-column px-6 py-4">
+                            <td className="student-religious-education-column px-6 py-4">
                               <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
                                 <span className="text-xs font-bold text-slate-700">
@@ -1112,26 +1115,16 @@ export default function StudentsPage() {
                                 </span>
                               </div>
                             </td>
-                            <td className="student-contemporary-column px-6 py-4">
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
-                                <span className="text-xs font-semibold text-slate-600">
-                                  {OPTION_KEYS[student.contemporary_class]
-                                    ? t("options", OPTION_KEYS[student.contemporary_class])
-                                    : t("students", "noSchooling")}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="student-teacher-column px-6 py-4 text-sm text-slate-600 font-medium">
+                            <td className="student-religious-teacher-column px-6 py-4 text-sm text-slate-600 font-medium">
                               {student.teacher_name || (
                                 <span className="text-slate-300 italic text-xs">
                                   {t("students", "unassigned")}
                                 </span>
                               )}
                             </td>
-                            <td className="student-progress-column px-6 py-4">
+                            <td className="student-quranic-progress-column px-6 py-4">
                               {canViewProgress ? <button
-                                onClick={() => canManageProgress && handleOpenProgress(student)}
+                                onClick={() => canManageProgress && handleOpenQuranicProgress(student)}
                                 disabled={!canManageProgress}
                                 className="flex flex-col items-start hover:bg-slate-100 p-1.5 rounded-lg transition-all group/progress w-full"
                               >
@@ -1158,6 +1151,16 @@ export default function StudentsPage() {
                                   </span>
                                 </span>
                               </button> : <span className="text-slate-300">—</span>}
+                            </td>
+                            <td className="student-contemporary-education-column px-6 py-4">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                <span className="text-xs font-semibold text-slate-600">
+                                  {OPTION_KEYS[student.contemporary_class]
+                                    ? t("options", OPTION_KEYS[student.contemporary_class])
+                                    : t("students", "noSchooling")}
+                                </span>
+                              </div>
                             </td>
                             <td className="student-status-column px-6 py-4">
                               {canUpdateStudents ? <button
@@ -1279,24 +1282,20 @@ export default function StudentsPage() {
                           </div>
                         </div>
 
-                        <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2.5">
+                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2.5">
                           <div className="min-w-0">
-                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colReligiousEducation")}</p>
+                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colReligiousTrack")}</p>
                             <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.religious_class || student.class] ? t("options", OPTION_KEYS[student.religious_class || student.class]) : t("common", "notAvailable")}</p>
                           </div>
                           <div className="min-w-0 border-l border-slate-200 pl-2.5">
-                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colContemporaryEducation")}</p>
-                            <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("students", "noSchooling")}</p>
-                          </div>
-                          <div className="min-w-0 border-l border-slate-200 pl-2.5">
-                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colTeacher")}</p>
+                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colReligiousTeacher")}</p>
                             <p className="truncate text-xs font-bold text-slate-700">{student.teacher_name || t("students", "unassigned")}</p>
                           </div>
                         </div>
 
-                        {canViewProgress && <button onClick={() => canManageProgress && handleOpenProgress(student)} disabled={!canManageProgress} className="mt-2 flex w-full items-center justify-between rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-left disabled:cursor-default">
+                        {canViewProgress && <button onClick={() => canManageProgress && handleOpenQuranicProgress(student)} disabled={!canManageProgress} className="mt-2 flex w-full items-center justify-between rounded-lg border border-blue-100 bg-blue-50/60 px-3 py-2 text-left disabled:cursor-default">
                           <span>
-                            <span className="block text-[9px] font-bold uppercase tracking-wide text-blue-500">{t("students", "currentProgress")}</span>
+                            <span className="block text-[9px] font-bold uppercase tracking-wide text-blue-500">{t("students", "colQuranicProgress")}</span>
                             <span className="block text-xs font-bold text-blue-700">{OPTION_KEYS[student.current_progress?.type || "Qaida"] ? t("options", OPTION_KEYS[student.current_progress?.type || "Qaida"]) : student.current_progress?.type}</span>
                           </span>
                           <span className={`text-right text-[9px] font-bold uppercase ${hasCurrentMonthProgress(student) ? "text-emerald-600" : "text-rose-500"}`}>
@@ -1305,6 +1304,11 @@ export default function StudentsPage() {
                               : t("students", "updatePending")}
                           </span>
                         </button>}
+
+                        <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
+                          <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colContemporaryTrack")}</p>
+                          <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("students", "noSchooling")}</p>
+                        </div>
 
                         <div className="mt-2 grid grid-cols-4 gap-1 border-t border-slate-100 pt-2">
                           <Link href={`/students/${student.id}`} className="flex min-h-10 items-center justify-center rounded-lg text-slate-500 hover:bg-primary-50 hover:text-primary-700" title={t("students", "openProfile")}><Eye className="h-4 w-4" /></Link>
@@ -1948,7 +1952,7 @@ export default function StudentsPage() {
                 </div>}
               </div>
 
-              {/* Phone & Teacher */}
+              {/* Phone & Religious Teacher */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
@@ -1979,9 +1983,9 @@ export default function StudentsPage() {
                     }
                   >
                     <option value="">{t("students", "unassigned")}</option>
-                    {teachers.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name}
+                    {religiousTeachers.map((religiousTeacher) => (
+                      <option key={religiousTeacher.id} value={religiousTeacher.id}>
+                        {religiousTeacher.name}
                       </option>
                     ))}
                   </select>
@@ -2129,11 +2133,11 @@ export default function StudentsPage() {
           />
 
           <Modal
-            open={showProgressModal}
-            onClose={() => setShowProgressModal(false)}
+            open={showQuranicProgressModal}
+            onClose={() => setShowQuranicProgressModal(false)}
             title={t("students", "updateMilestone")}
           >
-            <form onSubmit={handleSaveProgress} className="space-y-4">
+            <form onSubmit={handleSaveQuranicProgress} className="space-y-4">
               <div className="p-3 bg-slate-50 rounded-xl">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-2">
                   {t("students", "reportingPeriod")}
@@ -2141,15 +2145,15 @@ export default function StudentsPage() {
                 <div className="flex gap-2">
                   <select
                     className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-700 outline-none"
-                    value={progressData.month}
-                    onChange={(e) => setProgressData({ ...progressData, month: e.target.value })}
+                    value={quranicProgressData.month}
+                    onChange={(e) => setQuranicProgressData({ ...quranicProgressData, month: e.target.value })}
                   >
                     {MONTHS.map(m => <option key={m} value={m}>{t("months", m)}</option>)}
                   </select>
                   <select
                     className="w-24 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-700 outline-none"
-                    value={progressData.year}
-                    onChange={(e) => setProgressData({ ...progressData, year: e.target.value })}
+                    value={quranicProgressData.year}
+                    onChange={(e) => setQuranicProgressData({ ...quranicProgressData, year: e.target.value })}
                   >
                     {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
@@ -2162,9 +2166,9 @@ export default function StudentsPage() {
                   </label>
                   <select
                     className="input-field text-sm"
-                    value={progressData.type}
+                    value={quranicProgressData.type}
                     onChange={(e) =>
-                      setProgressData({ ...progressData, type: e.target.value })
+                      setQuranicProgressData({ ...quranicProgressData, type: e.target.value })
                     }
                   >
                     {RELIGIOUS_CLASSES.filter((c) => c !== "None").map((c) => (
@@ -2175,17 +2179,17 @@ export default function StudentsPage() {
                   </select>
                 </div>
                 <div
-                  className={progressData.type === "Qaida" ? "opacity-50" : ""}
+                  className={quranicProgressData.type === "Qaida" ? "opacity-50" : ""}
                 >
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     {t("students", "para")}
                   </label>
                   <select
-                    disabled={progressData.type === "Qaida"}
+                    disabled={quranicProgressData.type === "Qaida"}
                     className="input-field text-sm"
-                    value={progressData.para}
+                    value={quranicProgressData.para}
                     onChange={(e) =>
-                      setProgressData({ ...progressData, para: e.target.value })
+                      setQuranicProgressData({ ...quranicProgressData, para: e.target.value })
                     }
                   >
                     {PARA_NUMBERS.map((n) => (
@@ -2198,23 +2202,23 @@ export default function StudentsPage() {
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div
-                  className={progressData.type === "Qaida" ? "opacity-50" : ""}
+                  className={quranicProgressData.type === "Qaida" ? "opacity-50" : ""}
                 >
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     {t("students", "surah")}
                   </label>
                   <select
-                    disabled={progressData.type === "Qaida"}
+                    disabled={quranicProgressData.type === "Qaida"}
                     readOnly
                     title={t("students", "autoSurah")}
                     className="input-field text-sm"
-                    value={progressData.surahNumber}
+                    value={quranicProgressData.surahNumber}
                     onChange={(e) => {
                       const newSurahNumber = e.target.value;
                       const surahName = getArabicScript(newSurahNumber);
                       const displayName = surahName ? `${surahName} (${newSurahNumber})` : "";
-                      setProgressData({ 
-                        ...progressData, 
+                      setQuranicProgressData({
+                        ...quranicProgressData,
                         surahNumber: newSurahNumber,
                         surah: displayName 
                       });
@@ -2228,18 +2232,18 @@ export default function StudentsPage() {
                     ))}
                   </select>
                 </div>
-                <div className={progressData.type === "Qaida" ? "opacity-50" : ""}>
+                <div className={quranicProgressData.type === "Qaida" ? "opacity-50" : ""}>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
                     {t("students", "ayatNumber")}
                   </label>
                   <input
                     type="number"
-                    disabled={progressData.type === "Qaida"}
+                    disabled={quranicProgressData.type === "Qaida"}
                     className="input-field text-sm"
                     placeholder="0"
-                    value={progressData.ayat}
+                    value={quranicProgressData.ayat}
                     onChange={(e) =>
-                      setProgressData({ ...progressData, ayat: e.target.value })
+                      setQuranicProgressData({ ...quranicProgressData, ayat: e.target.value })
                     }
                   />
                 </div>
@@ -2248,7 +2252,7 @@ export default function StudentsPage() {
               <div className="flex gap-2 justify-end pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowProgressModal(false)}
+                  onClick={() => setShowQuranicProgressModal(false)}
                   className="btn btn-secondary text-sm"
                 >
                   {t("common", "cancel")}
@@ -2316,7 +2320,7 @@ export default function StudentsPage() {
                         )}
                         <p className="text-[10px] text-slate-400 mt-1">
                           {t("students", "verifiedBy")}:{" "}
-                          {teachers.find((t) => t.id === entry.teacher_id)
+                          {religiousTeachers.find((religiousTeacher) => religiousTeacher.id === entry.teacher_id)
                             ?.name || t("students", "unknownTeacher")}
                         </p>
                       </div>

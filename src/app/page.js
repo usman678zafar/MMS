@@ -141,6 +141,7 @@ export default function DashboardPage() {
     donations: t("dashboard", "donations"),
     expenses: t("dashboard", "expenses"),
   };
+  const financeSeriesCount = Number(canViewDonations) + Number(canViewExpenses);
 
   const cards = [
     {
@@ -243,9 +244,9 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div className="data-stage grid grid-cols-1 gap-8 lg:grid-cols-2" data-ready={dataReady} aria-busy={!dataReady}>
-            {(canViewDonations || canViewExpenses) && <div className="dashboard-panel surface-card rounded-2xl p-4 sm:p-6">
-              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="dashboard-detail-grid data-stage grid grid-cols-1 gap-8 lg:grid-cols-2" data-single-panel={!canViewDonations} data-ready={dataReady} aria-busy={!dataReady}>
+            {(canViewDonations || canViewExpenses) && <div className="finance-overview-panel dashboard-panel surface-card rounded-2xl p-4 sm:p-6">
+              <div className="finance-panel-header mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="font-bold text-slate-900 text-lg">
                     {t("dashboard", "financesOverview")}
@@ -259,7 +260,7 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              <div className="mb-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="finance-summary-grid mb-7 grid grid-cols-1 gap-3" data-series-count={financeSeriesCount}>
                 {canViewDonations && <div className="finance-summary-card finance-summary-donations rounded-xl bg-emerald-50/60 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-700">
                     {t("dashboard", "donations")}
@@ -296,7 +297,7 @@ export default function DashboardPage() {
                 </div>}
               </div>
 
-              <div dir="ltr" className="h-56 min-h-0 min-w-0 overflow-hidden sm:h-64">
+              <div dir="ltr" className="finance-chart h-56 min-h-0 min-w-0 overflow-hidden sm:h-64">
                 {hasMounted && (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart

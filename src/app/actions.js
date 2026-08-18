@@ -33,19 +33,18 @@ export async function getFinancialData() {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const month = (column) => sql`date_trunc('month', ${column})`;
+    const month = (column) => sql`to_char(date_trunc('month', ${column}), 'YYYY-MM')`;
     const [donationRows, expenseRows] = await Promise.all([
       canDonations ? db.select({ month: month(donations.date), value: total(donations.amount) }).from(donations).where(and(gte(donations.date, start), lt(donations.date, end))).groupBy(month(donations.date)) : [],
       canExpenses ? db.select({ month: month(expenses.date), value: total(expenses.amount) }).from(expenses).where(and(gte(expenses.date, start), lt(expenses.date, end))).groupBy(month(expenses.date)) : [],
     ]);
-    const key = (value) => new Date(value).toISOString().slice(0, 7);
-    const donationMap = new Map(donationRows.map((row) => [key(row.month), Number(row.value)]));
-    const expenseMap = new Map(expenseRows.map((row) => [key(row.month), Number(row.value)]));
+    const donationMap = new Map(donationRows.map((row) => [String(row.month), Number(row.value)]));
+    const expenseMap = new Map(expenseRows.map((row) => [String(row.month), Number(row.value)]));
     const formatter = new Intl.DateTimeFormat("en", { month: "short" });
     const data = [];
     for (let offset = 5; offset >= 0; offset -= 1) {
       const date = new Date(now.getFullYear(), now.getMonth() - offset, 1);
-      const monthKey = date.toISOString().slice(0, 7);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       data.push({ name: formatter.format(date), donations: donationMap.get(monthKey) || 0, expenses: expenseMap.get(monthKey) || 0 });
     }
     return { success: true, data };

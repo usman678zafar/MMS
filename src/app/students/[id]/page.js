@@ -39,7 +39,7 @@ import {
   recordFeePayment,
   recordStudentAttendance,
   updateStudentNotes,
-  updateStudentProgress,
+  updateStudentQuranicProgress,
   uploadStudentDocument,
   uploadStudentPhoto,
 } from "../actions";
@@ -623,7 +623,7 @@ export default function StudentProfilePage() {
             )}
 
             <Modal open={modal === "progress"} onClose={() => setModal(null)} title={t("studentProfile", "recordProgress")}>
-              <form onSubmit={(event) => { event.preventDefault(); runMutation(() => updateStudentProgress(id, progressForm), "Academic progress recorded"); }} className="space-y-4">
+              <form onSubmit={(event) => { event.preventDefault(); runMutation(() => updateStudentQuranicProgress(id, progressForm), "Quranic progress recorded"); }} className="space-y-4">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "track")}<select value={progressForm.type} onChange={(e) => setProgressForm({ ...progressForm, type: e.target.value })} className="input-field mt-1 text-sm">{["Qaida", "Nazra", "Hifz", "Girdan"].map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "para")}<select value={progressForm.para} onChange={(e) => setProgressForm({ ...progressForm, para: e.target.value })} className="input-field mt-1 text-sm">{Array.from({ length: 30 }, (_, index) => index + 1).map((value) => <option key={value}>{value}</option>)}</select></label></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "surahLesson")}<input value={progressForm.surah} onChange={(e) => setProgressForm({ ...progressForm, surah: e.target.value })} className="input-field mt-1 text-sm" /></label><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "ayat")}<input type="number" min="1" value={progressForm.ayat} onChange={(e) => setProgressForm({ ...progressForm, ayat: e.target.value })} className="input-field mt-1 text-sm" /></label></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "month")}<select value={progressForm.month} onChange={(e) => setProgressForm({ ...progressForm, month: e.target.value })} className="input-field mt-1 text-sm">{months.map((value) => <option key={value}>{t("months", value)}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">{t("studentProfile", "year")}<input type="number" min="2000" max="2200" value={progressForm.year} onChange={(e) => setProgressForm({ ...progressForm, year: e.target.value })} className="input-field mt-1 text-sm" /></label></div>

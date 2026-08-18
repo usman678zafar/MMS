@@ -50,11 +50,11 @@ export async function addStudent(studentData) {
     const canManageFees = hasPermission(current.role, PERMISSIONS.FEES_MANAGE, current.permissions);
     const parsed = studentSchema.parse(studentData);
     const now = new Date();
-    const currentProgress = { type: parsed.progress_type, para: parsed.progress_para, surah: parsed.progress_surah, ayat: null, last_updated: now.toISOString() };
+    const currentQuranicProgress = { type: parsed.progress_type, para: parsed.progress_para, surah: parsed.progress_surah, ayat: null, last_updated: now.toISOString() };
     const row = await db.transaction(async (tx) => {
-      const [student] = await tx.insert(students).values({ ...studentValues(parsed, { includeFees: canManageFees }), currentProgress: canManageProgress ? currentProgress : {} }).returning();
+      const [student] = await tx.insert(students).values({ ...studentValues(parsed, { includeFees: canManageFees }), currentProgress: canManageProgress ? currentQuranicProgress : {} }).returning();
       if (canManageProgress) {
-        await tx.insert(studentProgresses).values({ studentId: student.id, teacherId: student.teacherId, type: currentProgress.type, para: currentProgress.para, surah: currentProgress.surah, ayat: null, notes: "Initial enrollment progress", date: now });
+        await tx.insert(studentProgresses).values({ studentId: student.id, teacherId: student.teacherId, type: currentQuranicProgress.type, para: currentQuranicProgress.para, surah: currentQuranicProgress.surah, ayat: null, notes: "Initial enrollment progress", date: now });
       }
       return student;
     });
@@ -85,15 +85,15 @@ export async function getStudents(page = 1, pageSize = PAGINATION_DEFAULTS.PAGE_
     const where = filters.length ? and(...filters) : undefined;
     const [[summary], rows] = await Promise.all([
       db.select({ value: count() }).from(students).where(where),
-      db.select({ student: students, teacherName: staff.name }).from(students).leftJoin(staff, eq(staff.id, students.teacherId)).where(where).orderBy(desc(students.createdAt)).offset((pagination.page - 1) * pagination.pageSize).limit(pagination.pageSize),
+      db.select({ student: students, religiousTeacherName: staff.name }).from(students).leftJoin(staff, eq(staff.id, students.teacherId)).where(where).orderBy(desc(students.createdAt)).offset((pagination.page - 1) * pagination.pageSize).limit(pagination.pageSize),
     ]);
-    const data = rows.map(({ student, teacherName }) => ({
+    const data = rows.map(({ student, religiousTeacherName }) => ({
       ...student,
       currentProgress: canViewProgress ? student.currentProgress : {},
       monthlyFee: canViewFees ? student.monthlyFee : 0,
       feeStatus: canViewFees ? student.feeStatus : null,
       lastFeePaid: canViewFees ? student.lastFeePaid : null,
-      teacherName,
+      teacherName: religiousTeacherName,
     }));
     return formatPaginatedResponse(serializeRows(data), summary.value, pagination.page, pagination.pageSize);
   } catch (error) { console.error("getStudents Error:", error); return { success: false, error: getErrorMessage(error) }; }
@@ -123,20 +123,20 @@ export async function deleteStudent(id) {
   } catch (error) { return { success: false, error: getErrorMessage(error) }; }
 }
 
-export async function updateStudentProgress(studentId, progressData) {
+export async function updateStudentQuranicProgress(studentId, quranicProgressData) {
   try {
     await requirePermission(PERMISSIONS.PROGRESS_MANAGE);
-    const parsed = progressSchema.parse(progressData);
+    const parsed = progressSchema.parse(quranicProgressData);
     const id = objectId(studentId, "student id");
     await db.transaction(async (tx) => {
       const [student] = await tx.select().from(students).where(eq(students.id, id)).limit(1);
       if (!student) throw new Error("Student not found");
-      const currentProgress = { type: parsed.type, para: parsed.para, surah_number: parsed.surahNumber || null, surah: parsed.surah, ayat: parsed.ayat || null, last_updated: new Date().toISOString() };
-      await tx.update(students).set({ currentProgress, updatedAt: new Date() }).where(eq(students.id, id));
+      const currentQuranicProgress = { type: parsed.type, para: parsed.para, surah_number: parsed.surahNumber || null, surah: parsed.surah, ayat: parsed.ayat || null, last_updated: new Date().toISOString() };
+      await tx.update(students).set({ currentProgress: currentQuranicProgress, updatedAt: new Date() }).where(eq(students.id, id));
       await tx.insert(studentProgresses).values({ studentId: id, teacherId: student.teacherId, type: parsed.type, para: parsed.para, surahNumber: parsed.surahNumber || null, surah: parsed.surah, ayat: parsed.ayat || null, notes: parsed.notes, date: parsed.month && parsed.year ? new Date(`${parsed.month} 1, ${parsed.year}`) : new Date() });
     });
     return { success: true };
-  } catch (error) { console.error("updateStudentProgress Error:", error); return { success: false, error: getErrorMessage(error) }; }
+  } catch (error) { console.error("updateStudentQuranicProgress Error:", error); return { success: false, error: getErrorMessage(error) }; }
 }
 
 export async function updateFeeStatus(id, fee_status) {
@@ -148,12 +148,12 @@ export async function updateFeeStatus(id, fee_status) {
   } catch (error) { return { success: false, error: getErrorMessage(error) }; }
 }
 
-export async function getStudentProgressHistory(studentId) {
+export async function getStudentQuranicProgressHistory(studentId) {
   try {
     await requirePermission(PERMISSIONS.PROGRESS_VIEW);
     const rows = await db.select().from(studentProgresses).where(eq(studentProgresses.studentId, objectId(studentId, "student id"))).orderBy(desc(studentProgresses.date));
     return { success: true, data: serializeRows(rows) };
-  } catch (error) { console.error("getStudentProgressHistory Error:", error); return { success: false, error: getErrorMessage(error) }; }
+  } catch (error) { console.error("getStudentQuranicProgressHistory Error:", error); return { success: false, error: getErrorMessage(error) }; }
 }
 
 export async function recordFeePayment(studentId, feeData) {
@@ -245,7 +245,7 @@ export async function getStudentAttendanceReport(studentId) {
   catch (error) { return { success: false, error: getErrorMessage(error) }; }
 }
 
-export async function deleteProgressHistory(entryId) {
+export async function deleteQuranicProgressHistory(entryId) {
   try {
     await requirePermission(PERMISSIONS.PROGRESS_MANAGE);
     const [row] = await db.delete(studentProgresses).where(eq(studentProgresses.id, objectId(entryId, "progress id"))).returning({ id: studentProgresses.id });
