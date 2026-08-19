@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import NavigationLayout from "@/components/NavigationLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -24,6 +25,11 @@ import {
   Loader2,
   CheckCircle2,
   Eye,
+  MoreHorizontal,
+  Download,
+  FileJson,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import {
   addStudent,
@@ -451,8 +457,14 @@ export default function StudentsPage() {
   );
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportFormat, setExportFormat] = useState("xlsx");
+  const [exportScope, setExportScope] = useState("all");
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [actionMenu, setActionMenu] = useState(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -495,6 +507,31 @@ export default function StudentsPage() {
   const [selectedFeeStudents, setSelectedFeeStudents] = useState(new Set());
   const [selectedAttendanceStudents, setSelectedAttendanceStudents] = useState(new Set());
   const [isBulkMarking, setIsBulkMarking] = useState(false);
+
+  useEffect(() => {
+    if (!actionMenu) return undefined;
+
+    const closeOnOutsidePress = (event) => {
+      if (!event.target.closest("[data-student-action-menu]")) {
+        setActionMenu(null);
+      }
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setActionMenu(null);
+    };
+    const closeMenu = () => setActionMenu(null);
+
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", closeMenu);
+    window.addEventListener("scroll", closeMenu, true);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePress);
+      document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", closeMenu);
+      window.removeEventListener("scroll", closeMenu, true);
+    };
+  }, [actionMenu]);
 
   useEffect(() => {
     const allowedTabs = [
@@ -658,6 +695,29 @@ export default function StudentsPage() {
       notes: "",
     });
     setShowQuranicProgressModal(true);
+  };
+
+  const handleToggleActionMenu = (event, student) => {
+    const trigger = event.currentTarget;
+    const rect = trigger.getBoundingClientRect();
+    const menuWidth = 208;
+    const estimatedMenuHeight = 230;
+    const viewportPadding = 8;
+    const opensUpward = rect.bottom + estimatedMenuHeight > window.innerHeight;
+    const top = opensUpward
+      ? Math.max(viewportPadding, rect.top - estimatedMenuHeight - 6)
+      : rect.bottom + 6;
+    const preferredLeft = document.documentElement.dir === "rtl"
+      ? rect.left
+      : rect.right - menuWidth;
+    const left = Math.min(
+      window.innerWidth - menuWidth - viewportPadding,
+      Math.max(viewportPadding, preferredLeft),
+    );
+
+    setActionMenu((current) => current?.student.id === student.id
+      ? null
+      : { student, top, left });
   };
 
   const handleDeleteProgress = async (id) => {
@@ -856,6 +916,44 @@ export default function StudentsPage() {
     setCurrentPage(page);
   };
 
+  const handleStudentExport = async () => {
+    setExporting(true);
+    setExportError("");
+    try {
+      const params = new URLSearchParams({ format: exportFormat });
+      if (exportScope === "filtered") {
+        if (search) params.set("search", search);
+        if (filterStatus) params.set("status", filterStatus);
+        if (filterClass && filterClass !== "All") params.set("educationClass", filterClass);
+      }
+      const response = await fetch(`/api/students/export?${params.toString()}`, {
+        credentials: "same-origin",
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || t("students", "exportFailed"));
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition") || "";
+      const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1]
+        || `students-export.${exportFormat}`;
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      setShowExportModal(false);
+    } catch (error) {
+      setExportError(error.message || t("students", "exportFailed"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const active = students.filter((s) => s.is_active !== false).length;
   const inactive = students.length - active;
 
@@ -871,20 +969,33 @@ export default function StudentsPage() {
                 {t("students", "subtitle")}
               </p>
             </div>
-            {canCreateStudents && (
+            <div className="page-header-actions flex flex-col gap-2 sm:flex-row">
               <button
+                type="button"
                 onClick={() => {
-                  fetchReligiousTeachers();
-                  setEditingId(null);
-                  setNewStudent(defaultForm);
-                  setShowModal(true);
+                  setExportError("");
+                  setShowExportModal(true);
                 }}
-                className="btn btn-primary page-primary-action"
+                className="btn btn-secondary page-primary-action"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                {t("students", "enrollBtn")}
+                <Download className="h-4 w-4 mr-2" />
+                {t("students", "exportData")}
               </button>
-            )}
+              {canCreateStudents && (
+                <button
+                  onClick={() => {
+                    fetchReligiousTeachers();
+                    setEditingId(null);
+                    setNewStudent(defaultForm);
+                    setShowModal(true);
+                  }}
+                  className="btn btn-primary page-primary-action"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("students", "enrollBtn")}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Tab Switcher */}
@@ -1027,22 +1138,19 @@ export default function StudentsPage() {
                         <th className="student-father-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                           {t("students", "colFather")}
                         </th>
-                        <th className="student-religious-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
-                          {t("students", "colReligiousTrack")}
+                        <th className="student-religious-class-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                          {t("students", "colReligiousClass")}
                         </th>
-                        <th className="student-religious-teacher-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
-                          {t("students", "colReligiousTeacher")}
+                        <th className="student-qari-teacher-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                          {t("students", "colQariTeacher")}
                         </th>
                         <th className="student-quranic-progress-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
                           {t("students", "colQuranicProgress")}
                         </th>
-                        <th
-                          className="student-contemporary-education-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-44"
-                          style={{ whiteSpace: "normal", textOverflow: "clip" }}
-                        >
-                          {t("students", "colContemporaryTrack")}
+                        <th className="student-school-class-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-40">
+                          {t("students", "colSchoolClass")}
                         </th>
-                        <th className="student-status-column px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">
+                        <th className="student-status-column px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider w-28">
                           {t("students", "colStatus")}
                         </th>
                         <th className="student-actions-cell px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right w-32">
@@ -1105,7 +1213,7 @@ export default function StudentsPage() {
                                 {student.father_name || t("common", "notAvailable")}
                               </span>
                             </td>
-                            <td className="student-religious-education-column px-6 py-4">
+                            <td className="student-religious-class-column px-6 py-4">
                               <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
                                 <span className="text-xs font-bold text-slate-700">
@@ -1115,7 +1223,7 @@ export default function StudentsPage() {
                                 </span>
                               </div>
                             </td>
-                            <td className="student-religious-teacher-column px-6 py-4 text-sm text-slate-600 font-medium">
+                            <td className="student-qari-teacher-column px-6 py-4 text-sm text-slate-600 font-medium">
                               {student.teacher_name || (
                                 <span className="text-slate-300 italic text-xs">
                                   {t("students", "unassigned")}
@@ -1152,7 +1260,7 @@ export default function StudentsPage() {
                                 </span>
                               </button> : <span className="text-slate-300">—</span>}
                             </td>
-                            <td className="student-contemporary-education-column px-6 py-4">
+                            <td className="student-school-class-column px-6 py-4">
                               <div className="flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
                                 <span className="text-xs font-semibold text-slate-600">
@@ -1162,68 +1270,62 @@ export default function StudentsPage() {
                                 </span>
                               </div>
                             </td>
-                            <td className="student-status-column px-6 py-4">
-                              {canUpdateStudents ? <button
-                                onClick={() =>
-                                  handleToggleStatus(
-                                    student.id,
-                                    student.is_active !== false,
-                                  )
-                                }
-                                disabled={updatingStatusIds.has(student.id)}
-                                className={`w-20 h-6 flex items-center justify-center rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
-                                  updatingStatusIds.has(student.id)
-                                    ? "opacity-50 cursor-wait"
-                                    : ""
-                                } ${
-                                  student.is_active !== false
-                                    ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100"
-                                    : "bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100"
-                                }`}
-                              >
-                                {updatingStatusIds.has(student.id) ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : student.is_active !== false ? (
-                                  t("common", "active")
-                                ) : (
-                                  t("common", "inactive")
+                            <td className="student-status-column px-6 py-4 text-center">
+                              <div className="flex w-full items-center justify-center">
+                                {canUpdateStudents ? <button
+                                  onClick={() =>
+                                    handleToggleStatus(
+                                      student.id,
+                                      student.is_active !== false,
+                                    )
+                                  }
+                                  disabled={updatingStatusIds.has(student.id)}
+                                  className={`flex h-6 w-20 shrink-0 items-center justify-center rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                    updatingStatusIds.has(student.id)
+                                      ? "opacity-50 cursor-wait"
+                                      : ""
+                                  } ${
+                                    student.is_active !== false
+                                      ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100"
+                                      : "bg-slate-50 text-slate-400 hover:bg-slate-100 border border-slate-100"
+                                  }`}
+                                >
+                                  {updatingStatusIds.has(student.id) ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : student.is_active !== false ? (
+                                    t("common", "active")
+                                  ) : (
+                                    t("common", "inactive")
+                                  )}
+                                </button> : (
+                                  <span className={`inline-flex h-6 w-20 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold uppercase ${student.is_active !== false ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-slate-100 bg-slate-50 text-slate-400"}`}>
+                                    {student.is_active !== false ? t("common", "active") : t("common", "inactive")}
+                                  </span>
                                 )}
-                              </button> : (
-                                <span className={`inline-flex h-6 w-20 items-center justify-center rounded-full border text-[10px] font-bold uppercase ${student.is_active !== false ? "border-emerald-100 bg-emerald-50 text-emerald-600" : "border-slate-100 bg-slate-50 text-slate-400"}`}>
-                                  {student.is_active !== false ? t("common", "active") : t("common", "inactive")}
-                                </span>
-                              )}
+                              </div>
                             </td>
-                            <td className="student-actions-cell px-6 py-4 text-right">
-                              <div className="student-action-controls flex items-center justify-end gap-1">
+                            <td className="student-actions-cell px-6 py-4 text-center">
+                              <div className="student-action-controls flex items-center justify-center gap-2">
                                 <Link
                                   href={`/students/${student.id}`}
-                                  className="rounded-xl p-2 text-slate-400 transition-all hover:bg-primary-50 hover:text-primary-700"
+                                  className="student-action-button student-action-view flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                                   title={t("students", "openProfile")}
+                                  aria-label={t("students", "openProfile")}
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Eye className="h-5 w-5" style={{ width: "1.125rem", height: "1.125rem" }} />
                                 </Link>
-                                {canViewProgress && <button
-                                  onClick={() => handleOpenHistory(student)}
-                                  className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
-                                  title={t("students", "viewProgressHistory")}
+                                <button
+                                  type="button"
+                                  data-student-action-menu
+                                  onClick={(event) => handleToggleActionMenu(event, student)}
+                                  className={`student-action-button student-action-more flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-all hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 ${actionMenu?.student.id === student.id ? "is-active" : ""}`}
+                                  title={t("students", "moreActions")}
+                                  aria-label={t("students", "moreActions")}
+                                  aria-haspopup="menu"
+                                  aria-expanded={actionMenu?.student.id === student.id}
                                 >
-                                  <Calendar className="h-4 w-4" />
-                                </button>}
-                                {canUpdateStudents && <button
-                                  onClick={() => handleOpenEdit(student)}
-                                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
-                                  title={t("students", "editStudent")}
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </button>}
-                                {canDeleteStudents && <button
-                                  onClick={() => setDeleteId(student.id)}
-                                  className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                  title={t("students", "deleteStudent")}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>}
+                                  <MoreHorizontal className="h-5 w-5" style={{ width: "1.125rem", height: "1.125rem" }} />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1284,11 +1386,11 @@ export default function StudentsPage() {
 
                         <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-2.5">
                           <div className="min-w-0">
-                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colReligiousTrack")}</p>
+                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colReligiousClass")}</p>
                             <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.religious_class || student.class] ? t("options", OPTION_KEYS[student.religious_class || student.class]) : t("common", "notAvailable")}</p>
                           </div>
                           <div className="min-w-0 border-l border-slate-200 pl-2.5">
-                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colReligiousTeacher")}</p>
+                            <p className="truncate text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colQariTeacher")}</p>
                             <p className="truncate text-xs font-bold text-slate-700">{student.teacher_name || t("students", "unassigned")}</p>
                           </div>
                         </div>
@@ -1306,7 +1408,7 @@ export default function StudentsPage() {
                         </button>}
 
                         <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
-                          <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colContemporaryTrack")}</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">{t("students", "colSchoolClass")}</p>
                           <p className="truncate text-xs font-bold text-slate-700">{OPTION_KEYS[student.contemporary_class] ? t("options", OPTION_KEYS[student.contemporary_class]) : t("students", "noSchooling")}</p>
                         </div>
 
@@ -1826,10 +1928,189 @@ export default function StudentsPage() {
             </div>
           )}
 
+          {actionMenu && createPortal(
+            <div
+              data-student-action-menu
+              role="menu"
+              aria-label={t("students", "moreActions")}
+              className="student-action-menu fixed z-[80] overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"
+              style={{ top: actionMenu.top, left: actionMenu.left, width: "13rem" }}
+            >
+              <div className="border-b border-slate-100 px-2.5 py-2">
+                <p className="truncate text-xs font-bold text-slate-800">{actionMenu.student.name}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{t("students", "colActions")}</p>
+              </div>
+              <div className="py-1">
+                <Link
+                  href={`/students/${actionMenu.student.id}`}
+                  role="menuitem"
+                  className="student-action-menu-item flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                >
+                  <Eye className="h-4 w-4 shrink-0" />
+                  <span>{t("students", "openProfile")}</span>
+                </Link>
+                {canViewProgress && <button
+                  type="button"
+                  role="menuitem"
+                  className="student-action-menu-item flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                  onClick={() => {
+                    setActionMenu(null);
+                    handleOpenHistory(actionMenu.student);
+                  }}
+                >
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  <span>{t("students", "viewProgressHistory")}</span>
+                </button>}
+                {canUpdateStudents && <button
+                  type="button"
+                  role="menuitem"
+                  className="student-action-menu-item flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                  onClick={() => {
+                    const student = actionMenu.student;
+                    setActionMenu(null);
+                    handleOpenEdit(student);
+                  }}
+                >
+                  <Edit2 className="h-4 w-4 shrink-0" />
+                  <span>{t("students", "editStudent")}</span>
+                </button>}
+                {canDeleteStudents && <button
+                  type="button"
+                  role="menuitem"
+                  className="student-action-menu-item student-action-menu-delete flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                  onClick={() => {
+                    setDeleteId(actionMenu.student.id);
+                    setActionMenu(null);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 shrink-0" />
+                  <span>{t("students", "deleteStudent")}</span>
+                </button>}
+              </div>
+            </div>,
+            document.body,
+          )}
+
+          <Modal
+            open={showExportModal}
+            onClose={() => !exporting && setShowExportModal(false)}
+            title={t("students", "exportTitle")}
+            size="large"
+          >
+            <div className="space-y-5">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
+                <p className="text-sm font-bold text-emerald-900">{t("students", "exportSubtitle")}</p>
+                <p className="mt-1 text-xs leading-relaxed text-emerald-700">{t("students", "exportPrivacyHint")}</p>
+              </div>
+
+              <fieldset>
+                <legend className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {t("students", "exportFormat")}
+                </legend>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    { value: "xlsx", icon: FileSpreadsheet, title: "excelWorkbook", description: "excelDescription" },
+                    { value: "json", icon: FileJson, title: "jsonFile", description: "jsonDescription" },
+                    { value: "csv", icon: FileText, title: "csvFile", description: "csvDescription" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setExportFormat(option.value)}
+                      aria-pressed={exportFormat === option.value}
+                      className={`relative rounded-xl border p-4 text-start transition-all ${
+                        exportFormat === option.value
+                          ? "border-emerald-500 bg-emerald-50 shadow-sm ring-2 ring-emerald-100"
+                          : "border-slate-200 bg-white hover:border-emerald-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {option.value === "xlsx" && (
+                        <span className="absolute right-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white">
+                          {t("students", "recommended")}
+                        </span>
+                      )}
+                      <span className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg ${exportFormat === option.value ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+                        <option.icon className="h-5 w-5" />
+                      </span>
+                      <span className="block text-sm font-bold text-slate-900">{t("students", option.title)}</span>
+                      <span className="mt-1 block text-[11px] leading-relaxed text-slate-500">{t("students", option.description)}</span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {t("students", "exportScope")}
+                </legend>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {[
+                    { value: "all", title: "allStudents", description: "allStudentsHint" },
+                    { value: "filtered", title: "currentResults", description: "currentResultsHint" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setExportScope(option.value)}
+                      aria-pressed={exportScope === option.value}
+                      className={`flex items-center gap-3 rounded-xl border p-3 text-start transition-all ${
+                        exportScope === option.value
+                          ? "border-emerald-400 bg-emerald-50"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${exportScope === option.value ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-300"}`}>
+                        {exportScope === option.value && <CheckCircle2 className="h-3.5 w-3.5" />}
+                      </span>
+                      <span>
+                        <span className="block text-xs font-bold text-slate-800">{t("students", option.title)}</span>
+                        <span className="mt-0.5 block text-[10px] text-slate-500">{t("students", option.description)}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              {exportFormat === "xlsx" && (
+                <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3 text-blue-700">
+                  <FileSpreadsheet className="mt-0.5 h-5 w-5 shrink-0" />
+                  <p className="text-xs leading-relaxed">{t("students", "excelPhotoHint")}</p>
+                </div>
+              )}
+
+              {exportError && (
+                <p role="alert" className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+                  {exportError}
+                </p>
+              )}
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowExportModal(false)}
+                  disabled={exporting}
+                  className="btn btn-secondary text-sm disabled:opacity-50"
+                >
+                  {t("common", "cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStudentExport}
+                  disabled={exporting}
+                  className="btn btn-primary min-w-40 gap-2 text-sm disabled:cursor-wait disabled:opacity-60"
+                >
+                  {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {exporting ? t("students", "preparingExport") : t("students", "exportNow")}
+                </button>
+              </div>
+            </div>
+          </Modal>
+
           <Modal
             open={showModal}
             onClose={handleCloseModal}
             title={editingId ? t("students", "editStudent") : t("students", "enrollNew")}
+            size="large"
           >
             <form onSubmit={handleSave} className="space-y-3">
               {/* Name & Father */}
@@ -1868,6 +2149,33 @@ export default function StudentsPage() {
                   />
                 </div>
               </div>
+
+              {/* Gender is part of the primary student identity and should be immediately visible. */}
+              <fieldset className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                <legend className="px-1 text-xs font-semibold text-slate-600">
+                  {t("students", "gender")} *
+                </legend>
+                <div className="grid grid-cols-2 gap-2">
+                  {GENDERS.map((gender) => (
+                    <button
+                      key={gender}
+                      type="button"
+                      onClick={() => setNewStudent({ ...newStudent, gender })}
+                      aria-pressed={newStudent.gender === gender}
+                      className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold transition-all ${
+                        newStudent.gender === gender
+                          ? gender === "Male"
+                            ? "border-blue-500 bg-blue-500 text-white shadow-sm"
+                            : "border-rose-500 bg-rose-500 text-white shadow-sm"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      <User className="h-4 w-4" />
+                      {t("options", OPTION_KEYS[gender])}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
 
               {/* Education Track */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-blue-50/50 rounded-2xl">
@@ -1992,38 +2300,20 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              {/* Gender & Address */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    {t("students", "gender")}
-                  </label>
-                  <select
-                    className="input-field text-sm"
-                    value={newStudent.gender}
-                    onChange={(e) =>
-                      setNewStudent({ ...newStudent, gender: e.target.value })
-                    }
-                  >
-                    {GENDERS.map((g) => (
-                      <option key={g} value={g}>{t("options", OPTION_KEYS[g])}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    {t("students", "address")}
-                  </label>
-                  <input
-                    type="text"
-                    className="input-field text-sm"
-                    placeholder={t("students", "addressPlaceholder")}
-                    value={newStudent.address}
-                    onChange={(e) =>
-                      setNewStudent({ ...newStudent, address: e.target.value })
-                    }
-                  />
-                </div>
+              {/* Address */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  {t("students", "address")}
+                </label>
+                <input
+                  type="text"
+                  className="input-field text-sm"
+                  placeholder={t("students", "addressPlaceholder")}
+                  value={newStudent.address}
+                  onChange={(e) =>
+                    setNewStudent({ ...newStudent, address: e.target.value })
+                  }
+                />
               </div>
 
               {/* Progress (New Enrollment Only) */}

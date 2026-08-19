@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ["exceljs", "sharp"],
   experimental: {
     serverActions: {
       // Upload actions validate files at 5 MB; leave room for multipart metadata.

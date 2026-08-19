@@ -217,6 +217,77 @@ svg {
   display: none;
 }
 
+.student-action-button {
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 2.25rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #64748b;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.student-action-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  stroke-width: 2;
+}
+
+.student-action-button:hover,
+.student-action-button.is-active {
+  color: #047857;
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  box-shadow: 0 4px 10px rgb(5 150 105 / 0.12);
+  transform: translateY(-1px);
+}
+
+.student-action-button:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+.student-action-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 2.4rem;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  color: #475569;
+  border-radius: 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-align: start;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.student-action-menu-item svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+}
+
+.student-action-menu-item:hover,
+.student-action-menu-item:focus-visible {
+  color: #047857;
+  background: #ecfdf5;
+  outline: none;
+}
+
+.student-action-menu-delete { color: #e11d48; }
+.student-action-menu-delete:hover,
+.student-action-menu-delete:focus-visible {
+  color: #be123c;
+  background: #fff1f2;
+}
+
 /* Header controls use explicit logical spacing so icons never cover localized text. */
 .header-toolbar {
   display: grid;
@@ -363,11 +434,11 @@ svg {
     min-width: 0;
   }
 
-  .student-management-table .student-religious-education-column {
+  .student-management-table .student-religious-class-column {
     width: 13%;
   }
 
-  .student-management-table .student-religious-teacher-column {
+  .student-management-table .student-qari-teacher-column {
     width: 13%;
   }
 
@@ -375,7 +446,7 @@ svg {
     width: 18%;
   }
 
-  .student-management-table .student-contemporary-education-column {
+  .student-management-table .student-school-class-column {
     width: 15%;
   }
 
@@ -392,21 +463,6 @@ svg {
     width: 2.25rem !important;
     height: 2.25rem !important;
     font-size: 0.75rem;
-  }
-
-  .student-management-table .student-action-controls {
-    gap: 0.125rem;
-  }
-
-  .student-management-table .student-action-controls > a,
-  .student-management-table .student-action-controls > button {
-    border-radius: 0.5rem;
-    padding: 0.4rem;
-  }
-
-  .student-management-table .student-action-controls svg {
-    width: 0.875rem;
-    height: 0.875rem;
   }
 
   .student-management-table .group\/progress {
@@ -1359,6 +1415,38 @@ html.dark { scrollbar-color: #555e69 var(--dark-sidebar); }
   background: #20252c !important;
   border: 1px solid #343b45 !important;
   box-shadow: 0 10px 26px rgb(0 0 0 / 0.2) !important;
+}
+
+.dark .student-action-button {
+  color: var(--dark-secondary);
+  background: var(--dark-raised);
+  border-color: var(--dark-border);
+  box-shadow: none;
+}
+
+.dark .student-action-button:hover,
+.dark .student-action-button.is-active {
+  color: #a8d1c4;
+  background: var(--dark-accent-soft);
+  border-color: var(--dark-accent-strong);
+}
+
+.dark .student-action-menu {
+  background: var(--dark-surface) !important;
+  border-color: var(--dark-border) !important;
+}
+
+.dark .student-action-menu-item { color: var(--dark-secondary); }
+.dark .student-action-menu-item:hover,
+.dark .student-action-menu-item:focus-visible {
+  color: #a8d1c4;
+  background: var(--dark-accent-soft);
+}
+.dark .student-action-menu-delete { color: #cf9999; }
+.dark .student-action-menu-delete:hover,
+.dark .student-action-menu-delete:focus-visible {
+  color: #e7b0b0;
+  background: rgb(166 103 103 / 0.11);
 }
 
 @media (max-width: 640px) {
